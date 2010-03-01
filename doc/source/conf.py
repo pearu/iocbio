@@ -47,7 +47,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Iocbio'
+project = u'IOCBio'
 copyright = u'2009-2010, Pearu Peterson'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -186,7 +186,7 @@ latex_paper_size = 'a4'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Iocbio.tex', u'Iocbio Documentation',
+  ('index', 'Iocbio.tex', u'IOCBio Documentation',
    u'Pearu Peterson', 'manual'),
 ]
 

@@ -35,7 +35,7 @@ clean:
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(HTML_TARGET)
 	@echo
-	@echo "Build finished. The HTML pages are in ../apidocs."
+	@echo "Build finished. The HTML pages are in $(HTML_TARGET)."
 
 dirhtml:
 	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) _build/dirhtml
