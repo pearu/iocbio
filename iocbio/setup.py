@@ -11,9 +11,18 @@ def configuration(parent_package='',top_path=None):
     from numpy.distutils.misc_util import Configuration
     config = Configuration('iocbio',parent_package,top_path)
 
-    #config.add_subpackage('microscope')
+    # Add subpackages here:
+    config.add_subpackage('io')
+
+    # eof add.
 
     config.make_svn_version_py()
+
+    wininst = 'bdist_wininst' in sys.argv
+    try:
+        import multiprocessing
+    except ImportError:
+        multiprocessing = None
 
     scripts = glob(join(config.local_path, 'scripts', '*.py'))
     scripts += glob(join(config.local_path, '*', 'scripts', '*.py'))

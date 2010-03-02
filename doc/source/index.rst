@@ -15,8 +15,7 @@ __ http://code.google.com/p/iocbio/
 __ http://sysbio.ioc.ee/
 __ http://www.ioc.ee/
 
-
-Please report any issues to `Iocbio Issue Tracker`__.
+Please report any issues to `IOCBio Issue Tracker`__.
 
 __ http://code.google.com/p/iocbio/issues/list
 

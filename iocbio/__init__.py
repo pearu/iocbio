@@ -7,6 +7,7 @@ The :mod:`iocbio` package provides the following tools:
 
 .. autosummary::
 
+  io
   microscope
 
 and the following utilities:
@@ -14,5 +15,4 @@ and the following utilities:
 .. autosummary::
 
   optparse_gui
-
 """
