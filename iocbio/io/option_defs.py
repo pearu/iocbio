@@ -3,6 +3,8 @@ import sys
 import glob
 from optparse import OptionGroup, NO_DEFAULT
 
+print __file__,'will be removed in future, use subpackage/script_options.py instead'
+
 def set_plot_photons_options(parser):
     import matplotlib
     if os.name == 'posix' and 1:

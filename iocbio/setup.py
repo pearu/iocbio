@@ -13,6 +13,8 @@ def configuration(parent_package='',top_path=None):
 
     # Add subpackages here:
     config.add_subpackage('io')
+    config.add_subpackage('ops')
+    config.add_subpackage('microscope')
 
     # eof add.
 

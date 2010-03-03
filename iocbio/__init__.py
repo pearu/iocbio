@@ -8,6 +8,7 @@ The :mod:`iocbio` package provides the following tools:
 .. autosummary::
 
   io
+  ops
   microscope
 
 and the following utilities:

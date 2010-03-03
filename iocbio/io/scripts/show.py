@@ -16,7 +16,6 @@ import numpy
 from iocbio.io import ImageStack
 from iocbio.optparse_gui import OptionParser
 from iocbio.io.io import fix_path
-from iocbio.io import option_defs
 from iocbio.utils import tostr
 
 def runner (parser, options, args):
@@ -89,7 +88,8 @@ def runner (parser, options, args):
 
 def main ():
     parser = OptionParser()
-    option_defs.set_show_options (parser)
+    from iocbio.io.script_options import set_show_options
+    set_show_options (parser)
     if hasattr(parser, 'runner'):
         parser.runner = runner
     options, args = parser.parse_args()

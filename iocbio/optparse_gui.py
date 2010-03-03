@@ -746,7 +746,7 @@ that contain spaces must be entered like so: "arg with space"\
             values, args = self.option_parser.parse_options_args
             self.set_result()
             values, args = self.option_parser.get_result(values)
-            self.option_parser.save_options(values, args)
+            #self.option_parser.save_options(values, args)
         except optparse.OptionValueError, msg:
             print 'Ignoring %s' % (msg)
             pass
@@ -807,6 +807,14 @@ that contain spaces must be entered like so: "arg with space"\
         args = re.findall( r'(?:((?:(?:\w|\d)+)|".*?"))\s*', args_buff )
         self.option_parser.result = option_values, args
 
+    def put_result(self):
+        option_values, args = self.option_parser.result
+        for option, ctrl in self.option_controls.iteritems():
+            value = option_values.get(option)
+            if value is not None:
+                ctrl.SetValue(value)
+        self.args_ctrl.SetValue(' '.join(args))
+
 class UserCancelledError( Exception ):
     pass
 
@@ -845,6 +853,9 @@ class OptionParser( optparse.OptionParser ):
             kwargs['option_class'] = Option
         self.runner = None
         self.SUPER.__init__( self, *args, **kwargs )
+
+    def save_option_value (self, dest, value):
+        return self._set_dest_value (dest, value)
 
     def _set_dest_value(self, dest, value, old_cwd = None):
         if value is None:
@@ -887,6 +898,8 @@ class OptionParser( optparse.OptionParser ):
 
     def save_options (self, values, args):
         script_history = self.get_history_file()
+        if debug>1:
+            print 'Saving options to', script_history
         cwd = os.path.abspath(os.getcwd())
         dirname = os.path.dirname(script_history)
         if not os.path.isdir (dirname):
@@ -901,14 +914,10 @@ class OptionParser( optparse.OptionParser ):
                     f.write('%s: %r\n' % (option.dest, value))
         f.close()        
 
-    def parse_args( self, args = None, values = None ):
-        '''
-        This is the heart of it all - overrides optparse.OptionParser.parse_args
-        @param arg is irrelevant and thus ignored, 
-               it's here only for interface compatibility
-        '''
-        # load options history
+    def load_options(self):
         script_history = self.get_history_file ()
+        if debug>1:
+            print 'Loading options from',script_history
         h_args = None
         h_cwd = None
         cwd = os.path.abspath(os.getcwd())
@@ -923,7 +932,17 @@ class OptionParser( optparse.OptionParser ):
                     h_cwd = value
                 else:
                     self._set_dest_value(dest, value, h_cwd)
-            f.close()
+            f.close()        
+        return h_args
+
+    def parse_args( self, args = None, values = None ):
+        '''
+        This is the heart of it all - overrides optparse.OptionParser.parse_args
+        @param arg is irrelevant and thus ignored, 
+               it's here only for interface compatibility
+        '''
+        # load options history
+        h_args = self.load_options()
 
         no_gui = '--no-gui' in sys.argv
         if no_gui:
@@ -957,7 +976,7 @@ class OptionParser( optparse.OptionParser ):
             print 'User has cancelled, exiting.'
             sys.exit(0)
         
-        values, args = self.get_result(values)        
+        values, args = self.get_result(values)
         self.save_options(values, args)
 
         return values, args
