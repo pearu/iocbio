@@ -75,9 +75,8 @@ use::
   stack = ImageStack(images, voxel_sizes=...)
   stack.save('stack.tif')
 
-.. autoclass:: ImageStack
-.. autoclass:: PathInfo
-
+Module content
+--------------
 """
 # Author: Pearu Peterson
 # Created: 2009
@@ -89,7 +88,6 @@ from . import io
 from .pathinfo import PathInfo
 
 
-
 class ImageStack(object):
     """
     Holds a 3D stack of images and its parameters.
@@ -97,10 +95,14 @@ class ImageStack(object):
     Attributes
     ----------
 
-    images : numpy.ndarray
+    images : :numpy:`ndarray`
       a 3D array of image stacks.
     pathinfo : `iocbio.io.pathinfo.PathInfo`
       holds microscope data
+
+    See also
+    --------
+    :mod:`iocbio.io.image_stack`
     """
     
     @classmethod
@@ -112,13 +114,17 @@ class ImageStack(object):
         ----------
         path : str
           File or directory name.
-        options : {None, optparse.Values}
+        options : {None, :pythonlib:`optparse`.Values}
           Options specified in command line. Note that command line
           options override options stored in pathinfo attribute.
 
         Returns
         -------
-          image_stack : `ImageStack`
+          image_stack : `iocbio.io.image_stack.ImageStack`
+
+        See also
+        --------
+        :class:`iocbio.io.image_stack.ImageStack`
         """
         images, pathinfo = io.load_image_stack(path, options=options)
         return cls (images, pathinfo=pathinfo, options=options)
@@ -129,12 +135,12 @@ class ImageStack(object):
 
         Parameters
         ----------
-        images : numpy.ndarray
+        images : :numpy:`ndarray`
           A 3D or 2D array.
         pathinfo : {None, `iocbio.io.pathinfo.PathInfo`}
           If pathinfo is None then it will be constructed from the
           kws mapping.
-        options : {None, optparse.Values}
+        options : {None, :pythonlib:`optparse`.Values}
         kws : dict
           A dictionary of pathinfo keys.
         """

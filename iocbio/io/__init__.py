@@ -15,6 +15,12 @@ The front-end class for I/O tasks is
 `iocbio.io.image_stack.ImageStack`, see `iocbio.io.image_stack` for
 more information.
 
+Package content
+---------------
 """
+
+__autodoc__ = ['image_stack', 'pathinfo', 'io', 
+               'RowFile', 'ImageStack', 'load_image_stack','save_image_stack']
+
 from .image_stack import ImageStack
 from .io import RowFile, load_image_stack, save_image_stack

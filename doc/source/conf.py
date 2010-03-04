@@ -23,7 +23,8 @@ import sys, os
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.pngmath', 'numpydoc',
-              'sphinx.ext.intersphinx', 'sphinx.ext.coverage',]
+              'sphinx.ext.intersphinx', 'sphinx.ext.coverage',
+              'sphinx.ext.extlinks']
 extensions.append('sphinx.ext.autosummary')
 
 #import sphinx
@@ -209,6 +210,61 @@ latex_documents = [
 
 intersphinx_mapping = {'http://docs.python.org/dev': None}
 
+extlinks = {'numpy': ('http://docs.scipy.org/doc/numpy/reference/generated/numpy.%s.html',
+                      'numpy.'),
+            'pythonlib': ('http://docs.python.org/library/%s.html',
+                          '')}
+
+
 
 import glob
-autosummary_generate = glob.glob ('*.rst')
+autosummary_generate = glob.glob ('index.rst')# + glob.glob ('generated/*.rst')
+
+
+import types
+
+def scan_for_autodoc(obj, prefix, cache=set([])):
+    if not hasattr(obj, '__name__'):
+        # objects with no name have no members
+        return
+    if isinstance(obj, types.ModuleType) and not obj.__name__.startswith(prefix):
+        # skip external modules/packages
+        print 'skipping',obj.__name__
+        return
+    if isinstance(obj, types.ModuleType):
+        n = obj.__name__
+    else:
+        n = prefix + '.' + obj.__name__
+    if n not in cache:
+        yield n
+        cache.add(n)
+    prefix = n
+    autodoc_names = getattr(obj, '__autodoc__',None)
+    if autodoc_names is None:
+        if isinstance(obj, (types.TypeType, types.ClassType)):
+            autodoc_names = [name for name in dir (obj) if not name.startswith ('_')]
+        elif isinstance(obj, types.ModuleType):
+            autodoc_names = getattr(obj, '__all__', [])
+    if autodoc_names is None:
+        return
+    for name in autodoc_names:
+        if not hasattr(obj, name):
+            if isinstance(obj, types.ModuleType):
+                exec 'import %s.%s' % (obj.__name__, name)
+        member = getattr(obj, name)
+        for n in scan_for_autodoc(member, prefix):
+            if n not in cache:
+                yield n
+                cache.add(n)
+
+import iocbio
+f = open('generated_stubs.rst', 'w')
+print>>f,'.. autosummary::'
+print>>f,'  :toctree: generated/'
+print>>f
+
+for n in scan_for_autodoc(iocbio, 'iocbio'):
+    sys.stdout.flush ()
+    print>>f, '  ' + n
+f.close ()
+autosummary_generate.append('generated_stubs.rst')

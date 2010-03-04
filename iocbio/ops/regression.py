@@ -25,8 +25,6 @@ The following example illustrates local linear regression method for
 
 Module content
 --------------
-
-.. autofunction:: regress
 """
 # Author: Pearu Peterson
 # Created: September 2009
@@ -98,6 +96,10 @@ def regress(data, scales,
     -------
     new_data : numpy.ndarray
       smoothed data
+
+    See also
+    --------
+    :mod:`iocbio.ops.regression`
     """
     kernel_types = dict (epanechnikov=0, uniform=1, 
                          triangular = 2, quartic=3,

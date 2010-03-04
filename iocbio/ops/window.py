@@ -26,10 +26,8 @@ itself::
 .. image:: ../_static/apply_window_1d.png
   :width: 60%
 
-
 Module content
 --------------
-.. autofunction:: apply_window
 """
 
 __all__ = ['apply_window']
@@ -70,6 +68,10 @@ def apply_window(data, scales, smoothness=1,
     Returns
     -------
     data : numpy.ndarray
+
+    See also
+    --------
+    :mod:`iocbio.ops.window`
     """
     if not inplace:
         data = data.copy()

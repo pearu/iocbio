@@ -19,7 +19,6 @@ The following example illustrates how to convolve data with a kernel::
 
 Module content
 --------------
-.. autofunction:: convolve
 """
 
 from __future__ import division
@@ -46,6 +45,10 @@ def convolve(kernel, data, options = None):
     Returns
     -------
     result : numpy.ndarray
+
+    See also
+    --------
+    :mod:`iocbio.ops.convolution`
     """
     float_type = None
     if options is not None:

@@ -11,15 +11,16 @@ returns instances of one of the following classes:
   Configuration
   Tiffinfo
 
-.. autoclass:: PathInfo
-
 The following mappings are used to hold microscope information:
 
 .. autodata:: objectives
 .. autodata:: filters
 
+Module content
+--------------
 """
 
+__autodoc__ = ['PathInfo']
 __all__ = ['Scaninfo', 'Configuration', 'Tiffinfo']
 
 import sys
