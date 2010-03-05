@@ -235,6 +235,9 @@ def scan_for_autodoc(obj, prefix, cache=set([])):
         n = obj.__name__
     else:
         n = prefix + '.' + obj.__name__
+        if not obj.__module__.startswith('iocbio'):
+            # skip external classes
+            return
     if n not in cache:
         yield n
         cache.add(n)
@@ -242,7 +245,7 @@ def scan_for_autodoc(obj, prefix, cache=set([])):
     autodoc_names = getattr(obj, '__autodoc__',None)
     if autodoc_names is None:
         if isinstance(obj, (types.TypeType, types.ClassType)):
-            autodoc_names = [name for name in dir (obj) if not name.startswith ('_')]
+            autodoc_names = [name for name in dir(obj) if not name.startswith ('_')]
         elif isinstance(obj, types.ModuleType):
             autodoc_names = getattr(obj, '__all__', [])
     if autodoc_names is None:
@@ -268,3 +271,5 @@ for n in scan_for_autodoc(iocbio, 'iocbio'):
     print>>f, '  ' + n
 f.close ()
 autosummary_generate.append('generated_stubs.rst')
+
+#sys.exit (0)

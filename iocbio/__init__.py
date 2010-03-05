@@ -15,13 +15,7 @@ and the following utilities:
 
 .. autosummary::
 
-  optparse_gui
+  iocbio.optparse_gui
 """
 
-__autodoc__ = ['io', 'ops', 'microscope']
-
-#__all__ = ['io', 'ops', 'microscope']
-
-#from . import io
-#from . import ops
-#from . import microscope
+__autodoc__ = ['io', 'ops', 'microscope', 'optparse_gui']

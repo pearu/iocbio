@@ -1,20 +1,24 @@
-'''
-A drop-in replacement for optparse ("import iocbio.optparse_gui as optparse")
+'''A drop-in replacement for :pythonlib:`optparse` ("import iocbio.optparse_gui as optparse")
 
-Provides an identical interface to optparse(.OptionParser), in
-addition, it displays an automatically generated wx dialog in order to
-enter the options/args, instead of parsing command line arguments.
+Provides an identical interface to
+:pythonlib:`optparse`.OptionParser, in addition, it displays an
+automatically generated `wx`__ dialog in order to enter the
+options/args, instead of parsing command line arguments.
+
+__ http://www.wxpython.org
 
 This code is based on optparse_gui module
 http://code.google.com/p/optparse-gui/. Unfortunately the owner of
 optparse_gui did not respond to a request to join the optparse_gui
-group. By now this module has become more complete with many more
-features.
+group. By now this module has become more complete with more features.
 
-
+Module content
+--------------
 '''
 #Author: Pearu Peterson
 #Created: September 2009
+
+__all__ = ['OptionParser', 'Option']
 
 import os
 import signal
@@ -839,20 +843,26 @@ def check_directory(option, opt, value):
     return value
 
 class Option(optparse.Option):
-    SUPER = optparse.Option
-    TYPES = SUPER.TYPES + ('file', 'directory', 'multiline')
-    TYPE_CHECKER = SUPER.TYPE_CHECKER.copy()
+    """Extends optparse.Option with file, directory and multiline types.
+    """
+    _SUPER = optparse.Option
+    TYPES = _SUPER.TYPES + ('file', 'directory', 'multiline')
+    TYPE_CHECKER = _SUPER.TYPE_CHECKER.copy()
     TYPE_CHECKER.update (file=check_file, directory=check_directory)
 
 
 class OptionParser( optparse.OptionParser ):
-    SUPER = optparse.OptionParser
+    """Extends optparse.OptionParser with GUI support.
+    """
+    _SUPER = optparse.OptionParser
+    """Holds base class.
+    """
     
     def __init__( self, *args, **kwargs ):
         if 'option_class' not in kwargs:
             kwargs['option_class'] = Option
         self.runner = None
-        self.SUPER.__init__( self, *args, **kwargs )
+        self._SUPER.__init__( self, *args, **kwargs )
 
     def save_option_value (self, dest, value):
         return self._set_dest_value (dest, value)
@@ -936,10 +946,7 @@ class OptionParser( optparse.OptionParser ):
         return h_args
 
     def parse_args( self, args = None, values = None ):
-        '''
-        This is the heart of it all - overrides optparse.OptionParser.parse_args
-        @param arg is irrelevant and thus ignored, 
-               it's here only for interface compatibility
+        '''Parse the command-line options.
         '''
         # load options history
         h_args = self.load_options()
@@ -948,7 +955,7 @@ class OptionParser( optparse.OptionParser ):
         if no_gui:
             sys.argv.remove('--no-gui')
         # preprocess command line arguments and set to defaults
-        pp_option_values, pp_args = self.SUPER.parse_args(self, args, values)
+        pp_option_values, pp_args = self._SUPER.parse_args(self, args, values)
 
         if no_gui:
             self.save_options(pp_option_values, pp_args)
@@ -988,7 +995,7 @@ class OptionParser( optparse.OptionParser ):
         #if app is None:    
         #    app = wx.App( False )
         #wx.MessageDialog( None, msg, 'Error!', wx.ICON_ERROR ).ShowModal()
-        return self.SUPER.error( self, msg )
+        return self._SUPER.error( self, msg )
 
     def get_result(self, values):
         if values is None:
