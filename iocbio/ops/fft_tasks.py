@@ -1,24 +1,31 @@
+"""Provides FFTTasks class.
+
+Module content
+--------------
+"""
+__all__ = ['FFTTasks']
 
 import os
 import numpy
 
 from ..utils import mul_seq
 
-class FFTTasks:
-    """ Holds optimized cache for Fourier transforms
-    and implements various computational tasks using the cache.
+class FFTTasks(object):
+    """ Optimized cache for Fourier transforms using `FFTW <http://www.fftw.org/>`_ with operations.
     """
 
     _wisdoms = {}
 
     @staticmethod
     def load_wisdoms(_cache=[]):
+        """Load fftw wisdom from a disk.
+        """
         if _cache:
             return
         import fftw3
         import fftw3f
         for fftw in [fftw3, fftw3f]:
-            wisdom_file_name = os.path.join('.ioc','fft_tasks','%s_wisdom_data.txt' % (fftw.__name__))
+            wisdom_file_name = os.path.join('.iocbio','fft_tasks','%s_wisdom_data.txt' % (fftw.__name__))
             if os.path.isfile(wisdom_file_name):
                 print 'Loading wisdom from file %r' % (wisdom_file_name)
                 fftw.import_wisdom_from_file(wisdom_file_name)
@@ -26,13 +33,15 @@ class FFTTasks:
                 FFTTasks._wisdoms[wisdom_file_name] = fftw.export_wisdom_to_string()
     @staticmethod
     def save_wisdoms(_cache=[]):
+        """Save fftw wisdom to a disk.
+        """
         if _cache:
             return
         import fftw3
         import fftw3f
         import atexit
         for fftw in [fftw3, fftw3f]:
-            wisdom_file_name = os.path.join('.ioc','fft_tasks','%s_wisdom_data.txt' % (fftw.__name__))
+            wisdom_file_name = os.path.join('.iocbio','fft_tasks','%s_wisdom_data.txt' % (fftw.__name__))
             dirpath = os.path.dirname(wisdom_file_name)
             if dirpath and not os.path.exists(dirpath):
                 os.makedirs(dirpath)
@@ -50,6 +59,15 @@ class FFTTasks:
 
     @classmethod
     def get_optimal_fft_size(cls, size):
+        """Compute optimal FFT size from a given size.
+
+        Usually optimal FFT size is a power of two but on the other
+        hand, achieving power of two may be memory expensive and there
+        may exist sizes that give more efficient FFT computation.  For
+        example, if the input size is 65 then extending the FFT size
+        to 128 is less efficient compared to extending the size, say,
+        to 66.
+        """
         if size==2**int(numpy.log2(size)):
             return size
         import fftw3f as fftw
@@ -73,6 +91,14 @@ class FFTTasks:
         return optimal_size
 
     def __init__(self, shape, float_type=None, options = None):
+        """ Construct an instance of FFTTasks.
+
+        Parameters
+        ----------
+        shape : tuple
+        float_type : {None, 'single', 'double'}
+        options : {None, :pythonlib:`optparse`.Values}
+        """
 
         if options is None:
             flags = ['estimate']
@@ -115,32 +141,61 @@ class FFTTasks:
         self.convolve_kernel_fourier = None
 
     def fft(self, data):
+        """Compute FFT of data.
+        """
         cache = self._cache
         cache[:] = data
         self._fft_plan.execute()
         return cache.copy()
 
     def ifft(self, data):
+        """Compute inverse FFT of data.
+        """
         cache = self._cache
         cache[:] = data
         self._ifft_plan.execute()
         return cache.real / mul_seq(cache.shape)
 
     def set_convolve_kernel(self, kernel):
+        """ Set convolve kernel.
+
+        Parameters
+        ----------
+        kernel : :numpy:`ndarray`
+        """
         cache = self._cache
         cache[:] = kernel
         self._fft_plan.execute()
         self.set_convolve_fourier_kernel(cache.copy())
 
     def set_convolve_fourier_kernel(self, kernel_f):
+        """ Set convolve kernel in Fourier transform.
+
+        Parameters
+        ----------
+        kernel_f : :numpy:`ndarray`
+        """
         kernel_f = kernel_f.astype(self.complex_dtype)
         self.convolve_kernel_fourier = kernel_f
         self.convolve_kernel_fourier_normal = kernel_f / mul_seq(kernel_f.shape)
         self.convolve_kernel_fourier_conj = kernel_f.conj()
 
     def convolve(self, data):
+        """Compute convolution of data and convolve kernel.
+
+        Parameters
+        ----------
+          data : :numpy:`ndarray`
+        
+        Returns
+        -------
+          result : :numpy:`ndarray`
+
+        See also
+        --------
+        set_convolve_kernel, set_convolve_fourier_kernel
+        """
         kernel_f = self.convolve_kernel_fourier_normal
-        #kernel_f = self.convolve_kernel_fourier
         if kernel_f is None:
             raise TypeError ('Convolve kernel not specified')
         cache = self._cache

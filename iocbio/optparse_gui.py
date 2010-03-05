@@ -2,13 +2,11 @@
 
 Provides an identical interface to
 :pythonlib:`optparse`.OptionParser, in addition, it displays an
-automatically generated `wx`__ dialog in order to enter the
+automatically generated `wx <http://www.wxpython.org>`_ dialog in order to enter the
 options/args, instead of parsing command line arguments.
 
-__ http://www.wxpython.org
-
-This code is based on optparse_gui module
-http://code.google.com/p/optparse-gui/. Unfortunately the owner of
+This code is based on `optparse_gui module
+<http://code.google.com/p/optparse-gui/>`_. Unfortunately the owner of
 optparse_gui did not respond to a request to join the optparse_gui
 group. By now this module has become more complete with more features.
 

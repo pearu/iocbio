@@ -6,8 +6,14 @@ The :mod:`iocbio.microscope` provides the following modules:
 
 .. autosummary::
 
+  psf
   deconvolution
 
 Package content
 ---------------
 """
+
+__autodoc__ = ['cluster_tools', 'psf', 'deconvolution',
+               'spots_to_psf']
+
+from .psf import spots_to_psf

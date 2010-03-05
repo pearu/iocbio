@@ -4,7 +4,8 @@ __all__ = ['set_convolve_options',
            'set_regress_options',
            'get_regress_options_group',
            'get_apply_window_options_group',
-           'set_apply_window_options']
+           'set_apply_window_options',
+           'set_apply_noise_options']
 
 import os
 from optparse import OptionGroup, NO_DEFAULT
@@ -131,3 +132,21 @@ def set_regress_options (parser):
     get_regress_options_group (parser, group=parser)
     parser.add_option_group(get_io_options_group (parser))
     parser.add_option_group(get_microscope_options_group (parser))
+
+def set_apply_noise_options (parser):
+    parser.add_option ('--quiet', dest = 'verbose',
+                       action = 'store_false', default=True,
+                       help = 'Disable output messages. Default: %default')
+    parser.add_option ('--input-path','-i',
+                       type = 'file', metavar='PATH',
+                       help = 'Specify input PATH of 3D images. Default: %default.'
+                       )
+    parser.add_option ('--output-path','-o',
+                       type = 'file', metavar='PATH',
+                       help = 'Specify output PATH of 3D images. Default: %default.'
+                       )
+    parser.add_option ("--noise-type", dest='noise_type',
+                      choices = ['poisson'],
+                      default = 'poisson',
+                      help = 'Specify noise type: poisson. Default: %default',
+                      )
