@@ -19,9 +19,11 @@ Please report any issues to `IOCBio Issue Tracker`__.
 
 __ http://code.google.com/p/iocbio/issues/list
 
+.. include:: generated/scripts.rst
+
 .. currentmodule:: iocbio
 
 .. automodule:: iocbio.__init__
   :members:
 
-.. include:: generated/scripts.rst
+

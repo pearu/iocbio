@@ -168,6 +168,7 @@ def get_tag_from_lsm_file(path, tagname, _cache={}):
             if i==-1: continue
             key = '.'.join(l + [sline[:i].rstrip()])
             info[key] = sline[i+1:].lstrip()
+            #print key, info[key]
     f.close ()
     _cache[path] = info
     return info.get(tagname)
@@ -204,6 +205,9 @@ class PathInfo(object):
             try:
                 v = getattr (self, 'get_'+attr) ()
             except NotImplementedError, msg:
+                v = None
+            except AttributeError, msg:
+                print '%s: no %s attribute' % (self.__class__.__name__, msg)
                 v = None
             if v is None:
                 continue
@@ -508,6 +512,16 @@ class PathInfo(object):
         if t=='widefield':
             return 2*dr
         raise NotImplementedError(`t`)
+
+    def get_detectors(self):
+        """Return detectors information.
+
+        Returns
+        -------
+        info : list
+          A list of dictonaries with `name`, `index`, `pinhole` keys.
+        """
+        return
 
 class Scaninfo(PathInfo):
 
@@ -914,3 +928,14 @@ class Tiffinfo(PathInfo):
             if sample_format is not None:
                 self.set_sample_format(sample_format)
         return self.sample_format
+
+    def get_detectors(self):
+        nof_detectors = int(get_tag_from_lsm_file(self.path, 'Tracks.Detectors.NumberDetectors'))
+        l =[]
+        for n in range (1, nof_detectors+1):
+            name = get_tag_from_lsm_file(self.path, 'Tracks.Detectors.Detector%s.ImageChannelName' % (n))
+            pinhole = get_tag_from_lsm_file(self.path, 'Tracks.Detectors.Detector%s.PinholeDiameter' % (n))
+            pinhole, unit = pinhole.strip (). split()
+            unit = {'\xb5'+'m':1e6}.get (unit, 1)
+            l.append (dict(name=name, index=n-1, pinhole=float(pinhole) * unit))
+        return l

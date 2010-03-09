@@ -191,6 +191,11 @@ def load_image_stack(path, options=None):
             if pathinfo is None:
                 pathinfo = Tiffinfo(path)
                 images = pathinfo.tif.asarray()
+                if len (images.shape)==4:
+
+                    detector = [d for d in pathinfo.get_detectors() if d['pinhole']][0]
+                    print 'Using detector with non-zero pinhole:', detector                    
+                    images = images[:,detector['index'],:,:]
             else:
                 tif = TIFFfile(path)
                 images = tif.asarray()

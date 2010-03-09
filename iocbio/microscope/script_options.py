@@ -5,6 +5,18 @@ __all__ = ['add_psflib_options', 'set_estimate_psf_options',
            'set_deconvolve_options','get_rltv_options_group',
            'set_deconvolve_with_sphere_options']
 
+def set_clusters_options (parser):
+    parser.set_usage ('%prog [options] [ -i INPUT_PATH ]')
+    parser.set_description('Find clusters in INPUT_PATH field.')
+    parser.add_option ('--input-path','-i',
+                       type = 'file', metavar='INPUT_PATH', dest='input_path',
+                       help = 'Specify INPUT_PATH.'
+                       )
+    parser.add_option ('--output-path','-o',
+                       type = 'file', metavar='OUTPUT_PATH', dest='output_path',
+                       help = 'Specify OUTPUT_PATH.'
+                       )
+
 def add_psflib_options (parser):
     from ..io.io import get_psf_libs, psflib_dir
     parser.add_option ('--psf-lib',

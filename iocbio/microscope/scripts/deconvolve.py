@@ -1,9 +1,5 @@
 #!/usr/bin/env python 
 # -*- python-mode -*-
-"""
-Front end script for deconvolving microscope images.
-Execute this script with --help for usage information.
-"""
 # Author: Pearu Peterson
 # Created: May 2009
 
@@ -44,9 +40,9 @@ def runner (parser, options, args):
 
     options.input_path = fix_path (options.input_path)
     if options.output_path is None:
-        deconvolve_dir = get_path_dir(options.input_path, 'ioc.deconvolve')
+        deconvolve_dir = get_path_dir(options.input_path, 'iocbio.deconvolve')
     else:
-        deconvolve_dir = get_path_dir(options.output_path, 'ioc.deconvolve')
+        deconvolve_dir = get_path_dir(options.output_path, 'iocbio.deconvolve')
 
     psf_path = get_psf_path(options)
 
