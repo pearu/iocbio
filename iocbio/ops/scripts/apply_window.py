@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 # -*- python-mode -*-
-"""
-Estimate a scalar field from noisy observations (images) using local
-constant or local linear regression.
-"""
 # Author: Pearu Peterson
 # Created: September 2009
 
@@ -19,14 +15,9 @@ from iocbio.io import ImageStack
 from iocbio.ops.apply_window_ext import apply_window_inplace
 from iocbio.io.io import fix_path
 from iocbio.io import utils
+from iocbio.ops.script_options import set_apply_window_options
 
 import time
-
-__usage__ = """\
-%prog [options] [ INPUT_PATH [ OUTPUT_PATH ] ]
-
-Description:
-  %prog applies smooth window to images in INPUT_PATH to make images periodic."""
 
 def runner(parser, options, args):
 
@@ -91,8 +82,7 @@ def runner(parser, options, args):
     ImageStack(new_images, stack.pathinfo).save(options.output_path)        
 
 def main ():
-    parser = OptionParser(__usage__)
-    from iocbio.ops.script_options import set_apply_window_options
+    parser = OptionParser()
     set_apply_window_options (parser)
     if hasattr(parser, 'runner'):
         parser.runner = runner

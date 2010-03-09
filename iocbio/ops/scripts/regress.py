@@ -19,12 +19,7 @@ from iocbio.optparse_gui import OptionParser
 from iocbio.io import ImageStack
 from iocbio.ops import regress
 from iocbio.io.io import fix_path
-
-__usage__ = """\
-%prog [options] [ INPUT_PATH [ OUTPUT_PATH ] ]
-
-Description:
-  %prog applies local regression methods to images in INPUT_PATH."""
+from iocbio.ops.script_options import set_regress_options
 
 def get_dtype_min_max(dtype):
     """
@@ -136,8 +131,7 @@ def runner(parser, options, args):
 
 
 def main ():
-    parser = OptionParser(__usage__)
-    from iocbio.ops.script_options import set_regress_options
+    parser = OptionParser()
     set_regress_options (parser)
     if hasattr(parser, 'runner'):
         parser.runner = runner

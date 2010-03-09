@@ -14,22 +14,20 @@ def add_psflib_options (parser):
                        )
 
 def set_estimate_psf_options (parser):
-    parser.set_usage ('''\
-%prog [options] [ [-i] INPUT_PATH [ [-k] OUTPUT_PATH ] ]
+    parser.set_usage('%prog [options] [ [-i] INPUT_PATH [ [-o] OUTPUT_PATH ] ]')
+    parser.set_description('''Find PSF estimate from the measurments of microspheres.
 
-Description:
-  %prog finds PSF estimate from the measurments of microspheres.
-  Intermediate results are saved to INPUT_PATH/iocbio.compute_psf/ directory
-  and estimated PSF is saved to OUTPUT_PATH
+Intermediate results are saved to INPUT_PATH/iocbio.estimate_psf/
+directory and estimated PSF is saved to OUTPUT_PATH
 ''')
     parser.add_option ("--measurement-path", '--input-path','-i',
-                       type = 'file', metavar='MEASUREMENT_PATH', dest='input_path',
+                       type = 'file', metavar='INPUT_PATH', dest='input_path',
                        help = '''Specify PATH to microsphere measurments.\
 To select directory PATH, find a file PATH/{PATHINFO.txt, configuration.txt, SCANINFO.txt} and select it. Default: %default.''',
                        )
 
     parser.add_option ("--psf-path", '--output-path','-o','-k',
-                       type = 'file', metavar='PSF_PATH', dest='output_path',
+                       type = 'file', metavar='OUTPUT_PATH', dest='output_path',
                        help = '''Specify PATH for saving estimated PSF. Default: %default.'''
                        )
     #parser.add_option('--photon-counter-offset',
@@ -83,12 +81,8 @@ overlapping clusters (a bad thing); default will be estimated. Default: %default
     parser.add_option_group(get_microscope_options_group (parser))
 
 def set_deconvolve_options(parser):
-    parser.set_usage('''
-__usage__ = """\
-%prog [options] [-k PSF_PATH -i INPUT_PATH [-o OUTPUT_PATH]]
-
-Description:
-  %prog deconvolves INPUT with PSF''')
+    parser.set_usage('%prog [options] [ [-k] PSF_PATH [-i] INPUT_PATH [ [-o] OUTPUT_PATH] ]')
+    parser.set_description('Deconvolve INPUT_PATH with PSF_PATH.')
     add_psflib_options(parser)
     parser.add_option('--psf-path','-k', dest = 'psf_path',
                       type = 'file', metavar='PATH',
@@ -172,12 +166,8 @@ Specify options for Richardson-Lucy deconvolution algorithm with total variation
     return group
 
 def set_deconvolve_with_sphere_options (parser):
-    parser.set_usage('''
-__usage__ = """\
-%prog [options] [-i INPUT_PATH [-o OUTPUT_PATH]]
-
-Description:
-  %prog deconvolves INPUT with sphere''')
+    parser.set_usage('%prog [options] [ [-i] INPUT_PATH [ [-o] OUTPUT_PATH ] ]')
+    parser.set_description('Deconvolve INPUT_PATH with sphere.')
     parser.add_option ('--sphere-diameter', dest='diameter',
                        type = 'float',
                        default = 170,

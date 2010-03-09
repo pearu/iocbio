@@ -11,11 +11,8 @@ def set_show_options(parser):
     if os.name == 'posix':
         matplotlib.use('GTkAgg')
         parser.run_methods = ['subcommand']
-    parser.set_usage("""\
-%prog [options] [ [-i] INPUT_PATH ]
-
-Description:
-  %prog displays INPUT_PATH as 3D image""")
+    parser.set_usage('%prog [options] [ [-i] INPUT_PATH ]')
+    parser.set_description('Display INPUT_PATH as 3D image.')
 
     parser.add_option ('--input-path', '-i',
                        type = 'file', metavar='INPUT_PATH',
@@ -40,7 +37,7 @@ Description:
     colormap_names = lcolormap_names + ucolormap_names
 
     parser.add_option('--cmap', choices = colormap_names, default='gray',
-                      help='Specify colormap. Possible colormaps are available for view: http://matplotlib.sourceforge.net/plot_directive/mpl_examples/pylab_examples/show_colormaps.hires.png. Default: %default.')
+                      help='Specify `colormap <http://matplotlib.sourceforge.net/plot_directive/mpl_examples/pylab_examples/show_colormaps.hires.png>`_. Default: %default.')
     parser.add_option ('--invert-cmap', action='store_true', default=False,
                        help='Invert specified colormap. Default: %default.')
 
@@ -93,6 +90,9 @@ microscope options empty.''')
 
 def set_convert_options (parser):
     import numpy
+    parser.set_usage('%prog [options] [ [-i] INPUT_PATH  [ [-o] OUTPUT_PATH ]]')
+    parser.set_description('Convert INPUT_PATH to specified type and format.')
+
     parser.add_option ('--input-path','-i',
                        type = 'file', metavar='INPUT_PATH',
                        help = 'Specify input PATH of 3D images. Default: %default.'
@@ -118,19 +118,15 @@ def set_convert_options (parser):
     parser.add_option('--output-ext', dest='output_ext',
                       choices = ['tif', 'vtk', 'data'],
                       default = 'tif',
-                      help="Specify output image extension. Default: %default.")
+                      help="Specify output format extension. Default: %default.")
 
 def set_rowfile_plot_options (parser):
     import matplotlib
     if os.name == 'posix' and 1:
         matplotlib.use('GTkAgg')
         parser.run_methods = ['subcommand']
-    parser.set_usage ('''\
-%prog [options] [[-i] ROWFILE]
-
-Description:
-  %prog makes plots from the data in ROWFILE.
-''')
+    parser.set_usage ('%prog [options] [[-i] ROWFILE]')
+    parser.set_description('Plot data in ROWFILE')
     parser.add_option ('--input-path', '-i',
                        type = 'file', metavar='ROWFILE',
                        help = 'Specify path to ROWFILE. Default: %default.'
@@ -141,4 +137,4 @@ Description:
     parser.add_option('--x-keys',
                       help = 'Specify keys for x-axis. Default: %default.')
     parser.add_option('--y-keys',
-                      help = 'Specify keys for y-axis. Default: %default.')
+                      help = 'Specify keys for y-axis. Default: %default. When not specified then use all keys.')

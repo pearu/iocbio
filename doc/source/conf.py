@@ -220,6 +220,7 @@ extlinks = {'numpy': ('http://docs.scipy.org/doc/numpy/reference/generated/numpy
 import glob
 autosummary_generate = glob.glob ('index.rst')# + glob.glob ('generated/*.rst')
 
+os.makedirs('generated')
 
 import types
 
@@ -261,7 +262,7 @@ def scan_for_autodoc(obj, prefix, cache=set([])):
                 cache.add(n)
 
 import iocbio
-f = open('generated_stubs.rst', 'w')
+f = open('generated/stubs.rst', 'w')
 print>>f,'.. autosummary::'
 print>>f,'  :toctree: generated/'
 print>>f
@@ -270,6 +271,85 @@ for n in scan_for_autodoc(iocbio, 'iocbio'):
     sys.stdout.flush ()
     print>>f, '  ' + n
 f.close ()
-autosummary_generate.append('generated_stubs.rst')
+autosummary_generate.append('generated/stubs.rst')
 
-#sys.exit (0)
+from iocbio.optparse_gui import OptionParser
+from optparse import TitledHelpFormatter
+parent_path = os.path.abspath(os.path.dirname(iocbio.__file__))
+
+scripts_info = {}
+class MyHelpFormatter(TitledHelpFormatter):
+    pass
+help_formatter = MyHelpFormatter()
+
+for root, dirs, files in os.walk(parent_path):
+    if '.svn' in dirs: dirs.remove('.svn')
+    if os.path.basename(root)=='scripts':
+        for script in files:
+            script_name = os.path.splitext(script)[0]
+            package_name = '.'.join(root[len(os.path.dirname(parent_path))+1:].split(os.sep)[:-1])
+            try:
+                exec 'import %s.script_options as script_options' % (package_name)
+            except ImportError, msg:
+                print msg
+                continue
+            try:
+                set_options = getattr (script_options, 'set_%s_options' % (script_name))
+            except AttributeError, msg:
+                print msg
+                continue
+            parser = OptionParser()
+            parser.add_option('--no-gui', action='store_true', default=True, help='run script without opening GUI')
+            set_options (parser)
+            parser.prog = 'iocbio.%s' % (script_name)
+            if parser.description is None:
+                print 'Warning: %s does not have a description (use parser.set_description in %s.script_options.%s)' % (parser.prog, package_name,set_options.__name__)
+                parser.description = 'PFI'
+
+            descr = parser.get_description()
+            descr_title = descr.lstrip().split('\n')[0]
+            help = parser.format_help(formatter=help_formatter)
+            help += '''
+See also
+========
+:mod:`%s`
+''' % (package_name)
+            scripts_info[parser.prog] = dict(
+                name = script_name,
+                descr_title = descr_title,
+                help = help)
+
+
+name_len = 0
+descr_len = 0
+for script_name in sorted(scripts_info):
+    info = scripts_info[script_name]
+    f = open('generated/%s.rst' % (script_name.replace('.','-')), 'w')
+    f.write('.. _%s:\n\n' % (script_name))
+    f.write('%s\n%s\n%s\n' % ('-'*len (script_name), script_name, '-'*len (script_name)))
+    f.write ('%s\n' % (info['help']))
+    f.close()
+    name_len = max (name_len, len(script_name))
+    descr_len = max (descr_len, len(info['descr_title']))
+
+
+f = open('generated/scripts.rst', 'w')
+f.write('''
+===========
+GUI scripts
+===========
+''')
+
+name_len += 7
+row_fmt = '| %%%ss | %%%ss |\n' % (name_len, descr_len)
+name_len += 2
+descr_len += 2
+for script_name in sorted(scripts_info):
+    info = scripts_info[script_name]
+    script_ref = ':ref:`%s`' % (script_name)
+    f.write('+%s+%s+\n' % ('-'*name_len, '-'*descr_len))
+    f.write (row_fmt % (script_ref, info['descr_title']))
+f.write('+%s+%s+\n' % ('-'*name_len, '-'*descr_len))
+f.close()
+
+#sys.exit(0)

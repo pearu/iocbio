@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # -*- python-mode -*-
-"""
-Plot data from a row file.
-"""
 # Author: Pearu Peterson
 # Created: August 2009
 

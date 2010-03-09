@@ -1,9 +1,13 @@
 # To make ioc directory a Python package. Keep this file empty!!
 """
+================
+Python interface
+================
 
 .. .. currentmodule:: iocbio
 
-The :mod:`iocbio` package provides the following tools:
+Packages
+========
 
 .. autosummary::
 
@@ -11,7 +15,8 @@ The :mod:`iocbio` package provides the following tools:
   iocbio.ops
   iocbio.microscope
 
-and the following utilities:
+Modules
+=======
 
 .. autosummary::
 

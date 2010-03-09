@@ -1,9 +1,5 @@
 #!/usr/bin/env python 
 # -*- python-mode -*-
-"""
-Front end script for deconvolving images against a sphere.
-Execute this script with --help for usage information.
-"""
 # Author: Pearu Peterson
 # Created: May 2009
 
@@ -77,7 +73,7 @@ def runner (parser, options, args):
     deconvolved_image.save(options.output_path)
 
 def main ():
-    parser = OptionParser(__usage__)
+    parser = OptionParser()
     set_deconvolve_with_sphere_options (parser)
     if hasattr(parser, 'runner'):
         parser.runner = runner

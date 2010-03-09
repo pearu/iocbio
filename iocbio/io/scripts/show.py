@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # -*- python-mode -*-
-"""
-Display 3D image.
-"""
 # Author: Pearu Peterson
 # Created: August 2009
 
@@ -17,6 +14,7 @@ from iocbio.io import ImageStack
 from iocbio.optparse_gui import OptionParser
 from iocbio.io.io import fix_path
 from iocbio.utils import tostr
+from iocbio.io.script_options import set_show_options
 
 def runner (parser, options, args):
     
@@ -88,7 +86,6 @@ def runner (parser, options, args):
 
 def main ():
     parser = OptionParser()
-    from iocbio.io.script_options import set_show_options
     set_show_options (parser)
     if hasattr(parser, 'runner'):
         parser.runner = runner

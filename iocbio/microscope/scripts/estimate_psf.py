@@ -17,6 +17,7 @@ from iocbio.optparse_gui import OptionParser
 from iocbio.io.io import fix_path
 from iocbio.microscope import spots_to_psf
 from iocbio import utils
+from iocbio.microscope.script_options import set_estimate_psf_options
 
 def runner(parser, options, args):
 
@@ -63,7 +64,6 @@ def runner(parser, options, args):
 
 def main():
     parser = OptionParser()
-    from iocbio.microscope.script_options import set_estimate_psf_options
     set_estimate_psf_options (parser)
 
     if hasattr(parser, 'runner'):

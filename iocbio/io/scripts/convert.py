@@ -16,12 +16,7 @@ import numpy
 from iocbio.io import ImageStack
 from iocbio.optparse_gui import OptionParser
 from iocbio.io.io import fix_path
-
-__usage__ = """\
-%prog [options] [ INPUT_PATH [ OUTPUT_PATH ] ]
-
-Description:
-  %prog converts INPUT_PATH to OUTPUT_PATH with specified type"""
+from iocbio.io.script_options import set_convert_options
 
 def get_dtype_min_max(dtype):
     """
@@ -133,8 +128,8 @@ def runner (parser, options, args):
         raise NotImplementedError (`output_ext`)
 
 def main ():
-    parser = OptionParser(__usage__)
-    from iocbio.io.script_options import set_convert_options
+    parser = OptionParser()
+
     set_convert_options (parser)
     if hasattr(parser, 'runner'):
         parser.runner = runner

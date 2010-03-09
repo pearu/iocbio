@@ -12,6 +12,8 @@ from optparse import OptionGroup, NO_DEFAULT
 
 def set_apply_window_options (parser):
     from ..io.script_options import get_microscope_options_group
+    parser.set_usage('%prog [options] [ INPUT_PATH [OUTPUT_PATH]]')
+    parser.set_description('Apply smooth window to INPUT_PATH scalar field.')
     parser.add_option ('--quiet', dest = 'verbose',
                        action = 'store_false', default=True,
                        help = 'Disable output messages. Default: %default')
@@ -28,6 +30,8 @@ def set_apply_window_options (parser):
 
 def set_convolve_options(parser):
     from ..microscope.script_options import add_psflib_options
+    parser.set_usage('%prog [options] [ [-i] INPUT_PATH [ [-o] OUTPUT_PATH ] ]')
+    parser.set_description('Convolve INPUT_PATH with KERNEL_PATH.')
     add_psflib_options(parser)
     parser.add_option ('--kernel-path','-k',
                        type = 'file', metavar='PATH',
@@ -73,8 +77,7 @@ Specify options for applying regression.''')
 def get_apply_window_options_group(parser, group=None):
     if group is None:
         group = OptionGroup (parser, 'Apply window options',
-                             description = '''\
-Specify options for applying window.''')
+                             description = 'Specify options for applying window.')
         group.add_option('--apply-window', action='store_true',
                          help = 'Apply window to input images. Default: %default.')
         group.add_option('--no-apply-window', action='store_false',
@@ -111,6 +114,8 @@ Specify options for FFT algorithm.''')
 
 def set_regress_options (parser):
     from ..io.script_options import get_microscope_options_group, get_io_options_group
+    parser.set_usage ('%prog [options] [ [-i] INPUT_PATH [ [-o] OUTPUT_PATH]]')
+    parser.set_description('Apply local regression methods to INPUT_PATH scalar field.')
     parser.add_option ('--quiet', dest='verbose', action='store_false',
                        help = 'Disable output messages. Default: %default')
     parser.add_option ('--input-path','-i',
@@ -134,6 +139,8 @@ def set_regress_options (parser):
     parser.add_option_group(get_microscope_options_group (parser))
 
 def set_apply_noise_options (parser):
+    parser.set_usage ('%prog [options] [ [-i] INPUT_PATH [ [-o] OUTPUT_PATH] ]')
+    parser.set_description('Apply noise to INPUT_PATH scalar field.')
     parser.add_option ('--quiet', dest = 'verbose',
                        action = 'store_false', default=True,
                        help = 'Disable output messages. Default: %default')

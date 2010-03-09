@@ -16,18 +16,9 @@ from iocbio.optparse_gui import OptionParser
 from iocbio.microscope.deconvolution import deconvolve
 from iocbio.io import ImageStack
 from iocbio.io.io import fix_path, get_psf_path
-
-__usage__ = """\
-usage: %prog [options] [ PSF_PATH [ INPUT_PATH [ OUTPUT_PATH ] ] ]
-
-Required arguments:
-  PSF_PATH              read microscope PSF from file or directory
-  IMAGE_PATH            read microscope images from file or directory
-  OUTPUT_PATH           write deconvolved images to file\
-"""
+from iocbio.microscope.script_options import set_deconvolve_options
 
 file_extensions = ['.tif', '.lsm', 'tiff', '.raw']
-
 
 def runner (parser, options, args):
     
@@ -92,8 +83,7 @@ def get_path_dir(path, suffix):
     return path_dir
 
 def main ():
-    parser = OptionParser(__usage__)
-    from iocbio.microscope.script_options import set_deconvolve_options
+    parser = OptionParser()
     set_deconvolve_options (parser)
     if hasattr(parser, 'runner'):
         parser.runner = runner

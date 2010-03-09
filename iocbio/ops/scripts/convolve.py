@@ -16,12 +16,7 @@ from iocbio.optparse_gui import OptionParser
 from iocbio.io import ImageStack
 from iocbio.ops import convolve
 from iocbio.io.io import fix_path
-
-__usage__ = """\
-%prog [options] [ KERNEL_PATH INPUT_PATH [ OUTPUT_PATH ] ]
-
-Description:
-  %prog convolve INPUT_PATH against KERNEL_PATH"""
+from iocbio.ops.script_options import set_convolve_options
 
 def runner(parser, options, args):
 
@@ -62,8 +57,7 @@ def runner(parser, options, args):
     ImageStack(result, stack.pathinfo).save(options.output_path)
 
 def main ():
-    parser = OptionParser(__usage__)
-    from iocbio.ops.script_options import set_convolve_options
+    parser = OptionParser()
     set_convolve_options (parser)
     if hasattr(parser, 'runner'):
         parser.runner = runner

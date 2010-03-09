@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # -*- python-mode -*-
-"""
-Apply Poisson noise to a scalar field.
-"""
 # Author: Pearu Peterson
 # Created: September 2009
 
