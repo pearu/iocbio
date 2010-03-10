@@ -573,7 +573,7 @@ class Scaninfo(PathInfo):
                 if objective_params is not None:
                     objective_NA = objective_params.get('NA')
                 else:
-                    raise NotImplementedError(`objective_name`)
+                    return None
             if objective_NA is not None:
                 self.set_objective_NA(objective_NA)
         return self.objective_NA
@@ -605,7 +605,7 @@ class Scaninfo(PathInfo):
                 if objective_params is not None:
                     refractive_index = objective_params.get('refractive_index')
                 else:
-                    raise NotImplementedError(`objective_name`)
+                    return None
             if refractive_index is not None:
                 self.set_refractive_index(refractive_index)
         return self.refractive_index

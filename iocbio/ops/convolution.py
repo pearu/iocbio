@@ -22,6 +22,9 @@ Module content
 """
 
 from __future__ import division
+
+__all__ = ['convolve']
+
 from scipy import fftpack
 from . import fft_tasks
 from .. import utils
@@ -55,8 +58,7 @@ def convolve(kernel, data, options = None):
         float_type = options.float_type
     if float_type is None:
         float_type = 'double'
-    task = fft_tasks.FFTTasks(data.shape, float_type)
-    print kernel
+    task = fft_tasks.FFTTasks(data.shape, float_type, options=options)
     if kernel.shape != data.shape:
         kernel = utils.expand_to_shape(kernel, data.shape, data.dtype)
     kernel = fftpack.fftshift(kernel)

@@ -264,7 +264,7 @@ def scan_for_autodoc(obj, prefix, cache=set([])):
 import iocbio
 f = open('generated/stubs.rst', 'w')
 print>>f,'.. autosummary::'
-print>>f,'  :toctree: generated/'
+print>>f,'  :toctree: .'
 print>>f
 
 for n in scan_for_autodoc(iocbio, 'iocbio'):

@@ -131,7 +131,9 @@ class FFTTasks(object):
         self._cache = cache
         self.fftw = fftw
 
-        print 'Computing fftw wisdom (flags=%s, threads=%s), be patient, it may take a while..' % (flags, threads), 
+        print 'Computing fftw wisdom (flags=%s, threads=%s, shape=%s, float=%s),'\
+            ' be patient, it may take a while..'\
+            % (flags, threads, shape, float_type), 
         self._fft_plan = fftw.Plan(cache, cache, direction='forward', flags=flags, nthreads=threads)
         self._ifft_plan = fftw.Plan(cache, cache, direction='backward', flags=flags, nthreads=threads)
         print 'done'

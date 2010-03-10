@@ -42,7 +42,8 @@ def regress(data, scales,
             kernel='uniform', 
             method='average',
             boundary='finite',
-            verbose = True):
+            verbose = True,
+            options = None):
     """
     Estimate a scalar field from noisy observations (data).
 
@@ -90,7 +91,12 @@ def regress(data, scales,
       +--------------------+-----------------------------------------------+
 
     verbose : bool
-      when True then show the progress of computations to terminal.
+      When True then show the progress of computations to terminal.
+
+    options : {:pythonlib:`optparse`.Values}
+      Specify regression parameters from command line. This will override
+      parameters specified in function call. The following options attributes
+      are used: ``options.kernel``, ``options.method``, ``options.boundary``.
 
     Returns
     -------
@@ -113,6 +119,11 @@ def regress(data, scales,
                                periodic=2,   # periodic boundaries
                                reflective=3, # boundary is a mirror
                                )
+    if options is not None:
+        kernel = options.kernel
+        method = options.method
+        boundary = options.boundary
+
     if kernel not in kernel_types:
         raise ValueError('kernel type must be %s but got %s' \
                              % ('|'.join(map (str, kernel_types)), kernel))
@@ -128,6 +139,6 @@ def regress(data, scales,
             sys.stdout.flush()
     else:
         write_func = None
-    return regress_ext.regress (data, scales, kernel_types[kernel],
+    return regress_ext.regress (data, tuple(scales), kernel_types[kernel],
                                 smoothing_methods[method], boundary_conditions[boundary],
                                 write_func)

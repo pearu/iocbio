@@ -16,6 +16,12 @@ def set_clusters_options (parser):
                        type = 'file', metavar='OUTPUT_PATH', dest='output_path',
                        help = 'Specify OUTPUT_PATH.'
                        )
+    parser.add_option ('--detail-size', dest='detail_size',type = 'float', 
+                       help = 'Specify typical size of a detail to be resolved, in micrometers. Default: %default.')
+    from iocbio.ops.script_options import get_regress_options_group
+    parser.add_option_group(get_regress_options_group (parser))
+    from iocbio.ops.script_options import get_fft_options_group
+    parser.add_option_group(get_fft_options_group (parser))
 
 def add_psflib_options (parser):
     from ..io.io import get_psf_libs, psflib_dir
