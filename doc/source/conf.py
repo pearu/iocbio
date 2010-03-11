@@ -279,7 +279,13 @@ parent_path = os.path.abspath(os.path.dirname(iocbio.__file__))
 
 scripts_info = {}
 class MyHelpFormatter(TitledHelpFormatter):
-    pass
+
+    def format_option(self, option):
+        if option.type=='choice':
+            pass
+        result = TitledHelpFormatter.format_option (self, option)
+        return result
+
 help_formatter = MyHelpFormatter()
 
 for root, dirs, files in os.walk(parent_path):
@@ -352,4 +358,4 @@ for script_name in sorted(scripts_info):
 f.write('+%s+%s+\n' % ('-'*name_len, '-'*descr_len))
 f.close()
 
-#sys.exit(0)
+sys.exit(0)

@@ -12,6 +12,9 @@ from ..utils import mul_seq
 
 class FFTTasks(object):
     """ Optimized cache for Fourier transforms using `FFTW <http://www.fftw.org/>`_ with operations.
+
+
+
     """
 
     _wisdoms = {}
@@ -96,8 +99,13 @@ class FFTTasks(object):
         Parameters
         ----------
         shape : tuple
+          Specify array shape for FFT.
         float_type : {None, 'single', 'double'}
+          Specify floating point type.
         options : {None, :pythonlib:`optparse`.Values}
+          Specify command line options:
+            options.fftw_plan_flags
+
         """
 
         if options is None:
