@@ -277,21 +277,21 @@ def time_to_str(s):
         return '0'
     return ''.join(r)
 
-def expand_to_shape(images, shape, dtype=None, background=None):
+def expand_to_shape(data, shape, dtype=None, background=None):
     """
-    Expand images stack to given shape by zero-padding.
+    Expand data to given shape by zero-padding.
     """
     if dtype is None:
-        dtype = images.dtype
-    if shape==images.shape:
-        return images.astype(dtype)
+        dtype = data.dtype
+    if shape==data.shape:
+        return data.astype(dtype)
     if background is None:
-        background = images.min()
-    expanded_images = numpy.zeros(shape, dtype=dtype) + background
+        background = data.min()
+    expanded_data = numpy.zeros(shape, dtype=dtype) + background
     slices = []
     rhs_slices = []
-    for s1, s2 in zip (shape, images.shape):
-        a, b = (s1-s2)//2, (s1+s2)//2
+    for s1, s2 in zip (shape, data.shape):
+        a, b = (s1-s2+1)//2, (s1+s2+1)//2
         c, d = 0, s2
         while a<0:
             a += 1
@@ -300,21 +300,21 @@ def expand_to_shape(images, shape, dtype=None, background=None):
             d -= 1
         slices.append(slice(a, b))
         rhs_slices.append(slice(c, d))
-    expanded_images[tuple(slices)] = images[tuple (rhs_slices)]
-    return expanded_images
+    expanded_data[tuple(slices)] = data[tuple (rhs_slices)]
+    return expanded_data
 
-def contract_to_shape(images, shape, dtype=None):
+def contract_to_shape(data, shape, dtype=None):
     """
-    Contract images stack to given shape.
+    Contract data stack to given shape.
     """
     if dtype is None:
-        dtype = images.dtype
-    if shape==images.shape:
-        return images.astype(dtype)
+        dtype = data.dtype
+    if shape==data.shape:
+        return data.astype(dtype)
     slices = []
-    for s1, s2 in zip (images.shape, shape):
+    for s1, s2 in zip (data.shape, shape):
         slices.append(slice((s1-s2)//2, (s1+s2)//2))
-    return images[tuple(slices)].astype(dtype)
+    return data[tuple(slices)].astype(dtype)
 
 def mul_seq(seq):
     return reduce (lambda x,y:x*y,seq,1)
@@ -343,4 +343,10 @@ def get_path_dir(path, suffix):
         else:
             path_dir = os.path.join(path, suffix)
     return path_dir
+
+def make_options(**kws):
+    """ Create Values instance from a keywords dictionary.
+    """
+    import optparse
+    return optparse.Values (kws)
 

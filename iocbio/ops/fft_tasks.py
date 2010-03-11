@@ -1,9 +1,48 @@
 """Provides FFTTasks class.
 
+Examples
+--------
+
+The following example illustrates the usage of ``fft`` and ``ifft``
+methods:
+
+  >>> from iocbio.ops.fft_tasks import FFTTasks
+  >>> task = FFTTasks((4,))
+  >>> print task.fft([1,2,3,4])
+  [ 10.+0.j  -2.+2.j  -2.+0.j  -2.-2.j]
+  >>> print task.ifft(task.fft([1,2,3,4]))
+  [ 1.  2.  3.  4.]
+
+The following example illustrates the usage of ``convolve`` method:
+
+  >>> task = FFTTasks((8,), float_type='double')
+  >>> task.set_convolve_kernel([0,0,1,2,2,1,0,0])
+  >>> print task.convolve([1,0,0,0,0,0,0,0]).round() # kernel
+  [ 0. -0.  1.  2.  2.  1.  0. -0.]
+  >>> print task.convolve([1,1,0,0,0,0,0,0]).round()
+  [ 0. -0.  1.  3.  4.  3.  1. -0.]
+
+The following example illustrates finding optimal FFT sizes with different inputs:
+  >>> for sz in [7,13,63,65,129,1023,1025,2049]:
+      print '%s -> %s gives speed up %.3fx' % ((sz,)+FFTTasks.get_optimal_fft_size(sz, return_speedup=True, max_nof_tries=100))
+  7 -> 8 gives speed up 1.286x
+  13 -> 16 gives speed up 1.288x
+  63 -> 64 gives speed up 1.253x
+  65 -> 66 gives speed up 1.069x
+  129 -> 132 gives speed up 1.924x
+  1002 -> 1024 gives speed up 4.713x
+  1004 -> 1024 gives speed up 2.235x
+  1023 -> 1024 gives speed up 2.137x
+  1025 -> 1050 gives speed up 1.523x
+  2049 -> 2100 gives speed up 4.244x
+
 Module content
 --------------
 """
+
+from __future__ import division
 __all__ = ['FFTTasks']
+
 
 import os
 import numpy
@@ -13,8 +52,9 @@ from ..utils import mul_seq
 class FFTTasks(object):
     """ Optimized cache for Fourier transforms using `FFTW <http://www.fftw.org/>`_ with operations.
 
-
-
+    See also
+    --------
+    iocbio.ops.fft_tasks, __init__
     """
 
     _wisdoms = {}
@@ -22,6 +62,10 @@ class FFTTasks(object):
     @staticmethod
     def load_wisdoms(_cache=[]):
         """Load fftw wisdom from a disk.
+
+        See also
+        --------
+        iocbio.ops.fft_tasks, save_wisdom
         """
         if _cache:
             return
@@ -37,6 +81,10 @@ class FFTTasks(object):
     @staticmethod
     def save_wisdoms(_cache=[]):
         """Save fftw wisdom to a disk.
+
+        See also
+        --------
+        iocbio.ops.fft_tasks, load_wisdom
         """
         if _cache:
             return
@@ -58,10 +106,11 @@ class FFTTasks(object):
             atexit.register(save_wisdom)
             _cache.append(wisdom_file_name)
             save_wisdom()
+
     flops_cache = {}
 
     @classmethod
-    def get_optimal_fft_size(cls, size):
+    def get_optimal_fft_size(cls, size, return_speedup=False, max_nof_tries=None):
         """Compute optimal FFT size from a given size.
 
         Usually optimal FFT size is a power of two but on the other
@@ -70,11 +119,41 @@ class FFTTasks(object):
         example, if the input size is 65 then extending the FFT size
         to 128 is less efficient compared to extending the size, say,
         to 66.
+
+        The method runs number of fft transforms (up-to the next power
+        of 2) and used the actual FLOPS for finding optimal FFT
+        size. So, the initial call may take some time but the results
+        will be cached for subsequent calls. Note that if size>1024
+        then the time spent of computing fft up to sizes <=2048 can be
+        considerable. To restrict this optimization, specify
+        ``max_nof_tries``.
+
+        Parameters
+        ----------
+        size : int
+          Specify estimate for FFT size.
+        return_speedup : bool
+          When True then return speed up factor.
+
+        Returns
+        -------
+        optimal_size : int
+          Optimal FFT size.
+        speedup : float
+          Speed up factor of using optimal size. Returned only if ``return_speedup`` is True.
+
+        See also
+        --------
+        iocbio.ops.fft_tasks
         """
         if size==2**int(numpy.log2(size)):
+            if return_speedup:
+                return size, 1
             return size
         import fftw3f as fftw
         max_size = 2**int(numpy.log2(size)+1)
+        if max_nof_tries is not None:
+            max_size = min (size+max_nof_tries, max_size)
         min_flops = 1e9
         optimal_size = size
         flops_cache = cls.flops_cache
@@ -91,6 +170,8 @@ class FFTTasks(object):
             if flops < min_flops:
                 min_flops = flops
                 optimal_size = sz
+        if return_speedup:
+            return optimal_size, flops_cache[size] / flops_cache[optimal_size]
         return optimal_size
 
     def __init__(self, shape, float_type=None, options = None):
@@ -104,17 +185,17 @@ class FFTTasks(object):
           Specify floating point type.
         options : {None, :pythonlib:`optparse`.Values}
           Specify command line options:
+            options.float_type
             options.fftw_plan_flags
+            options.fftw_threads
 
+        See also
+        --------
+        iocbio.ops.fft_tasks
         """
-
-        if options is None:
-            flags = ['estimate']
-        else:
-            flags = [options.fftw_plan_flags]
-
+        flags = [getattr(options,'fftw_plan_flags', 'estimate')]
         if float_type is None:
-            float_type = 'single'
+            float_type = getattr (options, 'float_type', 'single')
 
         self.load_wisdoms()
 
@@ -152,19 +233,51 @@ class FFTTasks(object):
 
     def fft(self, data):
         """Compute FFT of data.
+
+        Parameters
+        ----------
+        data : :numpy:`ndarray`
+          Input data of the same shape as ``task.shape``.
+
+        Returns
+        -------
+        data_f : :numpy:`ndarray`
+          Fourier transform of data.
+
+        See also
+        --------
+        iocbio.ops.fft_tasks, ifft
         """
         cache = self._cache
         cache[:] = data
         self._fft_plan.execute()
         return cache.copy()
 
-    def ifft(self, data):
+    def ifft(self, data, asreal=False):
         """Compute inverse FFT of data.
+
+        Parameters
+        ----------
+        data : :numpy:`ndarray`
+          Input data of the same shape as ``task.shape``.
+        asreal : bool
+          Return real part of the result.
+
+        Returns
+        -------
+        data_if : :numpy:`ndarray`
+          Inverse Fourier transform of data.
+
+        See also
+        --------
+        iocbio.ops.fft_tasks, fft
         """
         cache = self._cache
         cache[:] = data
         self._ifft_plan.execute()
-        return cache.real / mul_seq(cache.shape)
+        if asreal:
+            return cache.real / mul_seq(cache.shape)
+        return cache / mul_seq(cache.shape)
 
     def set_convolve_kernel(self, kernel):
         """ Set convolve kernel.
@@ -172,6 +285,11 @@ class FFTTasks(object):
         Parameters
         ----------
         kernel : :numpy:`ndarray`
+          Specify kernel for the `convolve` method.
+
+        See also
+        --------
+        iocbio.ops.fft_tasks, convolve, set_convolve_fourier_kernel
         """
         cache = self._cache
         cache[:] = kernel
@@ -184,7 +302,13 @@ class FFTTasks(object):
         Parameters
         ----------
         kernel_f : :numpy:`ndarray`
+          Specify kernel in Fourier form for the `convolve` method.
+
+        See also
+        --------
+        iocbio.ops.fft_tasks, convolve, set_convolve_kernel
         """
+        assert kernel_f.shape==self.shape,`kernel_f.shape, self.shape`
         kernel_f = kernel_f.astype(self.complex_dtype)
         self.convolve_kernel_fourier = kernel_f
         self.convolve_kernel_fourier_normal = kernel_f / mul_seq(kernel_f.shape)
@@ -196,14 +320,17 @@ class FFTTasks(object):
         Parameters
         ----------
           data : :numpy:`ndarray`
-        
+            Specify data to be convolved with kernel. Kernel must
+            be specified with `set_convolve_kernel` methods.
+
         Returns
         -------
           result : :numpy:`ndarray`
+            The result of convolution.
 
         See also
         --------
-        set_convolve_kernel, set_convolve_fourier_kernel
+        iocbio.ops.fft_tasks, set_convolve_kernel, set_convolve_fourier_kernel
         """
         kernel_f = self.convolve_kernel_fourier_normal
         if kernel_f is None:

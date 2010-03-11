@@ -246,7 +246,7 @@ def scan_for_autodoc(obj, prefix, cache=set([])):
     autodoc_names = getattr(obj, '__autodoc__',None)
     if autodoc_names is None:
         if isinstance(obj, (types.TypeType, types.ClassType)):
-            autodoc_names = [name for name in dir(obj) if not name.startswith ('_')]
+            autodoc_names = [name for name in dir(obj) if (not name.startswith ('_') or name in ['__init__'])]
         elif isinstance(obj, types.ModuleType):
             autodoc_names = getattr(obj, '__all__', [])
     if autodoc_names is None:
@@ -323,7 +323,7 @@ descr_len = 0
 for script_name in sorted(scripts_info):
     info = scripts_info[script_name]
     f = open('generated/%s.rst' % (script_name.replace('.','-')), 'w')
-    f.write('.. _%s:\n\n' % (script_name))
+    f.write('.. _%s:\n\n' % (script_name.replace('.','-')))
     f.write('%s\n%s\n%s\n' % ('-'*len (script_name), script_name, '-'*len (script_name)))
     f.write ('%s\n' % (info['help']))
     f.close()
@@ -344,7 +344,7 @@ name_len += 2
 descr_len += 2
 for script_name in sorted(scripts_info):
     info = scripts_info[script_name]
-    script_ref = ':ref:`%s`' % (script_name)
+    script_ref = ':ref:`%s`' % (script_name.replace('.','-'))
     f.write('+%s+%s+\n' % ('-'*name_len, '-'*descr_len))
     f.write (row_fmt % (script_ref, info['descr_title']))
 f.write('+%s+%s+\n' % ('-'*name_len, '-'*descr_len))

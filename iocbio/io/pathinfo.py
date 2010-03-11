@@ -216,7 +216,7 @@ class PathInfo(object):
 
     def get_shape (self):
         """
-        Return a shape of a 2D or 3D image stack.
+        Return a shape of image stack.
         """
         return self.shape
 
@@ -228,7 +228,7 @@ class PathInfo(object):
 
     def get_voxel_sizes(self):
         """
-        Return a 3-tuple of voxel sizes in meters.
+        Return a tuple of voxel sizes in meters.
         """
         return self.voxel_sizes
 
@@ -321,10 +321,9 @@ class PathInfo(object):
         self.microscope_type = type
 
     def set_shape(self, *shape):
-        if len(shape)==1:
+        if len(shape)==1 and not isinstance(shape[0], int):
             self.set_shape(*shape[0])
         else:
-            assert len(shape) in [2,3],`shape`
             self.shape = shape
 
     def set_nof_stacks(self, n):
@@ -334,10 +333,9 @@ class PathInfo(object):
         self.nof_stacks = n
 
     def set_voxel_sizes(self, *voxel_sizes):
-        if len (voxel_sizes)==1:
+        if len (voxel_sizes)==1  and not isinstance(voxel_sizes[0], (float, int)):
             self.set_voxel_sizes(*voxel_sizes[0])
         else:
-            assert len (voxel_sizes)==3,`voxel_sizes`
             self.voxel_sizes = voxel_sizes
 
     def set_objective_NA (self, objective_NA):
@@ -416,17 +414,17 @@ class PathInfo(object):
         f = open(path, 'w')
         shape = self.get_shape()
         if shape is not None:
-            f.write('DimensionX: %s\n' % (shape[2]))
-            f.write('DimensionY: %s\n' % (shape[1]))
-            f.write('DimensionZ: %s\n' % (shape[0]))
+            d = 'XYZT'
+            for i in range(len(shape)):
+                f.write('Dimension%s: %s\n' % (d[i], shape[len(shape)-i-1]))
         nof_stacks = self.get_nof_stacks()
         if nof_stacks is not None:
             f.write('NofStacks: %s\n' % (nof_stacks))
         voxel_sizes = self.get_voxel_sizes()
         if voxel_sizes is not None:
-            f.write('VoxelSizeX: %s\n' % (voxel_sizes[2]))
-            f.write('VoxelSizeY: %s\n' % (voxel_sizes[1]))
-            f.write('VoxelSizeZ: %s\n' % (voxel_sizes[0]))
+            d = 'XYZT'
+            for i in range(len(voxel_sizes)):
+                f.write('VoxelSize%s: %s\n' % (d[i], voxel_sizes[len (voxel_sizes)-i-1]))
         rotation_angle = self.get_rotation_angle()
         if rotation_angle is not None:
             f.write ('RotationAngle: %s\n' % (rotation_angle))
@@ -549,7 +547,14 @@ class Scaninfo(PathInfo):
 
     def get_shape(self):
         if self.shape is None:
-            self.set_shape(*[int(get_tag_from_scaninfo(self.path, 'Dimension'+x)) for x in 'ZYX'])
+            shape = []
+            for d in 'TZYX':
+                s = get_tag_from_scaninfo(self.path, 'Dimension'+d)
+                if s is None:
+                    assert not shape,`d, shape` # missing dimension??
+                    continue
+                shape.append(int(s))
+            self.set_shape(*shape)
         return self.shape
 
     def get_nof_stacks(self):
@@ -561,7 +566,16 @@ class Scaninfo(PathInfo):
 
     def get_voxel_sizes(self):
         if self.voxel_sizes is None:
-            self.set_voxel_sizes(*[float(get_tag_from_scaninfo(self.path, 'VoxelSize'+x)) for x in 'ZYX'])
+            voxel_sizes = []
+            for d in 'TZYX':
+                s = get_tag_from_scaninfo(self.path, 'VoxelSize'+d)
+                if s is None:
+                    assert not voxel_sizes,`d, voxel_sizes` # missing dimension??
+                    continue
+                voxel_sizes.append(float(s))
+            if not voxel_sizes:
+                voxel_sizes = [1] * len(self.get_shape())
+            self.set_voxel_sizes(*voxel_sizes)
         return self.voxel_sizes
 
     def get_objective_NA (self):
@@ -876,7 +890,8 @@ class Tiffinfo(PathInfo):
                 self.set_voxel_sizes(lsmi.voxel_size_z, lsmi.voxel_size_y, lsmi.voxel_size_x)
             else:
                 print 'Warning: failed to obtain voxel size info from %r' % (self.path)
-                self.set_voxel_sizes(1,1,1)
+                shape = tif.shape
+                self.set_voxel_sizes((1,)*len (shape))
         return self.voxel_sizes
 
     def get_objective_NA(self):

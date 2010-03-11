@@ -296,9 +296,24 @@ class TIFF(ctypes.c_void_p):
         else:
             raise NotImplementedError(`arr.dtype`)
         shape=arr.shape
-        if len(shape)==2:
+        bits = arr.itemsize * 8
+
+        if len(shape)==1:
+            width, = shape
+            size = width * arr.itemsize
+            self.SetField(TIFFTAG_IMAGEWIDTH, width)
+            self.SetField(TIFFTAG_IMAGELENGTH, 1)
+            self.SetField(TIFFTAG_BITSPERSAMPLE, bits)
+            self.SetField(TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK)
+            self.SetField(TIFFTAG_ORIENTATION, ORIENTATION_RIGHTTOP)
+            self.SetField(TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG)
+            if sample_format is not None:
+                self.SetField(TIFFTAG_SAMPLEFORMAT, sample_format)
+            self.WriteRawStrip(0, arr.ctypes.data, size)
+            self.WriteDirectory()
+
+        elif len(shape)==2:
             height, width = shape
-            bits = arr.itemsize * 8
             size = width * height * arr.itemsize
 
             self.SetField(TIFFTAG_IMAGEWIDTH, width)
@@ -317,7 +332,6 @@ class TIFF(ctypes.c_void_p):
             self.WriteDirectory()
         elif len(shape)==3:
             depth, height, width = shape
-            bits = arr.itemsize * 8
             size = width * height * arr.itemsize
             for n in range(depth):
                 self.SetField(TIFFTAG_IMAGEWIDTH, width)
@@ -369,6 +383,8 @@ class TIFF(ctypes.c_void_p):
     def WriteDirectory(self): 
         r = libtiff.TIFFWriteDirectory(self)
         assert r==1, `r`
+    @debug
+    def SetDirectory(self, dirnum): return libtiff.TIFFSetDirectory(self, dirnum)
     @debug
     def Fileno(self): return libtiff.TIFFFileno(self)
     @debug
@@ -515,6 +531,9 @@ libtiff.TIFFReadDirectory.argtypes = [TIFF]
 libtiff.TIFFWriteDirectory.restype = ctypes.c_int
 libtiff.TIFFWriteDirectory.argtypes = [TIFF]
 
+libtiff.TIFFSetDirectory.restype = ctypes.c_int
+libtiff.TIFFSetDirectory.argtypes = [TIFF, c_tdir_t]
+
 libtiff.TIFFFileno.restype = ctypes.c_int
 libtiff.TIFFFileno.argtypes = [TIFF]
 
@@ -551,6 +570,17 @@ libtiff.TIFFWriteRawStrip.argtypes = [TIFF, c_tstrip_t, c_tdata_t, c_tsize_t]
 libtiff.TIFFClose.restype = None
 libtiff.TIFFClose.argtypes = [TIFF]
 
+# Support for TIFFWarningHandler
+TIFFWarningHandler = ctypes.CFUNCTYPE(None,
+                                      ctypes.c_char_p, # Module
+                                      ctypes.c_char_p, # Format
+                                      ctypes.c_void_p) # va_list
+
+# This has to be at module scope so it is not garbage-collected
+_null_warning_handler = TIFFWarningHandler(lambda module, fmt, va_list: None)
+
+def suppress_warnings():
+    libtiff.TIFFSetWarningHandler(_null_warning_handler)
 
 def _test_read(filename=None):
     import sys
