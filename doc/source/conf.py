@@ -274,19 +274,10 @@ f.close ()
 autosummary_generate.append('generated/stubs.rst')
 
 from iocbio.optparse_gui import OptionParser
-from optparse import TitledHelpFormatter
+from iocbio.script_options import set_formatter
 parent_path = os.path.abspath(os.path.dirname(iocbio.__file__))
 
 scripts_info = {}
-class MyHelpFormatter(TitledHelpFormatter):
-
-    def format_option(self, option):
-        if option.type=='choice':
-            pass
-        result = TitledHelpFormatter.format_option (self, option)
-        return result
-
-help_formatter = MyHelpFormatter()
 
 for root, dirs, files in os.walk(parent_path):
     if '.svn' in dirs: dirs.remove('.svn')
@@ -305,7 +296,8 @@ for root, dirs, files in os.walk(parent_path):
                 print msg
                 continue
             parser = OptionParser()
-            parser.add_option('--no-gui', action='store_true', default=True, help='run script without opening GUI')
+            set_formatter (parser)
+            parser.add_option('--no-gui', action='store_false', default=True, help='Run script without opening GUI.')
             set_options (parser)
             parser.prog = 'iocbio.%s' % (script_name)
             if parser.description is None:
@@ -314,7 +306,7 @@ for root, dirs, files in os.walk(parent_path):
 
             descr = parser.get_description()
             descr_title = descr.lstrip().split('\n')[0]
-            help = parser.format_help(formatter=help_formatter)
+            help = parser.format_help()
             help += '''
 See also
 ========
@@ -358,4 +350,4 @@ for script_name in sorted(scripts_info):
 f.write('+%s+%s+\n' % ('-'*name_len, '-'*descr_len))
 f.close()
 
-sys.exit(0)
+#sys.exit(0)
