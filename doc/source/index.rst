@@ -25,5 +25,3 @@ __ http://code.google.com/p/iocbio/issues/list
 
 .. automodule:: iocbio.__init__
   :members:
-
-

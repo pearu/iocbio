@@ -183,7 +183,7 @@ class FFTTasks(object):
           Specify array shape for FFT.
         float_type : {None, 'single', 'double'}
           Specify floating point type.
-        options : {None, :pythonlib:`optparse`.Values}
+        options : {None, `iocbio.utils.Options`}
           Specify command line options:
             options.float_type
             options.fftw_plan_flags
@@ -193,9 +193,9 @@ class FFTTasks(object):
         --------
         iocbio.ops.fft_tasks
         """
-        flags = [getattr(options,'fftw_plan_flags', 'estimate')]
+        flags = [options.get(fftw_plan_flags='estimate')]
         if float_type is None:
-            float_type = getattr (options, 'float_type', 'single')
+            float_type = options.get(float_type='single')
 
         self.load_wisdoms()
 

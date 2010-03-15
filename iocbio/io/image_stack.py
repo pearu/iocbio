@@ -114,7 +114,7 @@ class ImageStack(object):
         ----------
         path : str
           File or directory name.
-        options : {None, :pythonlib:`optparse`.Values}
+        options : {None, `iocbio.utils.Options`}
           Options specified in command line. Note that command line
           options override options stored in pathinfo attribute.
 
@@ -140,7 +140,7 @@ class ImageStack(object):
         pathinfo : {None, `iocbio.io.pathinfo.PathInfo`}
           If pathinfo is None then it will be constructed from the
           kws mapping.
-        options : {None, :pythonlib:`optparse`.Values}
+        options : {None, `iocbio.utils.Options`}
         kws : dict
           A dictionary of pathinfo keys.
         """

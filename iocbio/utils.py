@@ -2,12 +2,16 @@
 Various utilities.
 """
 
+__autodoc__ = ['expand_to_shape', 'contract_to_shape', 'ProgressBar', 'Options', 'encode',
+               'tostr', 'get_path_dir', 'float2dtype', 'time_to_str', 'time_it']
+
 import os
 import sys
 import time
 import hashlib
 
 import numpy
+import optparse
 
 file_extensions = ['.tif', '.lsm', 'tiff', '.raw']
 
@@ -33,33 +37,47 @@ def argument_string(obj):
     return '<'+str(type(obj))[8:-2]+'>'
 
 def time_it(func):
-    """ Print how long calling given function took.
+    """Decorator: print how long calling given function took.
+
+    Notes
+    ----- 
+    ``iocbio.utils.VERBOSE`` must be True for this decorator to be
+    effective.
     """
+    if not VERBOSE:
+        return func
     def new_func(*args, **kws):
         t = time.time()
         r = func (*args, **kws)
         dt = time.time() - t
-        if VERBOSE:
-            print 'Calling %s(%s) -> %s took %s seconds' % \
-                (func.__name__, ', '.join(map(argument_string, args)), argument_string(r), dt)
+        print 'Calling %s(%s) -> %s took %s seconds' % \
+            (func.__name__, ', '.join(map(argument_string, args)), argument_string(r), dt)
         return r
     return new_func
 
 class ProgressBar:
-    """ Creates a text-based progress bar. Call the object with the `print'
-        command to see the progress bar, which looks something like this:
+    """Creates a text-based progress bar. 
+
+    Call the object with the ``print`` command to see the progress bar,
+    which looks something like this::
 
         [=======>        22%                  ]
 
-        You may specify the progress bar's width, min and max values on init.
-
-        Example:
-          bar = ProgressBar(N)
-          for i in range(N):
-              print bar(i)
-          print bar(N)
+    You may specify the progress bar's width, min and max values on
+    init. For example::
+    
+      bar = ProgressBar(N)
+      for i in range(N):
+        print bar(i)
+      print bar(N)
         
-    Source: http://code.activestate.com/recipes/168639/
+    References
+    ----------
+    http://code.activestate.com/recipes/168639/
+
+    See also
+    --------
+    __init__, updateComment
     """
 
     def __init__(self, minValue = 0, maxValue = 100, totalWidth=80, prefix='',
@@ -194,7 +212,6 @@ class Holder:
         return r
 
 options = Holder('Options')
-        
 
 alphabet='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 def getalpha(r):
@@ -215,11 +232,14 @@ def nary(number, base=64):
     return s
 
 def encode(string):
+    """ Return encoded string.
+    """
     return nary('0x'+hashlib.md5(string).hexdigest())
 
 
 def fix_exp_str(s):
     return s.replace ('e+00','').replace('e+0','E').replace ('e+','E').replace ('e-0','E-').replace ('e-','E-')
+
 def float_to_str(x):
     if abs(x)>=1000: return fix_exp_str('%.1e' % x)
     if abs(x)>=100: return '%.0f' % x
@@ -229,7 +249,14 @@ def float_to_str(x):
     if abs(x)<=1e-6: return fix_exp_str ('%.1e' % x)
     if not x: return '0'
     return fix_exp_str('%.2e' % x)
+
 def tostr (x):
+    """ Return pretty string representation of x.
+
+    Parameters
+    ----------
+    x : {tuple, float, :numpy:.float32, :numpy:.float64}
+    """
     if isinstance (x, tuple):
         return tuple ( map (tostr, x))
     if isinstance(x, (float, numpy.float32,numpy.float64)):
@@ -237,6 +264,8 @@ def tostr (x):
     return str(x)
 
 def time_to_str(s):
+    """ Return human readable time string from seconds.
+    """
     orig_s = s
     years = int(s / (60*60*24*365))
     r = []
@@ -320,6 +349,8 @@ def mul_seq(seq):
     return reduce (lambda x,y:x*y,seq,1)
 
 def float2dtype(float_type):
+    """Return numpy float dtype object from float type label.
+    """
     if float_type == 'single' or float_type is None:
         return numpy.float32
     if float_type == 'double':
@@ -344,9 +375,99 @@ def get_path_dir(path, suffix):
             path_dir = os.path.join(path, suffix)
     return path_dir
 
-def make_options(**kws):
-    """ Create Values instance from a keywords dictionary.
-    """
-    import optparse
-    return optparse.Values (kws)
+class Options(optparse.Values):
+    """Holds option keys and values.
 
+    Examples
+    --------
+
+      >>> from iocbio.utils import Options
+      >>> options = Options(a='abc', n=4)
+      >>> print options
+      {'a': 'abc', 'n': 4}
+      >>> options.get(n=5)
+      4
+      >>> options.get(m=5)
+      5
+      >>> print options
+      {'a': 'abc', 'm': 5, 'n': 4}
+      >>> options2 = Options(options)
+      >>> options.get(k = 6)
+      >>> print options2 # note that updating options will update also options2
+      {'a': 'abc', 'm': 5, 'n': 4, 'k': 6}
+
+    See also
+    --------
+    __init__
+    """
+
+    def __init__(self, *args, **kws):
+        """Construct Options instance.
+
+        The following constructions are supported:
+        
+        + construct Options instance from keyword arguments::
+
+            Options(key1 = value1, key2 = value2, ...)
+
+        + construct Options instance from :pythonlib:`optparse`.Values
+          instance and override with keyword arguments::
+
+            Options(<Values instance>, key1 = value1, ...)
+
+        + construct Options instance from Options instance::
+        
+            Options(<Options instance>, key1 = value1, ...)
+        
+          Note that both Options instances will share options data.
+
+        See also
+        --------
+        Options
+        """
+        if len(args)==0:
+            optparse.Values.__init__(self, kws)
+        elif len (args)==1:
+            arg = args[0]
+            if isinstance(arg, Options):
+                self.__dict__ = arg.__dict__
+                self.__dict__.update(**kws)
+            elif isinstance(arg, optparse.Values):
+                optparse.Values.__init__(self, arg.__dict__)
+                self.__dict__.update(**kws)
+            elif isinstance(arg, type (None)):
+                optparse.Values.__init__(self, kws)
+            else:
+                raise NotImplementedError(`arg`)
+        else:
+            raise NotImplementedError(`args`)
+
+    def get(self, **kws):
+        """Return option value.
+
+        For example, ``options.get(key = default_value)`` will return
+        the value of an option with ``key``. If such an option does
+        not exist then update ``options`` and return
+        ``default_value``.
+
+        Parameters
+        ----------
+        key = default_value
+          Specify option key and its default value. 
+
+        Returns
+        -------
+        value
+          Value of the option.
+
+        See also
+        --------
+        Options
+        """
+        assert len (kws)==1,`kws`
+        key, default = kws.items()[0]
+        if key not in self.__dict__:
+            if VERBOSE:
+                print 'Options.get: adding new option: %s=%r' % (key, default)
+            self.__dict__[key] = default
+        return self.__dict__[key]

@@ -333,7 +333,6 @@ for script_name in sorted(scripts_info):
 
 f = open('generated/scripts.rst', 'w')
 f.write('''
-===========
 GUI scripts
 ===========
 ''')

@@ -93,7 +93,7 @@ def regress(data, scales,
     verbose : bool
       When True then show the progress of computations to terminal.
 
-    options : {:pythonlib:`optparse`.Values}
+    options : `iocbio.utils.Options`
       Specify regression parameters from command line. This will override
       parameters specified in function call. The following options attributes
       are used: ``options.kernel``, ``options.method``, ``options.boundary``.
@@ -120,9 +120,9 @@ def regress(data, scales,
                                reflective=3, # boundary is a mirror
                                )
     if options is not None:
-        kernel = options.kernel
-        method = options.method
-        boundary = options.boundary
+        kernel = options.get(kernel=kernel)
+        method = options.get(method=method)
+        boundary = options.get(boundary=boundary)
 
     if kernel not in kernel_types:
         raise ValueError('kernel type must be %s but got %s' \

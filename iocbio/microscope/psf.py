@@ -227,7 +227,7 @@ def spots_to_psf(image_stack, psf_dir, options = None):
       Path to or image stack of PSF measurments.
     psf_dir : str
       Directory name where to save intermediate results.
-    options : {None, :pythonlib:`optparse`.Values}
+    options : {None, `iocbio.utils.Options`}
 
       The following options attributes are used:
 

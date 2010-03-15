@@ -21,6 +21,7 @@ Modules
 .. autosummary::
 
   iocbio.optparse_gui
+  iocbio.utils
 """
 
-__autodoc__ = ['io', 'ops', 'microscope', 'optparse_gui']
+__autodoc__ = ['io', 'ops', 'microscope', 'optparse_gui', 'utils']

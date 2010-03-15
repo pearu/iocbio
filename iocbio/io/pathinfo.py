@@ -316,6 +316,10 @@ class PathInfo(object):
             return mth()
         return getattr(self, key, None)
 
+    def set_suffix (self, suffix):
+        assert isinstance (suffix, str),`suffix`
+        self.suffix = suffix
+
     def set_microscope_type(self, type):
         assert type in ['confocal', 'widefield'],`type`
         self.microscope_type = type
