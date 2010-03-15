@@ -265,6 +265,23 @@ def tostr (x):
 
 def time_to_str(s):
     """ Return human readable time string from seconds.
+
+    Examples
+    --------
+    >>> from iocbio.utils import time_to_str
+    >>> print time_to_str(123000000)
+    3Y10M24d10h40m
+    >>> print time_to_str(1230000)
+    14d5h40m
+    >>> print time_to_str(1230)
+    20m30.0s
+    >>> print time_to_str(0.123)
+    123ms
+    >>> print time_to_str(0.000123)
+    123us
+    >>> print time_to_str(0.000000123)
+    123ns
+
     """
     orig_s = s
     years = int(s / (60*60*24*365))
@@ -302,6 +319,11 @@ def time_to_str(s):
             if useconds:
                 r.append ('%sus' % (useconds))
                 s -= useconds / 1000000
+            elif not r:
+                nseconds = int(s*1000000000)
+                if nseconds:
+                    r.append ('%sns' % (nseconds))
+                    s -= nseconds / 1000000000
     if not r:
         return '0'
     return ''.join(r)

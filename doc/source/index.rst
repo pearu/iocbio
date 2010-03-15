@@ -21,7 +21,14 @@ __ http://code.google.com/p/iocbio/issues/list
 
 .. include:: generated/scripts.rst
 
+:mod:`iocbio` content
+=====================
+
 .. currentmodule:: iocbio
 
 .. automodule:: iocbio.__init__
   :members:
+
+See also
+--------
+`List of documentations with examples <generated/examples.html>`_

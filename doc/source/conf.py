@@ -224,6 +224,8 @@ os.makedirs('generated')
 
 import types
 
+docs_with_examples = []
+
 def scan_for_autodoc(obj, prefix, cache=set([])):
     if not hasattr(obj, '__name__'):
         # objects with no name have no members
@@ -240,6 +242,9 @@ def scan_for_autodoc(obj, prefix, cache=set([])):
             # skip external classes
             return
     if n not in cache:
+        for title in ['Examples', 'Example']:
+            if title+'\n' in (getattr(obj, '__doc__') or ''):
+                docs_with_examples.append('`%s <%s.html#%s>`_' % (n,n, title.lower()))
         yield n
         cache.add(n)
     prefix = n
@@ -271,6 +276,14 @@ for n in scan_for_autodoc(iocbio, 'iocbio'):
     sys.stdout.flush ()
     print>>f, '  ' + n
 f.close ()
+f = open('generated/examples.rst', 'w')
+f.write('Documentations with examples\n')
+f.write('----------------------------\n\n')
+f.write (', '.join(docs_with_examples))
+f.close ()
+
+#sys.exit ()
+
 autosummary_generate.append('generated/stubs.rst')
 
 from iocbio.optparse_gui import OptionParser

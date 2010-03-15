@@ -1386,7 +1386,7 @@ def imshow(data, title=None, isrgb=True, vmin=0, vmax=None,
     if not isrgb:
         cbar = pyplot.colorbar()
         tick_values = []
-        from .utils import tostr
+        from ..utils import tostr
 
     if dims:
         current_axis = [0]

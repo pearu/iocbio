@@ -18,7 +18,7 @@ import numpy
 from .tifffile import TIFFfile
 from .libtiff import TIFF
 from glob import glob
-from . import utils
+from .. import utils
 from .pathinfo import Tiffinfo, Scaninfo, Configuration
 
 

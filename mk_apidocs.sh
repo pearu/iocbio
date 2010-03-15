@@ -1,7 +1,7 @@
 #!/bin/sh
 
 rm -rf doc/_build/ doc/source/generated /net/cens/home/www/sysbio/download/software/iocbio/*
-echo `date` ": documentation is being updated... try again in few minutes." >  /net/cens/home/www/sysbio/download/software/iocbio/index.html
+echo `date -u` ": documentation is being updated... try again in few minutes." >  /net/cens/home/www/sysbio/download/software/iocbio/index.html
 PYTHONPATH=`pwd`:$PYTHONPATH
 cd doc && make html || exit 1
 cd -

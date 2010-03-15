@@ -14,7 +14,7 @@ from iocbio.optparse_gui import OptionParser
 from iocbio.io import ImageStack
 from iocbio.ops.apply_window_ext import apply_window_inplace
 from iocbio.io.io import fix_path
-from iocbio.io import utils
+from iocbio import utils
 from iocbio.ops.script_options import set_apply_window_options
 
 import time
