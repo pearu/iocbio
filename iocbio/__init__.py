@@ -14,6 +14,7 @@ Packages
   iocbio.io
   iocbio.ops
   iocbio.microscope
+  iocbio.scanner
 
 Modules
 =======
@@ -24,4 +25,4 @@ Modules
   iocbio.utils
 """
 
-__autodoc__ = ['io', 'ops', 'microscope', 'optparse_gui', 'utils']
+__autodoc__ = ['io', 'ops', 'microscope', 'optparse_gui', 'utils', 'scanner']

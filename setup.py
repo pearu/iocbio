@@ -24,7 +24,7 @@ if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
 def write_version_py(filename='iocbio/version.py'):
     cnt = """
-# THIS FILE IS GENERATED FROM IOCBio SETUP.PY
+# THIS FILE IS GENERATED FROM iocbio/setup.py
 short_version='%(version)s'
 version='%(version)s'
 release=%(isrelease)s

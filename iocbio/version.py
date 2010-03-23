@@ -1,5 +1,5 @@
 
-# THIS FILE IS GENERATED FROM IOCBio SETUP.PY
+# THIS FILE IS GENERATED FROM iocbio/setup.py
 short_version='1.1.0'
 version='1.1.0'
 release=False

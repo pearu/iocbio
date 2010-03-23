@@ -15,6 +15,7 @@ def configuration(parent_package='',top_path=None):
     config.add_subpackage('io')
     config.add_subpackage('ops')
     config.add_subpackage('microscope')
+    config.add_subpackage('scanner')
 
     # eof add.
 

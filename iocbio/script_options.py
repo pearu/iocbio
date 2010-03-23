@@ -12,6 +12,8 @@ class MyHelpFormatter(TitledHelpFormatter):
         default = option.default
         if isinstance (default, str) and ' ' in default:
             default = repr (default)
+        if option.help is None:
+            option.help = 'Specify a %s.' % (option.type) 
         if option.type=='choice':
             choices = []
             for choice in option.choices:
@@ -25,7 +27,6 @@ class MyHelpFormatter(TitledHelpFormatter):
                 choices.append (choice)
             option.help = '%s Choices: %s.'% (option.help, ', '.join(choices))
         else:
-
             if default != NO_DEFAULT:
                 if option.action=='store_false':
                     option.help = '%s Default: %s.'% (option.help, not default)
