@@ -459,8 +459,9 @@ class RowFile:
           Otherwise, the row file will be overwritten.
         """
         self.filename = filename
-        if not os.path.exists(os.path.dirname(self.filename)):
-            os.makedirs(os.path.dirname(self.filename))
+        dirname = os.path.dirname(self.filename)
+        if not os.path.exists(dirname) and dirname:
+            os.makedirs(dirname)
         self.file = None
         self.nof_cols = 0
         self.append = append

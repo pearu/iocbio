@@ -166,9 +166,12 @@ Specify options for Richardson-Lucy deconvolution algorithm with total variation
     group.add_option ('--no-rltv-estimate-lambda', 
                       dest='rltv_estimate_lambda', action='store_false',
                       help = 'See ``--rltv-estimate-lambda`` option.')
-    #group.add_option ('--rltv-estimate-lambda-method',
-    #                  choices = ['scalar', 'smoothed scalar'], default = 'scalar',
-    #                  help = 'Specify method for estimating lambda.')
+    group.add_option ('--rltv-lambda-lsq-coeff',
+                      type = 'float',
+                      help = 'Specify coefficient in RLTV parameter estimate lambda_lsq.')
+    group.add_option ('--rltv-compute-lambda-lsq',
+                      action='store_true',
+                      help = 'Compute RLTV parameter estimation lambda_lsq.')
     group.add_option ('--rltv-algorithm-type',
                       choices = ['multiplicative', 'additive'], default='multiplicative',
                       help = 'Specify algorithm type. Use multiplicative with Poisson noise and additive with Gaussian noise.')

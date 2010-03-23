@@ -16,7 +16,7 @@ import optparse
 file_extensions = ['.tif', '.lsm', 'tiff', '.raw']
 
 
-VERBOSE = False
+VERBOSE = not False
 
 def argument_string(obj):
     if isinstance(obj, (str, )):
@@ -283,16 +283,17 @@ def time_to_str(s):
     123ns
 
     """
+    seconds_in_year = 31556925.9747 # a standard SI year
     orig_s = s
-    years = int(s / (60*60*24*365))
+    years = int(s / (seconds_in_year))
     r = []
     if years:
         r.append ('%sY' % (years))
-        s -= years * (60*60*24*365)
-    months = int(s / (60*60*24*(365/12.0)))
+        s -= years * (seconds_in_year)
+    months = int(s / (seconds_in_year/12.0))
     if months:
         r.append ('%sM' % (months))
-        s -= months * (60*60*24*(365/12.0))
+        s -= months * (seconds_in_year/12.0)
     days = int(s / (60*60*24))
     if days:
         r.append ('%sd' % (days))
@@ -492,4 +493,7 @@ class Options(optparse.Values):
             if VERBOSE:
                 print 'Options.get: adding new option: %s=%r' % (key, default)
             self.__dict__[key] = default
-        return self.__dict__[key]
+        value = self.__dict__[key]
+        if value is None:
+            value = self.__dict__[key] = default
+        return value
