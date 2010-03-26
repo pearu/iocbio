@@ -61,6 +61,23 @@ def get_io_options_group(parser, group=None):
     group.add_option('--max-nof-stacks-none', dest='max_nof_stacks', action='store_const',
                      const = 'none',
                      help = 'Unspecify the --max-nof-stacks option.')
+
+    parser.add_option_group(get_tiff_options_group(parser, group))  
+    return group
+
+def get_tiff_options_group(parser, group=None):
+    if group is None:
+        group = OptionGroup (parser, 'TIFF options',
+                             description = 'Specify options for processing TIFF files.')
+
+    import libtiff
+    lst = [name[len('COMPRESSION_'):].lower () for name in libtiff.name_to_define_map['Compression'].keys()]
+    group.add_option('--tiff-compression',
+                     choices = lst,
+                     default = 'deflate',
+                     help = 'Specify compression for saving TIFF files.',
+                     )
+
     return group
 
 def get_microscope_options_group(parser):
@@ -122,6 +139,8 @@ def set_convert_options (parser):
                       choices = ['tif', 'vtk', 'data'],
                       default = 'tif',
                       help="Specify output format extension.")
+
+    parser.add_option_group(get_tiff_options_group(parser))
 
 def set_rowfile_plot_options (parser):
     import matplotlib

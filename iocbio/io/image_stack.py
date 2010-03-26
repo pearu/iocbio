@@ -176,7 +176,7 @@ class ImageStack(object):
           Save only image data with indices. Applicable if path has
           ``.data`` extension.
         """
-        io.save_image_stack(self, path, indices=indices)
+        io.save_image_stack(self, path, indices=indices, options=self.options)
 
     def get_voxel_sizes(self):
         """

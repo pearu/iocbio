@@ -881,7 +881,7 @@ class Tiffinfo(PathInfo):
 
     def get_shape(self):
         if self.shape is None:
-            tif = self.tif
+            tif = self.tif[0]
             shape = tif.shape
             self.set_shape(*shape)
         return self.shape
@@ -894,7 +894,7 @@ class Tiffinfo(PathInfo):
                 self.set_voxel_sizes(lsmi.voxel_size_z, lsmi.voxel_size_y, lsmi.voxel_size_x)
             else:
                 print 'Warning: failed to obtain voxel size info from %r' % (self.path)
-                shape = tif.shape
+                shape = tif[0].shape
                 self.set_voxel_sizes((1,)*len (shape))
         return self.voxel_sizes
 
