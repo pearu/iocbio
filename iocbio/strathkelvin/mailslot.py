@@ -15,6 +15,7 @@ Example
 # Created: April, 2010
 
 __all__ = ['MailSlot']
+import os
 import sys
 import time
 import ctypes
@@ -32,13 +33,17 @@ except ImportError:
     FORMAT_MESSAGE_FROM_STRING = 0x00000400
     MAILSLOT_NO_MESSAGE = -1
 
-CreateFile = ctypes.windll.kernel32.CreateFileA 
-ReadFile = ctypes.windll.kernel32.ReadFile
-WriteFile = ctypes.windll.kernel32.WriteFile
-CloseHandle = ctypes.windll.kernel32.CloseHandle
-CreateMailslot = ctypes.windll.kernel32.CreateMailslotA 
-GetLastError = ctypes.windll.kernel32.GetLastError
-GetMailslotInfo = ctypes.windll.kernel32.GetMailslotInfo
+if os.name=='nt':
+    CreateFile = ctypes.windll.kernel32.CreateFileA 
+    ReadFile = ctypes.windll.kernel32.ReadFile
+    WriteFile = ctypes.windll.kernel32.WriteFile
+    CloseHandle = ctypes.windll.kernel32.CloseHandle
+    CreateMailslot = ctypes.windll.kernel32.CreateMailslotA 
+    GetLastError = ctypes.windll.kernel32.GetLastError
+    GetMailslotInfo = ctypes.windll.kernel32.GetMailslotInfo
+else:
+    CloseHandle = None
+
 c_int = ctypes.c_int
 c_char_p = ctypes.c_char_p
 pointer = ctypes.pointer
@@ -51,7 +56,7 @@ class MailSlot:
     Failure to read or write will trigger IOError containing error code.
     Error code values are explained in:
 
-      http://msdn.microsoft.com/en-us/library/ms681381%%28VS.85%%29.aspx
+      http://msdn.microsoft.com/en-us/library/ms681381%28VS.85%29.aspx
 
     See also
     --------

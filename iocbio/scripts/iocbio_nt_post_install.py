@@ -76,7 +76,11 @@ def test_libtiff():
     if lib is None:
         tiffdir = r'C:\Program Files\GnuWin32\bin'
         if os.path.isdir(tiffdir):
-            winreg_append_to_path(tiffdir)
+            try:
+                winreg_append_to_path(tiffdir)
+            except Exception, msg:
+                print "Calling winreg_append_to_path failed: %s" % (msg)
+                print '"%s" must be added to PATH environment variable manually' % (tiffdir)
             lib = os.path.join(tiffdir, 'libtiff3.dll')
             if not os.path.isfile (lib):
                 print 'Warning: File "%s" does not exists. Importing libtiff module may fail.' % (lib)
@@ -152,10 +156,10 @@ def install():
         b,e = os.path.splitext(bn)
         if b=='iocbio_nt_post_install':
             continue
-        dst = os.path.join(fldr, "%s.lnk" % (b[4:].title().replace ('_',' ')))
+        dst = os.path.join(fldr, "%s.lnk" % (b[7:].title().replace ('_',' ')))
         if verbose:
             print 'Creating shortcut', dst
-        create_shortcut(fn, bn[4:], dst, "", fldr)
+        create_shortcut(fn, bn[7:], dst, "", fldr)
         file_created(dst)
 
     # test the availability of prerequisites

@@ -445,7 +445,6 @@ class Model:
         """ Save protocols to protocols.txt file.
         """
         filename = os.path.join(self.main_dir, 'protocols.txt')
-        print 'Saving protocols to "%s"' % (filename)
         if os.path.isfile(filename):
             fin = open(filename)
             fout = open(filename[:-4]+'_backup.txt', 'w')
@@ -458,12 +457,13 @@ class Model:
             stream.write('%s\n' % (protocol))
 
             if protocol == ' Configuration':
-                for p in self.get_configuration ():
+                for p in self.get_configuration():
                     stream.write('\tparam: %s\n' % (p.to_line()))
             else:
                 for task in tasks:
                     stream.write('\t%s\n' % (task))
         stream.close()
+        return filename
 
     _parameters_cache = {}
 
@@ -683,6 +683,7 @@ class Parameter:
             param = ''
 
         self.name = name.strip()
+        assert ' ' not in name, `self.name, param`
 
         if param.endswith(']'):
             i = param.index('[')

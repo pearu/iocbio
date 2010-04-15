@@ -17,7 +17,7 @@ if os.name=='nt':
 else:
     from fakemailslot import MailSlot
 
-from model import Model
+from .model import Model
 
 import matplotlib
 matplotlib.interactive( True )
@@ -26,7 +26,7 @@ matplotlib.use( 'WXAgg' )
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 
-from menu_tools_wx import create_menus
+from .menu_tools_wx import create_menus
 
 import wx
 import wx.gizmos as gizmos
@@ -45,8 +45,8 @@ class GlobalAttr:
                 break
             p = getattr (p, 'parent', None)
 
-        if getattr (self, name) is None:
-            print 'Failed to set %r for %s instance' % (name, self.__class__.__name__)
+        #if getattr (self, name) is None:
+        #    print 'Failed to set %r for %s instance' % (name, self.__class__.__name__)
 
     def __init__(self, parent = None):
         self.parent = parent
@@ -116,8 +116,8 @@ class MainFrame(wx.Frame, GlobalAttr):
                      action = 'OnStrathKelvinStart'),
                 dict(label = 'Stop', help='Stop receiving data from StrathKelvin application.',
                      action = 'OnStrathKelvinStop'),
-                dict (label='Help...',
-                      help = 'Displays StrathKelvin System configuration help.',
+                dict (label='Workflow help...',
+                      help = 'Displays typical workflow of using this program.',
                       action = 'OnHelpStrathKelvin',
                       ),
                 ]
@@ -143,8 +143,8 @@ class MainFrame(wx.Frame, GlobalAttr):
                       help = 'Displays Measurements help.',
                       action = 'OnHelpMeasurements',
                       ),
-                dict (label='StrathKelvin...',
-                      help = 'Displays StrathKelvin System configuration help.',
+                dict (label='Workflow...',
+                      help = 'Displays typical workflow of using this program.',
                       action = 'OnHelpStrathKelvin',
                       ),
                 ],
@@ -204,11 +204,12 @@ Please report any bugs or feature requests to http://code.google.com/p/iocbio/is
         info.WebSite = ("http://sysbio.ioc.ee", "Laboratory of Systems Biology")
         info.Developers = ["Pearu Peterson <pearu.peterson@gmail.com>"]
 
-        try:
-            license_txt = open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'LICENSE.txt')).read()
-        except:
-            license_txt = 'See http://code.google.com/p/iocbio/ for information.'
-        license_txt = 'In short:\n  BSD\n\nIn long:\n' + license_txt
+        license_txt = '''
+BSD
+
+For full license text, see
+  http://iocbio.googlecode.com/svn/trunk/LICENSE.txt
+'''
         info.License = wordwrap (license_txt, 600, wx.ClientDC(self))
         wx.AboutBox(info)
 
@@ -670,13 +671,15 @@ See Protocols help page for more information.
                 p = Parameters(self, protocol)
                 self.container.Add(p, 1, wx.EXPAND|wx.ALL)
 
-        save_button = wx.Button (self, self.save_button_id, "Save configuration and protocols")
+        save_button = wx.Button (self, self.save_button_id,
+                                 "Save configuration and protocols")
         self.container.Add(save_button, 0, wx.EXPAND)
 
         self.NotifySizeChange()
 
     def OnSaveConfiguration (self, event):
-        self.model.save_protocols()
+        filename = self.model.save_protocols()
+        self.info('Configuration and protocols saved to "%s"' % (filename))
 
 class ChambersPage (wx.Panel, GlobalAttr):
 

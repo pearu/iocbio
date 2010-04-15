@@ -18,8 +18,8 @@ accessible as follows::
 For generating documentation from package sources, add subpackage
 information to the following files::
 
-  doc/source/stubs.rst
   iocbio/__init__.py
 
-Subpackage Python scripts must be in ``foo/scripts/`` directory.
+Subpackage Python scripts must be in ``foo/scripts/`` directory and
+optparse argument definitions should be in ``foo/script_options.py``.
 Installation of scripts will add ``iocbio.`` prefix to scripts names.
