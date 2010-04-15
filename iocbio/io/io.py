@@ -15,6 +15,7 @@ import os
 import sys
 import time
 import numpy
+from StringIO import StringIO
 from .tifffile import TIFFfile
 from .libtiff import TIFF
 from glob import glob
@@ -419,6 +420,9 @@ def save_image_stack(image_stack, path, indices=None,
     elif ext in tif_extensions:
         tif = TIFF.open(path, mode='w')
         compression = options.get(tiff_compression = 'lzw')
+        buf = StringIO()
+        image_stack.pathinfo.save(buf)
+        tif.SetField('ImageDescription', buf.getvalue ())
         tif.write_image(images, compression=compression)
         tif.close()
     elif ext=='.data':

@@ -26,6 +26,7 @@ __all__ = ['Scaninfo', 'Configuration', 'Tiffinfo']
 import sys
 import time
 import numpy
+from StringIO import StringIO
 from . import tifffile
 
 objectives = {'UPLSAPO_60xW_NA_1__x20':dict(refractive_index=1.33, NA = 1.2), # airy
@@ -415,7 +416,12 @@ class PathInfo(object):
         """
         Save PathInfo instance to a PATHINFO.txt file.
         """
-        f = open(path, 'w')
+        if isinstance (path, StringIO):
+            f = path
+        elif isinstance(path, str):
+            f = open(path, 'w')
+        else:
+            raise NotImplementedError (`path`)
         shape = self.get_shape()
         if shape is not None:
             d = 'XYZT'
@@ -475,8 +481,12 @@ class PathInfo(object):
                 if name.startswith ('_') or value is None: continue
                 l.append('%s=%r' % (name, value))
             f.write('Options: %s\n' % (';'.join(l)))
-
-        f.close()        
+        if isinstance (path, StringIO):
+            pass
+        elif isinstance(path, str):
+            f.close()        
+        else:
+            raise NotImplementedError (`path`)
 
     def copy(self):
         """

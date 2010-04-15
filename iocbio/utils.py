@@ -86,7 +86,7 @@ class ProgressBar:
         self.progBar = self.progBar_last = "[]"   # This holds the progress bar string
         self.min = minValue
         self.max = maxValue
-        self.span = maxValue - minValue
+        self.span = maxValue - minValue or 1
         self.width = totalWidth
         self.amount = 0       # When amount == max, we are 100% done
         self.start_time = self.current_time = self.prev_time = time.time()

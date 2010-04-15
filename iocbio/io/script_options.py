@@ -74,7 +74,7 @@ def get_tiff_options_group(parser, group=None):
     lst = [name[len('COMPRESSION_'):].lower () for name in libtiff.name_to_define_map['Compression'].keys()]
     group.add_option('--tiff-compression',
                      choices = lst,
-                     default = 'deflate',
+                     default = 'lzw', # because imagej does not support deflate
                      help = 'Specify compression for saving TIFF files.',
                      )
 
