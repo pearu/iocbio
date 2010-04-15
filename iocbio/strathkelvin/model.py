@@ -409,9 +409,9 @@ class Model:
                     self.protocols[protocol] = []
             stream.close()
 
-        if ' Configuration' not in self.protocols:
-            # adding special protocol (their names start with space)
-            self.protocols[' Configuration'] = []
+        if '_Configuration' not in self.protocols:
+            # adding special protocol (their names start with underscore)
+            self.protocols['_Configuration'] = []
 
         # Update configuration parameters
         params = []
@@ -433,7 +433,7 @@ class Model:
         params.append(r'param: directory path_to_results_dir')
         #params.append(r'param: file strathkelvin_exe = C:\Strathk\Meter.exe')
         params.append(r'param: file path_to_strathkelvin_program = C:\Strathk\Meter.exe')
-        config_params = self.protocols[' Configuration']
+        config_params = self.protocols['_Configuration']
 
         for param_line in params:
             p = Parameter (param_line[6:].lstrip ())
@@ -456,7 +456,7 @@ class Model:
         for protocol, tasks in self.protocols.items():
             stream.write('%s\n' % (protocol))
 
-            if protocol == ' Configuration':
+            if protocol == '_Configuration':
                 for p in self.get_configuration():
                     stream.write('\tparam: %s\n' % (p.to_line()))
             else:
@@ -499,7 +499,7 @@ class Model:
                     p = Parameter(param_line)
                 parameters.append(p)
                 has_volume_ml |= p.name == 'volume_ml'
-        if protocol and not protocol.startswith(' '):
+        if protocol and not protocol.startswith('_'):
             if not has_volume_ml:
                 param_line = 'float volume_ml = 1'
                 tasks.insert(0, 'param: '+param_line)
@@ -515,21 +515,21 @@ class Model:
             raise NotImplementedError (`obj`)
 
     def get_configuration(self):
-        return self.get_parameters(' Configuration')
+        return self.get_parameters('_Configuration')
 
-    def get_parameter (self, name, protocol=' Configuratio'):
+    def get_parameter(self, name, protocol='_Configuration'):
         params = self.get_parameters(protocol)
         for p in params:
             if p.name==name:
                 return p
 
-    def get_parameter_value(self, name, protocol=' Configuration'):
+    def get_parameter_value(self, name, protocol='_Configuration'):
         params = self.get_parameters(protocol)
         for p in params:
             if p.name==name:
                 return p.get_value()
 
-    def has_parameter (self, name, protocol=' Configuration'):
+    def has_parameter (self, name, protocol='_Configuration'):
         params = self.get_parameters(protocol)
         for p in params:
             if p.name==name:
@@ -546,7 +546,7 @@ class Model:
         else:
             raise NotImplementedError (`axis`)        
 
-    def get_axis_factors(self, protocol=' Configuration'):
+    def get_axis_factors(self, protocol='_Configuration'):
         unit0 = self.axis_unit (0, protocol=protocol)
         factor0 = dict(s=1, min=1/60, h=1/60/60).get(unit0,1)
 
@@ -558,7 +558,7 @@ class Model:
 
         return factor0, factor1, factor2
 
-    def get_axis_unit(self, axis=1, protocol=' Configuration'):
+    def get_axis_unit(self, axis=1, protocol='_Configuration'):
         unit = None
         if axis==2:
             unit0 = self.get_axis_unit (0, protocol=protocol)
@@ -572,14 +572,14 @@ class Model:
             unit = self.get_parameter_value ('%s_units' % label)
         return unit
 
-    def get_axis_label(self, axis=1, protocol=' Configuration'):        
+    def get_axis_label(self, axis=1, protocol='_Configuration'):        
         label = self._get_axis_config_label(axis)
         unit = self.get_axis_unit(axis, protocol=protocol)
         if unit is not None:
             label = '%s [%s]' % (label, unit)
         return label
 
-    def get_axis_range(self, axis=1, protocol=' Configuration'):
+    def get_axis_range(self, axis=1, protocol='_Configuration'):
         label = self._get_axis_config_label (axis)
         mode = self.get_parameter_value('%s_axis' % label, protocol=protocol)
         if mode != 'range':
@@ -598,7 +598,7 @@ class Model:
             max = None
         return min, max
 
-    def get_axis_interval(self, axis=1, protocol=' Configuration'):
+    def get_axis_interval(self, axis=1, protocol='_Configuration'):
         label = self._get_axis_config_label (axis)
         mode = self.get_parameter_value('%s_axis' % label, protocol=protocol)
         if mode != 'interval':
@@ -608,7 +608,7 @@ class Model:
         except ValueError: interval = None
         return interval
 
-    def get_slope_n(self, protocol=' Configuration'):
+    def get_slope_n(self, protocol='_Configuration'):
         n = self.get_parameter_value('rate_regression_points', protocol=protocol)
         if n is None:
             return 2
@@ -617,7 +617,7 @@ class Model:
         except ValueError:
             return 2
 
-    def get_results_dir(self, protocol=' Configuration'):
+    def get_results_dir(self, protocol='_Configuration'):
         d = self.get_parameter_value('path_to_results_dir', protocol=protocol)
         if d:
             if not os.path.isdir(d):

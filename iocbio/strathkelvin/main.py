@@ -369,14 +369,14 @@ parameters.  Protocols can be attached to channels (chambers) to
 define channels tasks and channel parameters. See Chambers page
 for more information.
 
-There exists special protocol, " Configuration", that
+There exists special protocol, "_Configuration", that
 is used to define general configuration parameters as well
 as for creating new protocols.
 
 Creating, copying, renaming, deleting protocols
 -----------------------------------------------
 
-To create a new protocol, right click to " Configuration" label and
+To create a new protocol, right click to "_Configuration" label and
 from a popup menu choose "New". A dialog window is opened for entering
 the name of the new protocol.  The new protocol will appear in the
 protocols column of the Protocols page that can be selected for
@@ -460,7 +460,7 @@ All protocols will define `float volume_ml = 1` parameter.
         protocol = self.GetPageText(selection)
         menu = wx.Menu()
         for op in sorted(self.popup):
-            if protocol.startswith(' '):
+            if protocol.startswith('_'):
                 if op in ['delete', 'rename']:
                     continue
             else:
@@ -488,7 +488,7 @@ All protocols will define `float volume_ml = 1` parameter.
             self.model.protocols[new_protocol] = new_tasks
             self.Populate()
         elif op=='delete':
-            if protocol.startswith(' '):
+            if protocol.startswith('_'):
                 self.warning('Special protocol "%s" cannot be deleted' % (protocol))
             else:
                 del self.model.protocols[protocol]
@@ -646,7 +646,7 @@ Configuration
 =============
 
 In the "Configuration" page one can modify the values of configuration
-parameters as defined in " Configuration" protocol.  
+parameters as defined in "_Configuration" protocol.  
 
 See Protocols help page for more information.
 '''
@@ -667,7 +667,7 @@ See Protocols help page for more information.
     def Populate(self):
         self.container.DeleteWindows()
         for protocol in self.model.protocols:
-            if protocol.startswith(' '):
+            if protocol.startswith('_'):
                 p = Parameters(self, protocol)
                 self.container.Add(p, 1, wx.EXPAND|wx.ALL)
 
@@ -1121,7 +1121,7 @@ class ChannelPanel(wx.Panel, GlobalAttr):
 
         self.Bind (wx.EVT_COMBOBOX, self.OnSelect)
 
-        protocols = [p for p in self.model.protocols if not p.startswith(' ')]
+        protocols = [p for p in self.model.protocols if not p.startswith('_')]
 
         protocol_ctrl = wx.ComboBox(self, wx.ID_ANY, choices=sorted(protocols))
         if channel.protocol in protocols:
