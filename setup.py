@@ -66,6 +66,7 @@ def configuration(parent_package='',top_path=None):
     config = Configuration(None,parent_package,top_path)
     config.add_subpackage('iocbio')
     config.get_version('iocbio/version.py')
+    config.add_data_files(('iocbio','LICENSE.txt'))
     return config
 
 if __name__ == '__main__':

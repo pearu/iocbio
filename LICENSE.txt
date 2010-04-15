@@ -38,3 +38,9 @@ IOCBio Microscope:
     * Laasmaa M, Vendelin M, Peterson P (YEAR). Application of
       regularized Richardson-Lucy algorithm for deconvolution of
       confocal microscopy images. JOURNAL INFORMATION
+
+IOCBio StrathKelvin:
+
+    * Pearu Peterson (2010). IOCBio.StrathKelvin -- a wrapper to
+      Strathkelvin 929 Oxygen System software.
+      URL: http://code.google.com/p/iocbio/.

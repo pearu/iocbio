@@ -16,7 +16,7 @@ def configuration(parent_package='',top_path=None):
     config.add_subpackage('ops')
     config.add_subpackage('microscope')
     config.add_subpackage('scanner')
-
+    config.add_subpackage('strathkelvin')
     # eof add.
 
     config.make_svn_version_py()
