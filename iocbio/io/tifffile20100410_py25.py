@@ -902,8 +902,9 @@ def _replace_by(module_function, warn=True):
 
     def decorate(func, module_function=module_function, warn=warn):
         try:
-            module, function = module_function.rsplit('.', 1)
-            func, oldfunc = getattr(__import__(module), function), func
+            module_name, function = module_function.rsplit('.', 1)
+            module = __import__ (module_name, fromlist=[module_name.rsplit('.',1)])
+            func, oldfunc = getattr(module, function), func
             globals()['__old_' + func.__name__] = oldfunc
         except Exception, msg:
             if warn:
