@@ -16,7 +16,7 @@ import sys
 import time
 import numpy
 from StringIO import StringIO
-from .tifffile import TIFFfile
+from .tifffile20100410_py25 import TIFFfile
 from .libtiff import TIFF
 from glob import glob
 from .. import utils
