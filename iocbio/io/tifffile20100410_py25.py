@@ -905,9 +905,9 @@ def _replace_by(module_function, warn=True):
             module, function = module_function.split('.')
             func, oldfunc = getattr(__import__(module), function), func
             globals()['__old_' + func.__name__] = oldfunc
-        except Exception:
+        except Exception, msg:
             if warn:
-                warnings.warn("Failed to import %s" % module_function)
+                warnings.warn("Failed to import %s: %s" % (module_function, msg))
         return func
 
     return decorate
