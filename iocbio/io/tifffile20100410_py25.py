@@ -913,7 +913,7 @@ def _replace_by(module_function, warn=True):
     return decorate
 
 
-@_replace_by('_tifffile.decodepackbits')
+@_replace_by('._tifffile.decodepackbits')
 def decodepackbits(encoded):
     """Decompress PackBits encoded byte string.
 
@@ -938,7 +938,7 @@ def decodepackbits(encoded):
     return (empty).join(result) if sys.version[0] == '2' else bytes(result)
 
 
-@_replace_by('_tifffile.decodelzw')
+@_replace_by('._tifffile.decodelzw')
 def decodelzw(encoded):
     """Decompress LZW (Lempel-Ziv-Welch) encoded TIFF strip (byte string).
 
