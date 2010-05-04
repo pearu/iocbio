@@ -549,8 +549,9 @@ class TIFFpage(object):
             for offset, bytecount in zip(strip_offsets, strip_byte_counts):
                 fhandle.seek(offset, 0)
                 data = unpack(decompress(fhandle.read(bytecount)))
-                result[index:index+data.size] = data
-                index += data.size
+                sz = min(len(result), data.size)
+                result[index:index+sz] = data[:sz]
+                index += sz
 
         result.shape = self.shape[:]
 
@@ -965,6 +966,8 @@ def decodelzw(encoded):
             code = unpack('>I', s)[0]
         except Exception:
             code = unpack('>I', s + null*(4-len(s)))[0]
+            if not s:
+                return 257
         code = code << (bitcount % 8)
         code = code & mask
         return code >> shr
@@ -1015,7 +1018,7 @@ def decodelzw(encoded):
             bitw, shr, mask = switchbitch[lentable]
 
     if code != 257:
-        raise ValueError("unexpected end of stream")
+        raise ValueError("unexpected end of stream (code=%s)" % (code))
 
     return empty.join(result)
 

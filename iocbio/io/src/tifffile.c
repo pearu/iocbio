@@ -400,8 +400,9 @@ py_decodelzw(PyObject *obj, PyObject *args)
     PyEval_RestoreThread(_save);
 
     if (code != 257) {
-        PyErr_Format(PyExc_TypeError, "unexpected end of stream");
-        goto _fail;
+      printf("py_decodelzw: unexpected end of stream (code=%d), ignoring\n", code);
+      //PyErr_Format(PyExc_TypeError, "unexpected end of stream");
+      //goto _fail;
     }
 
     /* result = ''.join(decoded) */
