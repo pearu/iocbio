@@ -241,7 +241,7 @@ def load_image_stack(path, options=None):
         bar = utils.ProgressBar(1,len(indexed_files), prefix='  ', show_percentage=False)
         max_i = None
         for i, filename in enumerate(indexed_files):
-            if i==max_i:
+            if max_i is not None and i>=max_i:
                 bar.updateComment(' Reached to a maximum nof stacks %s, breaking.' % (max_nof_stacks))
                 bar(i)
                 break
@@ -269,6 +269,8 @@ def load_image_stack(path, options=None):
                             max_i = shape[0]
                     images = numpy.empty(shape, image_type)
                 else:
+                    if max_nof_stacks is not None and max_i is None:
+                        max_i = max_nof_stacks
                     tif = TIFFfile(filename)
                     image = tif.asarray()                    
             elif ext in raw_extensions:
@@ -478,6 +480,8 @@ class RowFile:
         if titles is not None:
             self.header(*titles)
 
+        self.data_sep = ', '
+
     def __del__ (self):
         if self.file is not None:
             self.file.close()
@@ -529,6 +533,9 @@ class RowFile:
         self.file.flush()
 
     def _get_titles (self, line):
+        if line.startswith('"'): # csv file header
+            self.data_sep = '\t'
+            return tuple([t[1:-1] for t in line.strip().split('\t')])
         return tuple([t.strip() for t in line[1:].split('@,@')])
 
     def read(self, with_titles = False):
@@ -558,7 +565,7 @@ class RowFile:
                 continue
             if line.startswith ('#'):
                 continue
-            data = map(float,line.split(', '))
+            data = map(float,line.strip().split(self.data_sep))
             for i, t in enumerate (titles):
                 d[t].append(data[i])
         f.close()

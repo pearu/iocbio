@@ -859,7 +859,7 @@ class Configuration(PathInfo):
             protocol_mode = get_tag_from_configuration(path, 'main_protocol_mode')
             if protocol_mode in self._confocal_protocol_modes + self._rics_protocol_modes:
                 rotation_angle = get_tag_from_configuration(path, 'CONFOCAL_RotationAngle')
-            elif protocol_mode in ['Fluorescence']:
+            elif protocol_mode in self._widefield_protocol_modes:
                 rotation_angle = 0
             else:
                 raise NotImplementedError(`protocol_mode`)                
