@@ -28,6 +28,7 @@ import time
 import numpy
 from StringIO import StringIO
 from . import tifffile
+import tempfile
 
 objectives = {'UPLSAPO_60xW_NA_1__x20':dict(refractive_index=1.33, NA = 1.2), # airy
               'UPlanFLN_10x_NA_0__x30':dict(refractive_index=1.0, NA=0.3),    # airy
@@ -322,6 +323,8 @@ class PathInfo(object):
         self.suffix = suffix
 
     def set_microscope_type(self, type):
+        if type is None:
+            return
         assert type in ['confocal', 'widefield'],`type`
         self.microscope_type = type
 
@@ -344,12 +347,17 @@ class PathInfo(object):
             self.voxel_sizes = voxel_sizes
 
     def set_objective_NA (self, objective_NA):
+        if objective_NA is None:
+            assert self.objective_NA is None,`self.objective_NA`
+            return
         if isinstance(objective_NA, str):
             objective_NA = float(objective_NA)
         assert isinstance (objective_NA, (float, int)),`objective_NA, type(objective_NA)`
         self.objective_NA = objective_NA
 
     def set_excitation_wavelength(self, wavelength):
+        if wavelength is None:
+            return
         if isinstance(wavelength, str):
             wavelength = float(wavelength)
         assert isinstance (wavelength, (float, int)),`wavelength, type(wavelength)`
@@ -358,6 +366,8 @@ class PathInfo(object):
         self.excitation_wavelength = wavelength
 
     def set_emission_wavelength(self, wavelength):
+        if wavelength is None:
+            return
         if isinstance(wavelength, str):
             wavelength = float(wavelength)
         assert isinstance (wavelength, (float, int)),`wavelength, type(wavelength)`
@@ -366,6 +376,8 @@ class PathInfo(object):
         self.emission_wavelength = wavelength
 
     def set_refractive_index(self, refractive_index):
+        if refractive_index is None:
+            return
         if isinstance(refractive_index, str):
             refractive_index = float(refractive_index)
         assert isinstance (refractive_index, (float, int)),`refractive_index`
@@ -597,6 +609,7 @@ class Scaninfo(PathInfo):
             objective_NA = get_tag_from_scaninfo(self.path, 'ObjectiveNA')
             if objective_NA is None:
                 objective_name = get_tag_from_scaninfo(self.path, 'ENTRY_OBJECTIVE')
+                print objective_name, self.path
                 objective_params = objectives.get(objective_name)
                 if objective_params is not None:
                     objective_NA = objective_params.get('NA')
@@ -882,11 +895,25 @@ class Tiffinfo(PathInfo):
         PathInfo.__init__(self, path)
         self.tif = tif = tifffile.TIFFfile(path)
 
+        if not tif.is_lsm:
+            try:
+                image_description = tif[0].image_description
+            except AttributeError:
+                image_description = ''
+            pathinfo = tempfile.mktemp()
+            f = open(pathinfo, 'w')
+            f.write(image_description)
+            f.close()
+            self.pathinfo = Scaninfo(pathinfo)
+            self.pathinfo.set_shape (*self.get_shape())
+
     def get_microscope_type(self):
         if self.microscope_type is None:
             tif = self.tif
             if tif.is_lsm:
                 self.set_microscope_type('confocal')
+            else:
+                self.set_microscope_type(self.pathinfo.get_microscope_type())
         return self.microscope_type
 
     def get_shape(self):
@@ -903,9 +930,7 @@ class Tiffinfo(PathInfo):
                 lsmi = tif[0].cz_lsm_info
                 self.set_voxel_sizes(lsmi.voxel_size_z, lsmi.voxel_size_y, lsmi.voxel_size_x)
             else:
-                print 'Warning: failed to obtain voxel size info from %r' % (self.path)
-                shape = tif[0].shape
-                self.set_voxel_sizes((1,)*len (shape))
+                self.set_voxel_sizes(*self.pathinfo.get_voxel_sizes())
         return self.voxel_sizes
 
     def get_objective_NA(self):
@@ -919,6 +944,8 @@ class Tiffinfo(PathInfo):
                 else:
                     raise NotImplementedError (`objective_name`)
                 self.set_objective_NA(objective_NA)
+            else:
+                self.set_objective_NA(self.pathinfo.get_objective_NA())
         return self.objective_NA
 
     def get_refractive_index(self):
@@ -932,22 +959,32 @@ class Tiffinfo(PathInfo):
                 else:
                     raise NotImplementedError (`objective_name`)
                 self.set_refractive_index(refractive_index)
+            else:
+                self.set_refractive_index(self.pathinfo.get_refractive_index())
         return self.refractive_index
 
     def get_excitation_wavelength(self):
         if self.excitation_wavelength is None:
-            value = get_tag_from_lsm_file(self.path, 'Tracks.Attenuators.Attenuator1.Wavelength')
-            if value is not None:
-                excitation_wavelength = float(value.split()[0])
-                self.set_excitation_wavelength(excitation_wavelength*1e-9)
+            tif = self.tif
+            if tif.is_lsm:
+                value = get_tag_from_lsm_file(self.path, 'Tracks.Attenuators.Attenuator1.Wavelength')
+                if value is not None:
+                    excitation_wavelength = float(value.split()[0])
+                    self.set_excitation_wavelength(excitation_wavelength*1e-9)
+            else:
+                self.set_excitation_wavelength(self.pathinfo.get_excitation_wavelength())
         return self.excitation_wavelength
 
     def get_rotation_angle(self):
         if self.rotation_angle is None:
-            value = get_tag_from_lsm_file(self.path, 'AcquisitionParameters.Rotation')
-            if value is not None:
-                rotation_angle = float(value.split()[0])
-                self.set_rotation_angle(rotation_angle)
+            tif = self.tif
+            if tif.is_lsm:
+                value = get_tag_from_lsm_file(self.path, 'AcquisitionParameters.Rotation')
+                if value is not None:
+                    rotation_angle = float(value.split()[0])
+                    self.set_rotation_angle(rotation_angle)
+            else:
+                self.set_rotation_angle(self.pathinfo.get_rotation_angle())  
         return self.rotation_angle
 
     def get_sample_format(self):
