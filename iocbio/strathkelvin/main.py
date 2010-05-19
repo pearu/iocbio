@@ -999,9 +999,17 @@ add a comment.
             line1_index = self.line1_index_lst[index]
             line2_index = self.line2_index_lst[index]
             if line1_index is not None:
-                del axes1.lines[line1_index]
+                try:
+                    del axes1.lines[line1_index]
+                except IndexError, msg:
+                    print msg
+                    print axes1.lines, line1_index
             if line2_index is not None:
-                del axes2.lines[line2_index]
+                try:
+                    del axes2.lines[line2_index]
+                except IndexError, msg:
+                    print msg
+                    print axes2.lines, line2_index
             line1, = axes1.plot(time_lst, data_lst, 'b')
             line2, = axes2.plot(time_lst, slope_lst, 'r')
             self.line1_index_lst[index] = axes1.lines.index(line1)
