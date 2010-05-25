@@ -319,7 +319,7 @@ def spots_to_psf(image_stack, psf_dir, options = None):
     background2 = images[(edge_indices2,)]
 
     if options.subtract_background_field:
-        from .regress import regress
+        from ..ops.regression import regress
         scales = (0.5*voxel_sizes[1]/dr, 0.5*voxel_sizes[2]/dr)
         print '  Computing background field..'
         sys.stdout.flush()

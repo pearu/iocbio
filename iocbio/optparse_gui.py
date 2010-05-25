@@ -350,10 +350,14 @@ class OptparseFrame (wx.Frame):
         option_panel.SetHelpText (option_parser.description or 'Main options')
         nb.AddPage(option_panel, 'Main Options')
 
+        pages = []
         for group in option_parser.option_groups:
+            if group in pages:
+                continue
             option_panel = OptionPanel(nb, group.option_list, self)
             option_panel.SetHelpText (group.description or 'Group options')
             nb.AddPage(option_panel, group.title)
+            pages.append(group)
 
         sizer_a = wx.BoxSizer (wx.VERTICAL)
         self.args_ctrl = args_ctrl = wx.TextCtrl(p, -1, '', size = ( -1, 80 ), 

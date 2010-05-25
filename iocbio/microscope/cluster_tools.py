@@ -83,15 +83,25 @@ class DisjointNode(object):
             node, node.parent = node.parent, root
         return root
 
-def compute_incr_list(r2 = 5):
+def compute_incr_list(r2 = 5, dims=3):
     incr_list = []
-    for di in [-2,-1,0,1,2]:
-        for dj in [-2,-1,0,1,2]:
-            for dk in [-2,-1,0,1,2]:
-                dijk = (di,dj,dk)
-                s = di*di + dj*dj + dk*dk
+    if dims==2:
+        for di in [-2,-1,0,1,2]:
+            for dj in [-2,-1,0,1,2]:
+                dijk = (di,dj)
+                s = di*di + dj*dj
                 if s and s < r2:
                     incr_list.append(dijk)
+    elif dims==3:
+        for di in [-2,-1,0,1,2]:
+            for dj in [-2,-1,0,1,2]:
+                for dk in [-2,-1,0,1,2]:
+                    dijk = (di,dj,dk)
+                    s = di*di + dj*dj + dk*dk
+                    if s and s < r2:
+                        incr_list.append(dijk)
+    else:
+        raise NotImplementedError (`dims`)
     return incr_list
 
 def find_clusters(data, background_level=None, voxel_sizes = None):

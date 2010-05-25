@@ -421,7 +421,7 @@ def save_image_stack(image_stack, path, indices=None,
             f.close()
     elif ext in tif_extensions:
         tif = TIFF.open(path, mode='w')
-        compression = options.get(tiff_compression = 'lzw')
+        compression = options.get(tiff_compression = 'none')
         buf = StringIO()
         image_stack.pathinfo.save(buf)
         tif.SetField('ImageDescription', buf.getvalue ())
