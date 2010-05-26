@@ -191,9 +191,12 @@ class Channel:
     def set_parameter(self, name, value):
         self.params[name] = value
 
-    def convert_time(self, t):
+    def convert_time(self, t, inverse=False):
         unit = self.get_time_unit()
-        factor = dict(s=1, min=1/60, h=1/60/60)[unit]
+        if inverse:
+            factor = dict(s=1, min=60, h=60*60)[unit]
+        else:
+            factor = dict(s=1, min=1/60, h=1/60/60)[unit]
         if factor==1:
             return t
         if isinstance (t, list):
@@ -248,7 +251,7 @@ class DataSlope:
         self.n = 0
         self.slope = []
 
-    def add(self, yn):
+    def add(self, yn, negative_slope=True):
         self.n += 1
         s, n, dt = self.s, self.n, self.dt
         y = self.y
@@ -264,7 +267,10 @@ class DataSlope:
         if s == 1:
             slope.append(0)
         else:
-            slope.append(( sum_iy[-1] - (s+1)/2*sum_y[-1] ) / (dt/12*s*(s*s-1)))
+            sv = ( sum_iy[-1] - (s+1)/2*sum_y[-1] ) / (dt/12*s*(s*s-1))
+            if negative_slope:
+                sv = -sv
+            slope.append( sv )
         if s == 2:
             slope[0] = slope[1]
 

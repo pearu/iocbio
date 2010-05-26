@@ -878,14 +878,19 @@ add a comment.
                 self.info('Experiment stopped: total number of samples=%s' % (self.data_index))
                 self.save_button.Enable(True)
             elif not self.experiment_started:
+                if messages:
+                    dt = messages.pop(0)
+                else:
+                    dt = self.mailslot.read(1, timeout=1)[0]
+                try:
+                    dt = float(dt)
+                except ValueError, msg:
+                    self.error('Failed to convert dt=%r to float. Try stopping and starting the experiment.' % (dt))
+                    raise
                 self.experiment_title = message
                 self.model.set_title(message)
                 self.model.start()
-                if messages:
-                    dt = float(messages.pop(0))
-                else:
-                    dt = self.mailslot.read(1, timeout=1)[0]
-                self.dt = dt = float(dt)
+                self.dt = dt
                 self.model.init_slope(dt, s=10)
                 update = int(dt*1e3/2.1)
                 self.timer_get_data.Start(update)
@@ -921,17 +926,20 @@ add a comment.
             return
         chamber_index = self.axes2_lst.index(event.inaxes) + 1
         x,y = event.xdata, event.ydata
+        if x is not None:
+            channel = self.model.channels[chamber_index-1]
+            t = channel.convert_time(x, inverse=True)
         #print 'onpress: clicked in axes %d at (x,y)=%s, %s' % (chamber_index, x, y)
         if event.button==3:
             if os.name=='nt':
-                self.select_task_dialog(chamber_index, x)
+                self.select_task_dialog(chamber_index, t)
             else:
                 # on linux select_task_dialog will hang, could be matplotlib/wx bug.
                 pass
         elif event.button==1:
             self.disable_draw = True
-            if self.marks and x is not None:
-                items = [(abs(x-xx),(ci,xx)) for ci,xx in self.marks if ci==chamber_index]
+            if self.marks and t is not None:
+                items = [(abs(t-xx),(ci,xx)) for ci,xx in self.marks if ci==chamber_index]
                 if items:
                     item = min(items)[1]
                     self.info("Chamber %s event@%.3fsecs: %s" % (item[0], item[1], self.marks[item]))
@@ -1025,7 +1033,7 @@ add a comment.
             self.line1_index_lst.append(None)
             self.line2_index_lst.append(None)
 
-            axes2.invert_yaxis()
+            #axes2.invert_yaxis()
         self.figure.subplots_adjust(left=0.125-0.08, right=0.9+0.05,
                                     wspace = 0.15, hspace=0.15,
                                     top = 0.9, bottom=0.1-0.05)
@@ -1037,6 +1045,9 @@ add a comment.
             self.draw_mark(channel_index, t, task)
 
     def draw(self):
+        from numpy.testing.utils import memusage
+        print memusage ()
+
         if not self.have_axes:
             return
         if self.disable_draw:
@@ -1055,25 +1066,10 @@ add a comment.
                 continue
             axes1 = self.axes1_lst[index]
             axes2 = self.axes2_lst[index]
-
-            line1_index = self.line1_index_lst[index]
-            line2_index = self.line2_index_lst[index]
-            if line1_index is not None:
-                try:
-                    del axes1.lines[line1_index]
-                except IndexError, msg:
-                    print msg
-                    print axes1.lines, line1_index
-            if line2_index is not None:
-                try:
-                    del axes2.lines[line2_index]
-                except IndexError, msg:
-                    print msg
-                    print axes2.lines, line2_index
+            axes1.clear ()
+            axes2.clear ()
             line1, = axes1.plot(time_lst, data_lst, 'b')
             line2, = axes2.plot(time_lst, slope_lst, 'r')
-            self.line1_index_lst[index] = axes1.lines.index(line1)
-            self.line2_index_lst[index] = axes2.lines.index(line2)
 
         self.update_axes()
         try:
