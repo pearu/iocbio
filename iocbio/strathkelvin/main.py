@@ -17,6 +17,7 @@ if os.name=='nt':
 else:
     from fakemailslot import MailSlot
 
+from ..version import version as VERSION
 from .model import Model
 
 import matplotlib
@@ -199,7 +200,7 @@ experiment data during measurements by the StrathKelvin software.
 
 Please report any bugs or feature requests to http://code.google.com/p/iocbio/issues/
 ''', 350, wx.ClientDC (self))
-        info.Version = "1.0"
+        info.Version = VERSION
         info.Copyright = "(C) 2010 Pearu Peterson"
         info.WebSite = ("http://sysbio.ioc.ee", "Laboratory of Systems Biology")
         info.Developers = ["Pearu Peterson <pearu.peterson@gmail.com>"]
@@ -1014,15 +1015,17 @@ add a comment.
             if i in [3,4,5]:
                 axes1.set_xlabel(xlabel)
             if i in [0,3]:
-                axes1.set_ylabel(ylabel)
+                axes1.set_ylabel(ylabel, color='blue')
             axes1.set_title('Chamber %d' % (i+1))
             axes2 = axes1.twinx()
             if i in [2,5]:
-                axes2.set_ylabel(dylabel)
+                axes2.set_ylabel(dylabel, color='red')
             self.axes1_lst.append(axes1)
             self.axes2_lst.append(axes2)
             self.line1_index_lst.append(None)
             self.line2_index_lst.append(None)
+
+            axes2.invert_yaxis()
         self.figure.subplots_adjust(left=0.125-0.08, right=0.9+0.05,
                                     wspace = 0.15, hspace=0.15,
                                     top = 0.9, bottom=0.1-0.05)
