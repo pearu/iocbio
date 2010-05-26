@@ -114,7 +114,7 @@ class MainFrame(wx.Frame, GlobalAttr):
              content = [
                 dict(label = 'Start', help='Start StrathKelvin application.',
                      action = 'OnStrathKelvinStart'),
-                dict(label = 'Stop', help='Stop receiving data from StrathKelvin application.',
+                dict(label = 'Interrupt', help='Interrupt receiving data from (possibly crashed) StrathKelvin application.',
                      action = 'OnStrathKelvinStop'),
                 dict (label='Workflow help...',
                       help = 'Displays typical workflow of using this program.',
@@ -280,6 +280,29 @@ Typical workflow
 3.1 To quit the programs, just exit both IOCBio.StrathKelvin and the
     StrathKelvin 929 Oxygen System programs.
 
+Interrupting data acquisition
+-----------------------------
+
+When StrathKelvin 929 Oxygen System program has become unresponsive
+then you can stop the experiment by selecting StrathKelvin/Interrupt
+menu. This will able you to save the experiment data that has been
+recieved so far.
+
+Changing protocols during an experiment
+---------------------------------------
+
+It is allowed to change protocols during the experiment. For that go
+to Chambers page and select a new protocol for a given chamber.  As a
+result, the markers of the new protocol will be available in the
+markers dialog. Note that all added markers (of the previous protocol)
+will be still visible and saved to the results file.
+
+It is also allowed to modify protocols during the experiment (to add
+new tasks, for example).  For that go to Protocols page and modify
+protocols. In order to apply the modifications to the running
+experiment, you must reselect the modified protocols in the Chambers
+page. Note that reselecting resets also the values of specified
+parameters, so you must reenter the parameter values again.
 
 Configuring StrathKelvin System software
 ========================================
@@ -307,9 +330,7 @@ class TasksCtrl (wx.Panel, GlobalAttr):
         wx.Panel.__init__ (self, parent, ID)
         GlobalAttr.__init__(self, parent)
 
-        self.tasks = tasks
         self.elb = elb = gizmos.EditableListBox (self, wx.ID_ANY, "Tasks/parameters - select and press operation button")
-        elb.SetStrings(tasks)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         sizer.Add (elb, 1, wx.EXPAND|wx.ALL)
         self.SetSizer(sizer)
@@ -320,6 +341,14 @@ class TasksCtrl (wx.Panel, GlobalAttr):
 
         elb.GetDownButton().Bind(wx.EVT_BUTTON, self.OnDown)
         elb.GetUpButton().Bind(wx.EVT_BUTTON, self.OnUp)
+
+        self.tasks = []
+        self.set_tasks (tasks)
+
+    def set_tasks(self, tasks = None):
+        if tasks is not None:
+            self.tasks = tasks
+        self.elb.SetStrings(self.tasks)
 
     def OnDown(self, event):
         event.Skip ()
@@ -449,7 +478,7 @@ All protocols will define `float volume_ml = 1` parameter.
         self.Bind(wx.EVT_TREE_ITEM_MENU, self.OnItemRightClick)
 
         self.popup = dict(rename=wx.NewId(), copy=wx.NewId(), delete=wx.NewId(),
-                          new=wx.NewId())
+                          new=wx.NewId(), refresh=wx.NewId())
         self.inv_popup = {}
         for op, Id in self.popup.items():
             self.inv_popup[Id] = op
@@ -486,6 +515,9 @@ All protocols will define `float volume_ml = 1` parameter.
                     break
             new_tasks = tasks[:]
             self.model.protocols[new_protocol] = new_tasks
+            self.Populate()
+        elif op=='refresh':
+            self.model.refresh()
             self.Populate()
         elif op=='delete':
             if protocol.startswith('_'):
@@ -760,14 +792,16 @@ user-specified number of recent sample points. This number can be
 specified by modifying ``rate_regression_points`` parameter in
 Configuration page.
 
-In addition, the Measurments page allows one to add markers to
-results. There are two ways to open markers dialog: either press keys
-1, 2, 3, 4, 5, or 6 in the keyboard that correspond to chamber
+In addition, the Measurments page allows one to add markers (events)
+to results. There are two ways to open markers dialog: either press
+keys 1, 2, 3, 4, 5, or 6 in the keyboard that correspond to chamber
 numbers, or right click to the corresponding axis of the chambers.
 
 In the markers dialog one can specify the time stamp (seconds from the
 start of the experiment), choose the pre-defined event or task, and
 add a comment.
+
+
 '''
 
     check_data_ms = 1000 # ms
@@ -817,6 +851,8 @@ add a comment.
         sizer.Add(self.save_button, 0, wx.EXPAND)
         self.SetSizer(sizer)
 
+        self.axis_units = None
+
     def OnSave (self, event):
         self.model.save()
         self.save_button.Enable(False)
@@ -855,6 +891,7 @@ add a comment.
                 self.timer_draw_data.Start(max(self.min_draw_ms, update))
                 self.experiment_started = True
                 self.data_index = 0
+                self.marks = {}
                 self.create_axes()
 
                 self.save_button.SetLabel('Save results to %s' % (self.model.channel_data_template.replace (r'%d','#')))
@@ -914,9 +951,8 @@ add a comment.
                 task = '%s [%s]' % (task, comment)
             self.model.add_channel_task(channel_index, t, task)
             if self.have_axes:
-                axes1 = self.axes1_lst[channel_index-1]
-                axes1.axvline(t, color='g')
                 self.marks[channel_index, t] = task
+                self.draw_mark(channel_index, t, task)
                 self.update_axes()
                 self.canvas.draw()
                 if not self.experiment_started:
@@ -927,6 +963,16 @@ add a comment.
         dlg.Destroy()        
         self.disable_draw = False
 
+    def draw_mark(self, channel_index, t, task):
+        if self.have_axes:
+            channel = self.model.channels[channel_index-1]
+            axes1 = self.axes1_lst[channel_index-1]
+            t = channel.convert_time(t)
+            line = axes1.axvline(t, color='g')
+            
+            ylim = axes1.get_ylim ()
+            axes1.annotate(task, (t, 0.5*(ylim[0]+ylim[1])))
+
     def onkeypress(self, event):
         t = self.model.get_current_time()
         if t is None:
@@ -934,6 +980,13 @@ add a comment.
         if event.key in '123456':
             self.select_task_dialog(int(event.key), t)
 
+    def need_axis_update(self):
+        if not self.axes1_lst:
+            return True
+        units = [self.model.get_axis_unit(axis=i) for i in range (3)]
+        if units != self.axis_units:
+            return True
+        return False
 
     def update_axes(self):
         axis1range = self.model.get_axis_range(axis=1)
@@ -948,7 +1001,7 @@ add a comment.
         self.axes2_lst = []
         self.line1_index_lst = []
         self.line2_index_lst = []
-        self.marks = {}
+        #self.marks = {}
 
         self.figure.clear()
         title = str(self.experiment_title)
@@ -975,6 +1028,10 @@ add a comment.
                                     top = 0.9, bottom=0.1-0.05)
 
         self.have_axes = True
+        self.axis_units = [self.model.get_axis_unit(axis=i) for i in range (3)]
+
+        for (channel_index, t), task in self.marks.items ():
+            self.draw_mark(channel_index, t, task)
 
     def draw(self):
         if not self.have_axes:
@@ -982,7 +1039,7 @@ add a comment.
         if self.disable_draw:
             return
 
-        if not self.axes1_lst:
+        if self.need_axis_update():
             self.create_axes()
 
         slope_n = self.model.get_slope_n()
@@ -1016,7 +1073,10 @@ add a comment.
             self.line2_index_lst[index] = axes2.lines.index(line2)
 
         self.update_axes()
-        self.canvas.draw()
+        try:
+            self.canvas.draw()
+        except RuntimeError, msg:
+            print '%s.draw: ignoring RuntimeError(%s)' % (self.__class__.__name__, msg)
         return
 
     def Populate(self):
@@ -1170,7 +1230,7 @@ def start_fake_strathkelvin():
     mailslot.write('%s' % (sleep_time))
     start_time = time.time()
     index = 0
-    while time.time() < start_time + 30:
+    while time.time() < start_time + 60:
         index += 1
         time.sleep(sleep_time)
         row = [time.time()-start_time, index, random.random (),

@@ -191,12 +191,17 @@ class Channel:
     def set_parameter(self, name, value):
         self.params[name] = value
 
-    def get_time (self):
+    def convert_time(self, t):
         unit = self.get_time_unit()
         factor = dict(s=1, min=1/60, h=1/60/60)[unit]
         if factor==1:
-            return self.time_data
-        return [factor*t for t in self.time_data]
+            return t
+        if isinstance (t, list):
+            return [factor*ts for ts in t]
+        return factor * t
+
+    def get_time (self):
+        return self.convert_time(self.time_data)
 
     def get_data (self):
         return self.value_data
@@ -436,10 +441,16 @@ class Model:
         config_params = self.protocols['_Configuration']
 
         for param_line in params:
-            p = Parameter (param_line[6:].lstrip ())
+            p = Parameter(param_line[6:].lstrip ())
             if not self.has_parameter(p.name):
                 config_params.append(param_line)
+
+        self.refresh()
         return
+
+    def refresh (self):
+        # initialize parameters cache, this will also add missing volume_ml parameters.
+        map (self.get_protocol_parameters, self.protocols)        
 
     def save_protocols(self):
         """ Save protocols to protocols.txt file.
@@ -491,14 +502,21 @@ class Model:
         parameters[:] = []
         tasks = self.protocols.get(protocol, [])
         has_volume_ml = False
+        existing_parameters = []
+
         for task in tasks:
             if task.startswith('param:'):
                 param_line = task[6:].lstrip()
                 p = old_parameters.get(param_line, None)
                 if p is None:
                     p = Parameter(param_line)
-                parameters.append(p)
-                has_volume_ml |= p.name == 'volume_ml'
+                if p.name not in existing_parameters:
+                    existing_parameters.append(p.name)
+                    parameters.append(p)
+                    has_volume_ml |= p.name == 'volume_ml'
+                else:
+                    print 'Warning: parameter with name %r already exists in protocol %r. Ignoring %r.' % (p.name, protocol, task)
+
         if protocol and not protocol.startswith('_'):
             if not has_volume_ml:
                 param_line = 'float volume_ml = 1'
@@ -587,6 +605,7 @@ class Model:
         range = self.get_parameter_value('%s_axis_range' % (label), protocol=protocol)
         if range is None:
             return None, None
+
         min, max = range.split('..')
         try:
             min = float (min.strip())
@@ -596,6 +615,7 @@ class Model:
             max = float (max.strip())
         except ValueError:
             max = None
+
         return min, max
 
     def get_axis_interval(self, axis=1, protocol='_Configuration'):
