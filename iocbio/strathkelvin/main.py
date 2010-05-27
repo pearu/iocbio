@@ -10,6 +10,7 @@ from __future__ import division
 import os
 import time
 import subprocess
+import numpy
 
 mailslotname = r'\\.\mailslot\Strathkelvin_Output'
 if os.name=='nt':
@@ -998,12 +999,16 @@ add a comment.
         return False
 
     def update_axes(self):
+        axis0range = self.model.get_axis_range(axis=0)
         axis1range = self.model.get_axis_range(axis=1)
         axis2range = self.model.get_axis_range(axis=2)
         
         for axes1, axes2 in zip (self.axes1_lst, self.axes2_lst):
+            axes1.set_xlim(axis0range)
             axes1.set_ylim(axis1range)
+            axes2.set_xlim(axis0range)
             axes2.set_ylim(axis2range)
+
 
     def create_axes(self):
         self.axes1_lst = []
@@ -1045,8 +1050,11 @@ add a comment.
             self.draw_mark(channel_index, t, task)
 
     def draw(self):
-        from numpy.testing.utils import memusage
-        print memusage ()
+        try:
+            from numpy.testing.utils import memusage
+            print memusage ()
+        except:
+            pass
 
         if not self.have_axes:
             return
@@ -1059,15 +1067,16 @@ add a comment.
         slope_n = self.model.get_slope_n()
 
         for index, channel in enumerate(self.model.channels):
-            time_lst = channel.get_time()
-            data_lst = channel.get_data()
-            slope_lst = channel.get_data_slope(slope_n)
-            if not time_lst:
+            time_lst = numpy.array(channel.get_time())
+            data_lst = numpy.array(channel.get_data())
+            slope_lst = numpy.array(channel.get_data_slope(slope_n))
+            if not len(time_lst):
                 continue
             axes1 = self.axes1_lst[index]
             axes2 = self.axes2_lst[index]
-            axes1.clear ()
-            axes2.clear ()
+            if axes1.lines:
+                del axes1.lines[-1]
+                del axes2.lines[-1]
             line1, = axes1.plot(time_lst, data_lst, 'b')
             line2, = axes2.plot(time_lst, slope_lst, 'r')
 

@@ -426,7 +426,7 @@ class Model:
 
         # Update configuration parameters
         params = []
-        params.append('param: [auto, range, interval] time_axis = auto')
+        params.append('param: [auto, range] time_axis = auto')
         params.append('param: time_axis_range = None..None')
         params.append('param: time_axis_interval = None')
         params.append('param: [s, min, h] time_units = s')
