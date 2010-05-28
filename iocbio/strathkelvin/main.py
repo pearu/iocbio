@@ -854,6 +854,9 @@ add a comment.
         self.SetSizer(sizer)
 
         self.axis_units = None
+        self.draw_count = 0
+        self.axes1_lst = []
+        self.axes2_lst = []
 
     def OnSave (self, event):
         self.model.save()
@@ -993,6 +996,8 @@ add a comment.
     def need_axis_update(self):
         if not self.axes1_lst:
             return True
+        if self.draw_count % 60 == 0:
+            return True
         units = [self.model.get_axis_unit(axis=i) for i in range (3)]
         if units != self.axis_units:
             return True
@@ -1011,12 +1016,8 @@ add a comment.
 
 
     def create_axes(self):
-        self.axes1_lst = []
-        self.axes2_lst = []
-        self.line1_index_lst = []
-        self.line2_index_lst = []
-        #self.marks = {}
-
+        while self.axes1_lst: self.axes1_lst.pop()
+        while self.axes2_lst: self.axes2_lst.pop()
         self.figure.clear()
         title = str(self.experiment_title)
         self.figure.suptitle(title, fontsize=12)
@@ -1035,10 +1036,7 @@ add a comment.
                 axes2.set_ylabel(dylabel, color='red')
             self.axes1_lst.append(axes1)
             self.axes2_lst.append(axes2)
-            self.line1_index_lst.append(None)
-            self.line2_index_lst.append(None)
 
-            #axes2.invert_yaxis()
         self.figure.subplots_adjust(left=0.125-0.08, right=0.9+0.05,
                                     wspace = 0.15, hspace=0.15,
                                     top = 0.9, bottom=0.1-0.05)
@@ -1050,19 +1048,16 @@ add a comment.
             self.draw_mark(channel_index, t, task)
 
     def draw(self):
-        try:
-            from numpy.testing.utils import memusage
-            print memusage ()
-        except:
-            pass
-
+        #from numpy.testing.utils import memusage
+        #print memusage ()
         if not self.have_axes:
             return
         if self.disable_draw:
             return
-
         if self.need_axis_update():
             self.create_axes()
+
+        self.draw_count += 1
 
         slope_n = self.model.get_slope_n()
 
@@ -1074,11 +1069,13 @@ add a comment.
                 continue
             axes1 = self.axes1_lst[index]
             axes2 = self.axes2_lst[index]
-            if axes1.lines:
-                del axes1.lines[-1]
-                del axes2.lines[-1]
-            line1, = axes1.plot(time_lst, data_lst, 'b')
-            line2, = axes2.plot(time_lst, slope_lst, 'r')
+
+            for line in axes1.lines+axes2.lines:
+                if line.get_label ()=='data':
+                    line.remove()
+
+            line1, = axes1.plot(time_lst, data_lst, 'b', label='data')
+            line2, = axes2.plot(time_lst, slope_lst, 'r', label='data')
 
         self.update_axes()
         try:
