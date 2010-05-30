@@ -592,7 +592,10 @@ class Parameters(wx.Panel, GlobalAttr):
             sizer = wx.FlexGridSizer(cols=2, hgap=0, vgap=5)
             sizer.AddGrowableCol(1)
             for param in params:
-                label = wx.StaticText(self, wx.ID_ANY, "%s:" % (param.name))
+                if param.comment:
+                    label = wx.StaticText(self, wx.ID_ANY, "%s [%s]:" % (param.name, param.comment))
+                else:
+                    label = wx.StaticText(self, wx.ID_ANY, "%s:" % (param.name))
                 value = param.get_value()
                 Id = wx.NewId()
                 self.ids[Id] = param
@@ -996,8 +999,8 @@ add a comment.
     def need_axis_update(self):
         if not self.axes1_lst:
             return True
-        if self.draw_count % 60 == 0:
-            return True
+        #if self.draw_count % 60 == 0:
+        #    return True
         units = [self.model.get_axis_unit(axis=i) for i in range (3)]
         if units != self.axis_units:
             return True
@@ -1007,8 +1010,12 @@ add a comment.
         axis0range = self.model.get_axis_range(axis=0)
         axis1range = self.model.get_axis_range(axis=1)
         axis2range = self.model.get_axis_range(axis=2)
-        
+
         for axes1, axes2 in zip (self.axes1_lst, self.axes2_lst):
+            axes1.relim()
+            axes2.relim()
+            axes1.autoscale_view()
+            axes2.autoscale_view()
             axes1.set_xlim(axis0range)
             axes1.set_ylim(axis1range)
             axes2.set_xlim(axis0range)
@@ -1070,12 +1077,23 @@ add a comment.
             axes1 = self.axes1_lst[index]
             axes2 = self.axes2_lst[index]
 
-            for line in axes1.lines+axes2.lines:
-                if line.get_label ()=='data':
-                    line.remove()
-
-            line1, = axes1.plot(time_lst, data_lst, 'b', label='data')
-            line2, = axes2.plot(time_lst, slope_lst, 'r', label='data')
+            line1, line2 = None, None
+            for line in axes1.lines:
+                if line.get_label()=='data':
+                    line1 = line
+                    break
+            if line1 is None:
+                assert line2 is None
+                line1, = axes1.plot(time_lst, data_lst, 'b', label='data')
+                line2, = axes2.plot(time_lst, slope_lst, 'r', label='data')
+            else:
+                for line in axes2.lines:
+                    if line.get_label ()=='data':
+                        line2 = line
+                        break
+                assert line2 is not None
+                line1.set_data(time_lst, data_lst)
+                line2.set_data(time_lst, slope_lst)
 
         self.update_axes()
         try:

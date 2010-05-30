@@ -402,7 +402,7 @@ class Model:
                                               'param: text comments',
                                               'param: int cells = 1',
                                               'param: string [A, B] collagenases = B',
-                                              'param: float temperature = 20.5',
+                                              'param: float temperature = 20.5 # Celsius',
                                               'Comment'
                                               ]
         # All channels will have `protocol` choice parameter and volume_ml parameter.
@@ -426,17 +426,17 @@ class Model:
 
         # Update configuration parameters
         params = []
-        params.append('param: [auto, range] time_axis = auto')
-        params.append('param: time_axis_range = None..None')
-        params.append('param: time_axis_interval = None')
+        params.append('param: [auto, range, interval] time_axis = auto')
+        params.append('param: time_axis_range = None..None # start..end, in time units' )
+        params.append('param: time_axis_interval = None # width, in time units')
         params.append('param: [s, min, h] time_units = s')
 
         params.append('param: [auto, range] oxygen_axis = auto')
-        params.append('param: oxygen_axis_range = None..None')
+        params.append('param: oxygen_axis_range = None..None # start..end, in oxygen units')
         params.append('param: [ug/ml, mg/l, ul/ml, ml/l, umol/l, torr, kPa, %satn] oxygen_units = ug/ml')
 
         params.append('param: [auto, range] respiration_rate_axis = auto')
-        params.append('param: respiration_rate_axis_range = None..None')
+        params.append('param: respiration_rate_axis_range = None..None # start..end, in rate units')
         #params.append('param: [ug/min, ug/h, mg/min, mg/h] respiration_rate_units = ug/min')
 
         params.append('param: int rate_regression_points = 2')
@@ -606,6 +606,16 @@ class Model:
     def get_axis_range(self, axis=1, protocol='_Configuration'):
         label = self._get_axis_config_label (axis)
         mode = self.get_parameter_value('%s_axis' % label, protocol=protocol)
+        if mode == 'interval':
+            assert axis == 0,`axis`
+            t1 = self.get_current_time()
+            interval = self.get_parameter_value('%s_axis_interval' % (label), protocol=protocol)
+            try:
+                dt = float(interval)
+            except ValueError, msg:
+                print 'Failed to convert %r to float: %s' % (interval, msg)
+                dt = 1
+            return t1 - dt, t1
         if mode != 'range':
             return None, None
         range = self.get_parameter_value('%s_axis_range' % (label), protocol=protocol)
@@ -688,11 +698,17 @@ class Parameter:
           Specify parameter definition as a string with the following
           format::
 
-            <type> <empty | list of choices> <name> = <default value>
+            <type> <empty | list of choices> <name> = <default value> # comment
 
           where ``<type>`` can be ``int``, ``float``, ``string``, ``text``,
           ``file``, ``directory``.
         """
+        if '#' in param:
+            param, comment = param.rsplit('#', 1)
+            comment = comment.strip()
+        else:
+            comment = None
+        self.comment = comment
         if '=' in param:
             param, default = param.rsplit('=',1)
             default = default.strip()
@@ -748,4 +764,6 @@ class Parameter:
         v = self.get_value()
         if v is not None:
             line = '%s = %s' % (line, v)
+        if self.comment:
+            line = '%s # %s' % (line, self.comment) 
         return line
