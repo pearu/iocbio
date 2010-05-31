@@ -39,6 +39,8 @@ except ImportError:
 import traceback
 import Queue as queue
 
+from .utils import splitcommandline
+
 #try:
 #    import matplotlib
 #except ImportError:
@@ -809,8 +811,8 @@ that contain spaces must be entered like so: "arg with space"\
                 option_values[option] = value
             elif value is not None:
                 option_values[option] = None
-        args_buff = self.args_ctrl.GetValue()
-        args = re.findall( r'(?:((?:(?:\w|\d)+)|".*?"))\s*', args_buff )
+        args_buff = str(self.args_ctrl.GetValue())
+        args =  splitcommandline(args_buff)
         self.option_parser.result = option_values, args
 
     def put_result(self):
