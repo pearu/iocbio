@@ -346,13 +346,17 @@ class Model:
         channel = self.channels[channel_index - 1]
         channel.set_parameter(name, value)
 
+    def get_channel_protocol(self, channel_index):
+        channel = self.channels[channel_index - 1]
+        return channel.protocol
+
     def get_current_time(self):
         if self.start_time is None:
             return None
         channel = self.channels[0]
         if not channel.time_data:
             return 0
-        return channel.time_data[-1]
+        return channel.convert_time(channel.time_data[-1])
 
     def start(self):
         """ Notify the start of experiment.
@@ -365,10 +369,12 @@ class Model:
         next = 1
         while 1:
             tmpl = os.path.join(dirname, '%s_%s_ch%%d.txt' % (today, next))
+            tmpl_pdf = os.path.join(dirname, '%s_%s.pdf' % (today, next))
             if not os.path.isfile(tmpl % 1):
                 break
             next += 1
         self.channel_data_template = tmpl
+        self.figure_pdf = tmpl_pdf
         for channel in self.channels:
             channel.start()
 
@@ -604,7 +610,7 @@ class Model:
         return label
 
     def get_axis_range(self, axis=1, protocol='_Configuration'):
-        label = self._get_axis_config_label (axis)
+        label = self._get_axis_config_label(axis)
         mode = self.get_parameter_value('%s_axis' % label, protocol=protocol)
         if mode == 'interval':
             assert axis == 0,`axis`

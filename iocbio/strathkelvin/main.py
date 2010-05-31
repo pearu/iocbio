@@ -857,12 +857,15 @@ add a comment.
         self.SetSizer(sizer)
 
         self.axis_units = None
+        self.protocols = None
         self.draw_count = 0
         self.axes1_lst = []
         self.axes2_lst = []
 
     def OnSave (self, event):
         self.model.save()
+        print 'Saving figure to %s' % (self.model.figure_pdf)
+        self.figure.savefig(self.model.figure_pdf)
         self.save_button.Enable(False)
 
     def OnGetData(self, event):
@@ -965,6 +968,8 @@ add a comment.
             comment = dlg.get_comment()
             if comment:
                 task = '%s [%s]' % (task, comment)
+            channel = self.model.channels[channel_index - 1]
+            t = channel.convert_time(t, inverse=True)
             self.model.add_channel_task(channel_index, t, task)
             if self.have_axes:
                 self.marks[channel_index, t] = task
@@ -1004,6 +1009,9 @@ add a comment.
         units = [self.model.get_axis_unit(axis=i) for i in range (3)]
         if units != self.axis_units:
             return True
+        protocols = [self.model.get_channel_protocol(i) for i in range (1,7)]
+        if protocols != self.protocols:
+            return True
         return False
 
     def update_axes(self):
@@ -1037,7 +1045,11 @@ add a comment.
                 axes1.set_xlabel(xlabel)
             if i in [0,3]:
                 axes1.set_ylabel(ylabel, color='blue')
-            axes1.set_title('Chamber %d' % (i+1))
+            protocol_name = self.model.get_channel_protocol(i+1)
+            if protocol_name:
+                axes1.set_title('Chamber %d: %s' % (i+1, protocol_name))
+            else:
+                axes1.set_title('Chamber %d' % (i+1))
             axes2 = axes1.twinx()
             if i in [2,5]:
                 axes2.set_ylabel(dylabel, color='red')
@@ -1050,6 +1062,7 @@ add a comment.
 
         self.have_axes = True
         self.axis_units = [self.model.get_axis_unit(axis=i) for i in range (3)]
+        self.protocols = [self.model.get_channel_protocol for i in range (1,7)]
 
         for (channel_index, t), task in self.marks.items():
             self.draw_mark(channel_index, t, task)
