@@ -942,6 +942,7 @@ add a comment.
         #print 'onpress: clicked in axes %d at (x,y)=%s, %s' % (chamber_index, x, y)
         if event.button==3:
             if os.name=='nt':
+                t = channel.convert_time(t)
                 self.select_task_dialog(chamber_index, t)
             else:
                 # on linux select_task_dialog will hang, could be matplotlib/wx bug.
