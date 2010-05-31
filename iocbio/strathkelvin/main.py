@@ -1023,8 +1023,8 @@ add a comment.
 
 
     def create_axes(self):
-        while self.axes1_lst: self.axes1_lst.pop()
-        while self.axes2_lst: self.axes2_lst.pop()
+        del self.axes1_lst[:]
+        del self.axes2_lst[:]
         self.figure.clear()
         title = str(self.experiment_title)
         self.figure.suptitle(title, fontsize=12)
@@ -1051,7 +1051,7 @@ add a comment.
         self.have_axes = True
         self.axis_units = [self.model.get_axis_unit(axis=i) for i in range (3)]
 
-        for (channel_index, t), task in self.marks.items ():
+        for (channel_index, t), task in self.marks.items():
             self.draw_mark(channel_index, t, task)
 
     def draw(self):
