@@ -6,6 +6,10 @@
 
 #include <math.h>
 
+#ifndef M_PI
+#define M_PI 3.1415926535897932384626433832795
+#endif
+
 #ifndef _GNU_SOURCE
 void sincos(double x, double *sn, double *cs)
 {
@@ -498,7 +502,7 @@ double m(double a, double b)
 }
 
 static
-inline double hypot3(double a, double b, double c)
+__inline double hypot3(double a, double b, double c)
 {
   return sqrt(a*a + b*b + c*c);
 }

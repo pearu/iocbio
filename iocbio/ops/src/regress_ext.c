@@ -26,6 +26,14 @@
     {
 #define REGRESS_LOOP_END }
 
+#define REGRESS_INIT_KERNEL_LOOP		\
+  for (i=0;i<=rank;i++)				\
+    {						\
+      for (j=0;j<=rank;j++) mat[i][j] = 0;	\
+      rhs[i] = 0;				\
+      if (i<rank) kkdims[i] = 0;		\
+    }
+
 #define REGRESS_KERNEL_LOOP(index) \
   for (ki##index=i##index-di[index]; ki##index<=i##index+di[index];++ki##index)	\
     {									\
@@ -199,10 +207,11 @@ static PyObject *regress(PyObject *self, PyObject *args)
     {
     case 1:
       {
-	REGRESS_LOOP(0);
 	double mat[2][2] = {{0,0},{0,0}};
 	double rhs[2] = {0,0};
 	int kkdims[1] = {-1};
+	REGRESS_LOOP(0);
+	REGRESS_INIT_KERNEL_LOOP;
 	REGRESS_KERNEL_LOOP(0);
 	r2 = d0*d0;
 	if (r2 < 1.0)
@@ -252,6 +261,9 @@ static PyObject *regress(PyObject *self, PyObject *args)
 
     case 2:
       {	
+	double mat[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
+	double rhs[3] = {0,0,0};
+	int kkdims[2] = {-1, -1};
 	if (verbose)
 	  {
 	    if (PyObject_CallFunctionObjArgs(write_func,
@@ -263,9 +275,7 @@ static PyObject *regress(PyObject *self, PyObject *args)
 	REGRESS_LOOP(1);
 	/* computing neighborhood indices and kernel values
 	 */
-	double mat[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
-	double rhs[3] = {0,0,0};
-	int kkdims[2] = {-1, -1};
+	REGRESS_INIT_KERNEL_LOOP;
 	kn = 0;
 	REGRESS_KERNEL_LOOP(0);
 	REGRESS_KERNEL_LOOP(1);
@@ -330,6 +340,10 @@ static PyObject *regress(PyObject *self, PyObject *args)
       break;
     case 3:
       {
+	double mat[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
+	double rhs[4] = {0,0,0,0};
+	int kkdims[3] = {-1, -1, -1};
+
 	if (verbose)
 	  {
 	    if (PyObject_CallFunctionObjArgs(write_func,
@@ -342,9 +356,7 @@ static PyObject *regress(PyObject *self, PyObject *args)
 	REGRESS_LOOP(2);
 	/* computing neighborhood indices and kernel values
 	 */
-	double mat[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
-	double rhs[4] = {0,0,0,0};
-	int kkdims[3] = {-1, -1, -1};
+	REGRESS_INIT_KERNEL_LOOP;
 	kn = 0;
 	REGRESS_KERNEL_LOOP(0);
 	REGRESS_KERNEL_LOOP(1);

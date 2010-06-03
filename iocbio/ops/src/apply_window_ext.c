@@ -12,6 +12,10 @@
 #define PyMODINIT_FUNC void
 #endif
 
+#ifndef M_PI
+#define M_PI 3.1415926535897932384626433832795
+#endif
+
 static npy_float64 g(npy_float64 x)
 {
   npy_float64 r = sin(x*0.5*M_PI);
