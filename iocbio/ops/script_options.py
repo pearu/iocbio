@@ -5,11 +5,25 @@ __all__ = ['set_convolve_options',
            'get_regress_options_group',
            'get_apply_window_options_group',
            'set_apply_window_options',
-           'set_apply_noise_options']
+           'set_apply_noise_options',
+           'set_estimate_snr_options']
 
 import os
 from optparse import OptionGroup, NO_DEFAULT
 from iocbio.script_options import set_formatter
+
+def set_estimate_snr_options (parser):
+    from ..io.script_options import get_microscope_options_group
+    set_formatter (parser)
+    parser.set_usage('%prog [options] [ -i INPUT_PATH ]')
+    parser.set_description('Estimate signal to noise ratio from the INPUT_PATH images.')
+    parser.add_option ('--input-path','-i',
+                       type = 'file', metavar='PATH',
+                       help = 'Specify input PATH of 3D images.'
+                       )
+    parser.add_option_group(get_regress_options_group (parser))
+    parser.add_option_group(get_microscope_options_group (parser))
+
 
 def set_apply_window_options (parser):
     from ..io.script_options import get_microscope_options_group
