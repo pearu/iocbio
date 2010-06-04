@@ -34,6 +34,12 @@
       if (i<rank) kkdims[i] = 0;		\
     }
 
+#define KERNEL_KERNEL_LOOP(index) \
+  for (ki##index=-di[index], i##index=0; ki##index<=di[index];++ki##index,++i##index) \
+    {									\
+      d##index = scales[index] * (ki##index);
+#define KERNEL_KERNEL_LOOP_END }
+
 #define REGRESS_KERNEL_LOOP(index) \
   for (ki##index=i##index-di[index]; ki##index<=i##index+di[index];++ki##index)	\
     {									\
@@ -46,7 +52,7 @@
 	case BC_REFLECTIVE: j##index = (ki##index>=dims[index]?2*dims[index]-ki##index-2: (ki##index<0?-ki##index:ki##index)); break; \
 	default:							\
 	  PyErr_SetString(PyExc_ValueError,"regress:kernel_loop: unknown boundary condition"); \
-	  return NULL;							\
+	  goto fail;							\
 	}
 
 #define REGRESS_KERNEL_LOOP_END }
@@ -65,8 +71,8 @@
     case PyArray_UINT16: *(npy_uint16*)(PTR) = value; break;		\
     case PyArray_UINT8: *(npy_uint8*)(PTR) = value; break;		\
     default:								\
-      PyErr_SetString(PyExc_TypeError,"regress:set_value: unsupported array dtype"); \
-      return NULL;							\
+      PyErr_SetString(PyExc_TypeError,"regress|kernel:set_value: unsupported array dtype"); \
+      goto fail;							\
     }
 
 #define REGRESS_GET_VALUE(ARR, PTR, value)				\
@@ -84,22 +90,27 @@
     case PyArray_UINT8: value = *(npy_uint8*)(PTR); break;		\
     default:								\
       PyErr_SetString(PyExc_TypeError,"regress:get_value: unsupported array dtype"); \
-      return NULL;							\
+      goto fail;							\
     }
 
+
+/* constant in gaussian kernel exponent is choosed such that the
+   boundary value is 100x smaller than the center value */
 #define REGRESS_EVAL_KERNEL						\
   switch (kernel_type)							\
     {									\
     case KT_EPANECHNIKOV: kv = 0.75*(1-r2); break;			\
-    case KT_UNIFORM: kv = 0.5; break;					\
+    case KT_UNIFORM: kv = 0.5; break;			\
     case KT_TRIANGULAR: kv = 1.0 - sqrt(r2); break;			\
     case KT_QUARTIC: kv=1-r2; kv = 15.0/16.0*kv*kv; break;		\
     case KT_TRIWEIGHT: kv=1-r2; kv = 35.0/32.0*kv*kv*kv; break;		\
     case KT_TRICUBE: kv = 1-r2*sqrt(r2); kv=kv*kv*kv; break;		\
+    case KT_GAUSSIAN: kv = exp((-4.6051701859880909) * r2); break;	\
     default:								\
-      PyErr_SetString(PyExc_ValueError,"regress:eval_kernel: unknown kernel type"); \
-      return NULL;							\
-    }
+      PyErr_SetString(PyExc_ValueError,"regress|kernel:eval_kernel: unknown kernel type"); \
+      goto fail;							\
+    }									\
+  if (r2==1.0) kv *= 0.5;
 
 #define REGRESS_UPDATE_KKDIMS(index)					\
   if (kkdims[index]==-1) kkdims[index] = j##index;			\
@@ -123,6 +134,146 @@ double compute_dot2(double a[2][2], double b[2], int i0);
 double compute_dot3(double a[3][3], double b[3], int i0, int i1);
 double compute_dot4(double a[4][4], double b[4], int i0, int i1, int i2);
 
+typedef enum {KT_EPANECHNIKOV=0, KT_UNIFORM=1, KT_TRIANGULAR=2, KT_QUARTIC=3, KT_TRIWEIGHT=4, KT_TRICUBE=5,
+              KT_GAUSSIAN=6 } KernelType;
+typedef enum {SM_AVERAGE=0, SM_LINEAR=1} SmoothingMethod;
+typedef enum {BC_CONSTANT=0, BC_FINITE=1, BC_PERIODIC=2, BC_REFLECTIVE=3} BoundaryCondition;
+
+double calc_kernel_sum(KernelType kernel_type, npy_intp rank, double* scales, npy_intp* di)
+{
+  double r = 0;
+  int ki0, ki1, ki2;
+  int i0, i1, i2;
+  double d0, d1, d2;
+  double kv, r2;
+  switch (rank)
+    {
+    case 1:
+      KERNEL_KERNEL_LOOP(0);
+      r2 = d0*d0;
+      REGRESS_EVAL_KERNEL; // sets kv
+      r += kv;
+      KERNEL_KERNEL_LOOP_END;
+      break;
+    case 2:
+      KERNEL_KERNEL_LOOP(0);
+      KERNEL_KERNEL_LOOP(1);
+      r2 = d0*d0 + d1*d1;
+      REGRESS_EVAL_KERNEL; // sets kv
+      r += kv;
+      KERNEL_KERNEL_LOOP_END;
+      KERNEL_KERNEL_LOOP_END;
+      break;
+    case 3:
+      KERNEL_KERNEL_LOOP(0);
+      KERNEL_KERNEL_LOOP(1);
+      KERNEL_KERNEL_LOOP(2);
+      r2 = d0*d0 + d1*d1 + d2*d2;
+      REGRESS_EVAL_KERNEL; // sets kv
+      r += kv;
+      KERNEL_KERNEL_LOOP_END;
+      KERNEL_KERNEL_LOOP_END;
+      KERNEL_KERNEL_LOOP_END;
+      break;
+    default:
+      PyErr_SetString(PyExc_ValueError,"kernel: unsupported array rank");
+      goto fail;
+    }
+  return r;
+ fail:
+  return 0;
+}
+
+static PyObject *kernel(PyObject *self, PyObject *args)
+{
+  npy_intp i,rank;
+  PyObject* scales_obj = NULL;
+  npy_float64* scales = NULL;
+  npy_intp* kdims = NULL;
+  npy_intp* di = NULL;
+  KernelType kernel_type;
+  PyObject* r=NULL;
+  double kv, r2;
+  int ki0, ki1, ki2;
+  int i0, i1, i2;
+  double d0, d1, d2;
+  double kernel_sum;
+  if (!PyArg_ParseTuple(args, "Oi", &scales_obj, &kernel_type))
+    return NULL;
+  if (!PyTuple_Check(scales_obj))
+    {
+      PyErr_SetString(PyExc_TypeError,"first argument must be tuple object");
+      return NULL;
+    }
+  rank = PyTuple_Size(scales_obj);
+  if (rank > 3)
+    {
+      PyErr_SetString(PyExc_NotImplementedError,"only rank <=3 arrays are supported");
+      return NULL;
+    }
+  scales = (npy_float64*)malloc(sizeof(npy_float64)*rank);
+  kdims = (npy_intp*)malloc(sizeof(npy_intp)*rank);
+  di = (npy_intp*)malloc(sizeof(npy_intp)*rank);
+
+  for (i=0; i<rank; ++i)
+    {
+      scales[i] = PyFloat_AsDouble(PyTuple_GET_ITEM(scales_obj, i));
+      di[i] = (npy_intp)(ceil(1 / scales[i]));
+      kdims[i] = 2*di[i]+1;
+    }
+
+  r = PyArray_SimpleNew(rank, kdims, PyArray_FLOAT64);
+
+  kernel_sum = calc_kernel_sum(kernel_type, rank, scales, di);
+  if (kernel_sum==0.0)
+    goto fail;
+
+  switch (rank)
+    {
+    case 1:
+      KERNEL_KERNEL_LOOP(0);
+      r2 = d0*d0;
+      REGRESS_EVAL_KERNEL; // sets kv
+      REGRESS_SET_VALUE(r, PyArray_GETPTR1(r, i0), kv/kernel_sum);
+      KERNEL_KERNEL_LOOP_END;
+      break;
+    case 2:
+      KERNEL_KERNEL_LOOP(0);
+      KERNEL_KERNEL_LOOP(1);
+      r2 = d0*d0 + d1*d1;
+      REGRESS_EVAL_KERNEL; // sets kv
+      REGRESS_SET_VALUE(r, PyArray_GETPTR2(r, i0, i1), kv/kernel_sum);
+      KERNEL_KERNEL_LOOP_END;
+      KERNEL_KERNEL_LOOP_END;
+      break;
+    case 3:
+      KERNEL_KERNEL_LOOP(0);
+      KERNEL_KERNEL_LOOP(1);
+      KERNEL_KERNEL_LOOP(2);
+      r2 = d0*d0 + d1*d1 + d2*d2;
+      REGRESS_EVAL_KERNEL; // sets kv
+      REGRESS_SET_VALUE(r, PyArray_GETPTR3(r, i0, i1, i2), kv/kernel_sum);
+      KERNEL_KERNEL_LOOP_END;
+      KERNEL_KERNEL_LOOP_END;
+      KERNEL_KERNEL_LOOP_END;
+      break;
+    default:
+      PyErr_SetString(PyExc_ValueError,"kernel: unsupported array rank");
+      goto fail;
+    }
+
+  free(scales);
+  free(kdims);
+  free(di);
+  return Py_BuildValue("N", r);  
+ fail:
+  Py_DECREF(r);
+  free(scales);
+  free(kdims);
+  free(di);
+  return NULL;
+}
+
 static PyObject *regress(PyObject *self, PyObject *args)
 {
   PyObject* a = NULL;
@@ -141,14 +292,14 @@ static PyObject *regress(PyObject *self, PyObject *args)
   int ki0, ki1, ki2;
   double d0, d1, d2;
   double r2, kv, value;
+  double kernel_sum;
   int verbose;
   PyObject* write_func = NULL;
   clock_t start_clock = clock();
 
-
-  enum {KT_EPANECHNIKOV=0, KT_UNIFORM=1, KT_TRIANGULAR=2, KT_QUARTIC=3, KT_TRIWEIGHT=4, KT_TRICUBE=5} kernel_type;
-  enum {SM_AVERAGE=0, SM_LINEAR=1} smoothing_method;
-  enum {BC_CONSTANT=0, BC_FINITE=1, BC_PERIODIC=2, BC_REFLECTIVE=3} boundary_condition;
+  KernelType kernel_type;
+  SmoothingMethod smoothing_method;
+  BoundaryCondition boundary_condition;
 
   if (!PyArg_ParseTuple(args, "OOiiiO", &a, &scales_obj, &kernel_type, &smoothing_method, &boundary_condition, &write_func))
     return NULL;
@@ -194,12 +345,16 @@ static PyObject *regress(PyObject *self, PyObject *args)
   for (i=0; i<rank; ++i)
     {
       scales[i] = PyFloat_AsDouble(PyTuple_GET_ITEM(scales_obj, i));
-      di[i] = (npy_intp)(ceil(1 / scales[i]))/2;
+      di[i] = (npy_intp)(ceil(1 / scales[i]));
       kdims[i] = 2*di[i]+1;
       //printf("kdims[%d]=%d\n",(int)i,(int)kdims[i]);
     }
 
   r = PyArray_SimpleNew(rank, PyArray_DIMS(a), PyArray_TYPE(a));
+
+  kernel_sum = calc_kernel_sum(kernel_type, rank, scales, di);
+  if (kernel_sum==0.0)
+    goto fail;
 
   kn = 0;
   count = 0;
@@ -214,10 +369,11 @@ static PyObject *regress(PyObject *self, PyObject *args)
 	REGRESS_INIT_KERNEL_LOOP;
 	REGRESS_KERNEL_LOOP(0);
 	r2 = d0*d0;
-	if (r2 < 1.0)
+	if (r2 <= 1.0)
 	  {
 	    REGRESS_GET_VALUE(a, PyArray_GETPTR1(a, j0), value);
 	    REGRESS_EVAL_KERNEL;
+	    kv /= kernel_sum;
 	    kn++;			
 	    REGRESS_UPDATE_KKDIMS(0);
 	    switch (smoothing_method)
@@ -233,7 +389,7 @@ static PyObject *regress(PyObject *self, PyObject *args)
 		break;
 	      default:
 		PyErr_SetString(PyExc_ValueError,"regress: unknown smoothing method");
-		return NULL;
+		goto fail;
 	      }
 	    //printf("i0=%d, ki0=%d, j0=%d, kv=%f, value=%f\n",i0,ki0,j0,kv,value);
 	  }
@@ -250,7 +406,7 @@ static PyObject *regress(PyObject *self, PyObject *args)
 	    break;
 	  default: 
 	    PyErr_SetString(PyExc_ValueError,"regress: unknown smoothing method");
-	    return NULL;
+	    goto fail;
 	  }
 	REGRESS_SET_VALUE(r, PyArray_GETPTR1(r, i0), value);
 	//printf("r[%d] = %f\n",i0, value);
@@ -269,7 +425,7 @@ static PyObject *regress(PyObject *self, PyObject *args)
 	    if (PyObject_CallFunctionObjArgs(write_func,
 					     PyString_FromString("\n"),
 					     NULL)==NULL)
-	      return NULL;
+	      goto fail;
 	  }
 	REGRESS_LOOP(0);
 	REGRESS_LOOP(1);
@@ -280,9 +436,10 @@ static PyObject *regress(PyObject *self, PyObject *args)
 	REGRESS_KERNEL_LOOP(0);
 	REGRESS_KERNEL_LOOP(1);
 	r2 = d0*d0 + d1*d1;
-	if (r2 < 1.0)
+	if (r2 <= 1.0)
 	  {
 	    REGRESS_EVAL_KERNEL;
+	    kv /= kernel_sum;
 	    kn++;			
 	    REGRESS_GET_VALUE(a, PyArray_GETPTR2(a, j0, j1), value);
 	    REGRESS_UPDATE_KKDIMS(0);
@@ -301,7 +458,7 @@ static PyObject *regress(PyObject *self, PyObject *args)
 		break;
 	      default:
 		PyErr_SetString(PyExc_ValueError,"regress: unknown smoothing method");
-		return NULL;
+		goto fail;
 	      }
 	  }
 	REGRESS_KERNEL_LOOP_END;
@@ -319,7 +476,7 @@ static PyObject *regress(PyObject *self, PyObject *args)
 	    break;
 	  default: 
 	    PyErr_SetString(PyExc_ValueError,"regress: unknown smoothing method");
-	    return NULL;
+	    goto fail;
 	  }
 	REGRESS_SET_VALUE(r, PyArray_GETPTR2(r, i0, i1), value);
 	count ++;
@@ -349,7 +506,7 @@ static PyObject *regress(PyObject *self, PyObject *args)
 	    if (PyObject_CallFunctionObjArgs(write_func,
 					     PyString_FromString("\n"),
 					     NULL)==NULL)
-	      return NULL;
+	      goto fail;
 	  }
 	REGRESS_LOOP(0);
 	REGRESS_LOOP(1);
@@ -362,9 +519,10 @@ static PyObject *regress(PyObject *self, PyObject *args)
 	REGRESS_KERNEL_LOOP(1);
 	REGRESS_KERNEL_LOOP(2);
 	r2 = d0*d0 + d1*d1 + d2*d2;
-	if (r2 < 1.0)
+	if (r2 <= 1.0)
 	  {
 	    REGRESS_EVAL_KERNEL;
+	    kv /= kernel_sum;
 	    kn++;			
 	    REGRESS_GET_VALUE(a, PyArray_GETPTR3(a, j0, j1, j2), value);
 	    REGRESS_UPDATE_KKDIMS(0);
@@ -384,7 +542,7 @@ static PyObject *regress(PyObject *self, PyObject *args)
 		break;
 	      default:
 		PyErr_SetString(PyExc_ValueError,"regress: unknown smoothing method");
-		return NULL;
+		goto fail;
 	      }
 	  }
 	REGRESS_KERNEL_LOOP_END;
@@ -404,7 +562,7 @@ static PyObject *regress(PyObject *self, PyObject *args)
 	      break;
 	    default: 
 	      PyErr_SetString(PyExc_ValueError,"regress: unknown smoothing method");
-	      return NULL;
+	      goto fail;
 	    }
 	REGRESS_SET_VALUE(r, PyArray_GETPTR3(r, i0, i1, i2), value);
 	count ++;
@@ -426,15 +584,22 @@ static PyObject *regress(PyObject *self, PyObject *args)
       break;
     default:
       PyErr_SetString(PyExc_ValueError,"regress: unsupported array rank");
-      return NULL;
+      goto fail;
     }
   free(scales);
   free(kdims);
   free(di);
   return Py_BuildValue("N", r);
+ fail:
+  free(scales);
+  free(kdims);
+  free(di);
+  return NULL;
+
 }
 
 static PyMethodDef module_methods[] = {
+  {"kernel", kernel, METH_VARARGS, "kernel(scales, kernel_type_code)"},
   {"regress", regress, METH_VARARGS, "regress(a, scales, kernel_type_code, smoother_method_code, boundary_condition_code, verbose)"},
   {NULL}  /* Sentinel */
 };
@@ -446,7 +611,7 @@ initregress_ext(void)
   import_array();
   if (PyErr_Occurred())
     {PyErr_SetString(PyExc_ImportError, "can't initialize module regress_ext (failed to import numpy)"); return;}
-  m = Py_InitModule3("regress_ext", module_methods, "Provides regress function.");
+  m = Py_InitModule3("regress_ext", module_methods, "Provides regress and kernel functions.");
 }
 
 void compute_inverse2(double imat[2][2], double a[2][2])

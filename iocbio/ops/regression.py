@@ -4,6 +4,9 @@ The :func:`regress` function can be used to smoothen noisy 3D images
 using local averaging or local linear regression with various kernels
 and boundary conditions.
 
+The :func:`kernel` function can be used for calculating the values
+of regression kernels.
+
 Example
 -------
 
@@ -23,13 +26,14 @@ The following example illustrates local linear regression method for
   :width: 60%
 
 
+
 Module content
 --------------
 """
 # Author: Pearu Peterson
 # Created: September 2009
 
-__all__ = ['regress']
+__all__ = ['regress', 'kernel']
 
 import sys
 
@@ -37,6 +41,49 @@ try:
     from . import regress_ext
 except ImportError, msg:
     print msg
+
+kernel_types = dict (epanechnikov=0, uniform=1, 
+                     triangular = 2, quartic=3,
+                     triweight=4, tricube=5, gaussian=6)
+
+def kernel (scales, kernel = 'uniform'):
+    """ Calculate regression kernel.
+
+    Parameters
+    ----------
+    scales : tuple
+      Kernel scaling parameters. ``1/scales[i]`` defines the
+      half-width of a kernel for i-th dimension. For example, if
+      ``scales=(0.1, 0.5)`` then ``2/0.1+1=21`` and ``2/0.5+1=5``
+      node points will be used in 1st and 2nd dimension,
+      respectively.
+
+    kernel : {'epanechnikov', 'uniform', 'triangular', 'quartic', 'triweight', 'tricube', 'gaussian'}
+      Smoothing kernel type, see `kernel types
+      <http://en.wikipedia.org/wiki/Kernel_(statistics)>`_ and
+      `tri-cube kernel
+      <http://en.wikipedia.org/wiki/Local_regression>`_ for
+      definitions.
+
+    Returns
+    -------
+    kernel_data : numpy.ndarray
+      Kernel values at node points.
+
+    Notes
+    -----
+    For kernels that have non-zero values at the boundaries (uniform,
+    gaussian), the boundary values are multiplied by 0.5 to minimize
+    error in discrete convolution.
+
+    The scale of gaussian kernel is choosen such that the boundary
+    value of discrete gaussian is 100x smaller than the center value.
+
+    See also
+    --------
+    :mod:`iocbio.ops.regression`, regress
+    """
+    return regress_ext.kernel(tuple(scales), kernel_types[kernel])
 
 def regress(data, scales,
             kernel='uniform', 
@@ -56,13 +103,14 @@ def regress(data, scales,
     scales : tuple
       Kernel scaling parameters. ``1/scales[i]`` defines the
       half-width of a kernel for i-th dimension. For example, if
-      `scales=(0.1, 0.5)` then `2/0.1+1=11` and `2/0.5+1=5`
+      `scales=(0.1, 0.5)` then `2/0.1+1=21` and `2/0.5+1=5`
       neighboring data points will averaged (using kernel weights) in
       1st and 2nd dimension, respectively.
 
-    kernel : {'epanechnikov', 'uniform', 'triangular', 'quartic', 'triweight', 'tricube'}
+    kernel : {'epanechnikov', 'uniform', 'triangular', 'quartic', 'triweight', 'tricube', 'gaussian'}
       Smoothing kernel type, see `kernel types
-      <http://en.wikipedia.org/wiki/Kernel_(statistics)>`_ for
+      <http://en.wikipedia.org/wiki/Kernel_(statistics)>`_ and 
+      `tri-cube kernel <http://en.wikipedia.org/wiki/Local_regression>`_ for
       definitions.
 
     method : {'average', 'linear'} 
@@ -105,12 +153,8 @@ def regress(data, scales,
 
     See also
     --------
-    :mod:`iocbio.ops.regression`
+    :mod:`iocbio.ops.regression`, kernel
     """
-    kernel_types = dict (epanechnikov=0, uniform=1, 
-                         triangular = 2, quartic=3,
-                         triweight=4, tricube=5)
-
     smoothing_methods = dict(average=0, 
                              linear=1)
 
