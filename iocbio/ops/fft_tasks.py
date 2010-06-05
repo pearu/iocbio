@@ -47,7 +47,7 @@ __all__ = ['FFTTasks']
 import os
 import numpy
 
-from ..utils import mul_seq
+from ..utils import mul_seq, VERBOSE
 
 class FFTTasks(object):
     """ Optimized cache for Fourier transforms using `FFTW <http://www.fftw.org/>`_ with operations.
@@ -74,7 +74,8 @@ class FFTTasks(object):
         for fftw in [fftw3, fftw3f]:
             wisdom_file_name = os.path.join('.iocbio','fft_tasks','%s_wisdom_data.txt' % (fftw.__name__))
             if os.path.isfile(wisdom_file_name):
-                print 'Loading wisdom from file %r' % (wisdom_file_name)
+                if VERBOSE:
+                    print 'Loading wisdom from file %r' % (wisdom_file_name)
                 fftw.import_wisdom_from_file(wisdom_file_name)
                 _cache.append(wisdom_file_name)
                 FFTTasks._wisdoms[wisdom_file_name] = fftw.export_wisdom_to_string()
@@ -101,7 +102,8 @@ class FFTTasks(object):
                 if wisdom is not None and wisdom==fftw.export_wisdom_to_string():
                     #print 'Wisdom for %s has not changed, saving is not needed.' % (fftw.__name__)
                     return
-                print 'Saving wisdom to file %r' % (wisdom_file_name)
+                if VERBOSE:
+                    print 'Saving wisdom to file %r' % (wisdom_file_name)
                 fftw.export_wisdom_to_file (wisdom_file_name)
             atexit.register(save_wisdom)
             _cache.append(wisdom_file_name)
@@ -220,12 +222,14 @@ class FFTTasks(object):
         self._cache = cache
         self.fftw = fftw
 
-        print 'Computing fftw wisdom (flags=%s, threads=%s, shape=%s, float=%s),'\
-            ' be patient, it may take a while..'\
+        if VERBOSE:
+            print 'Computing fftw wisdom (flags=%s, threads=%s, shape=%s, float=%s),'\
+                ' be patient, it may take a while..'\
             % (flags, threads, shape, float_type), 
         self._fft_plan = fftw.Plan(cache, cache, direction='forward', flags=flags, nthreads=threads)
         self._ifft_plan = fftw.Plan(cache, cache, direction='backward', flags=flags, nthreads=threads)
-        print 'done'
+        if VERBOSE:
+            print 'done'
 
         self.save_wisdoms()
 

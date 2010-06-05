@@ -29,21 +29,24 @@ from scipy import fftpack
 from . import fft_tasks
 from .. import utils
 
-def convolve(kernel, data, options = None):
+def convolve(kernel, data, kernel_background = None, options = None):
     """
-    Convolve kernel and data using FFT.
+    Convolve kernel and data using FFT algorithm.
 
     Parameters
     ----------
     kernel : numpy.ndarray
-      The center of kernel is assumed to be in the middle of kernel array.
-      If kernel has smaller size than data then kernel will be expanded
-      with its boundary values. So, for many application the kernel
-      must have ``kernel[0]==kernel[-1]==0``.
+      Specify convolution kernel.  The center of the kernel is assumed
+      to be in the middle of kernel array.
     data : numpy.ndarray
-    options : optparse.Values
+      Specify convolution data.
+    kernel_background : {int, float, None}
+      If kernel has smaller size than data then kernel will be expanded
+      with kernel_background value. By default, kernel_background value
+      is ``kernel.min()``.
+    options : {`iocbio.utils.Options`, None}
       options.float_type defines FFT algorithms floating point type:
-      float or double
+      ``'float'`` (32-bit float) or ``'double'`` (64-bit float).
 
     Returns
     -------
@@ -53,15 +56,13 @@ def convolve(kernel, data, options = None):
     --------
     :mod:`iocbio.ops.convolution`
     """
-    float_type = None
-    if options is not None:
-        float_type = options.float_type
-    if float_type is None:
-        float_type = 'double'
+    if options is None:
+        options = utils.Options()
+    float_type = options.get (float_type='double')
     task = fft_tasks.FFTTasks(data.shape, float_type, options=options)
     if kernel.shape != data.shape:
         # assuming that kernel has smaller size than data
-        kernel = utils.expand_to_shape(kernel, data.shape, data.dtype)
+        kernel = utils.expand_to_shape(kernel, data.shape, data.dtype, background=kernel_background)
     kernel = fftpack.fftshift(kernel)
     kernel = kernel / kernel.sum()
     task.set_convolve_kernel(kernel)

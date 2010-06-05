@@ -16,7 +16,7 @@ import optparse
 file_extensions = ['.tif', '.lsm', 'tiff', '.raw']
 
 
-VERBOSE = not False
+VERBOSE = False
 
 def argument_string(obj):
     if isinstance(obj, (str, )):

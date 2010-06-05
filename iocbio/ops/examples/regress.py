@@ -9,4 +9,3 @@ data_estimate = regress(data_with_noise, (0.1, ),
                         boundary='periodic', 
                         method='average')
 
-

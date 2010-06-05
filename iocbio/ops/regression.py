@@ -1,4 +1,4 @@
-"""Provides regression functions.
+r"""Provides regression functions.
 
 The :func:`regress` function can be used to smoothen noisy images
 (upto 3D) using local averaging or local linear regression with
@@ -21,7 +21,8 @@ The following example illustrates local linear regression method for
   x = arange(0,2*pi,0.1)
   data = 50+7*sin(x)+5*sin(2*x)
   data_with_noise = poisson.rvs (data).astype(data.dtype)
-  data_estimate, data_gradient = regress(data_with_noise, (0.1, ), method='linear', kernel='tricube', boundary='periodic')
+  data_estimate, data_gradient = regress(data_with_noise, (0.1, ), \
+    method='linear', kernel='tricube', boundary='periodic')
 
 ..
    import matplotlib.pyplot as plt
@@ -46,13 +47,33 @@ The following example illustrates local linear regression method for
    plt.legend(l)
    plt.savefig('regress_kernels.png')
 
-Available kernels
------------------
+Regression kernels
+------------------
 
 The following plot shows regression kernels for ``scales=(0.1, )``:
 
 .. image:: ../_static/regress_kernels.png
   :width: 60%
+
+Fast regression with FFT enabled
+--------------------------------
+
+With periodic boundary conditions it is possible to speed up averaging
+regression by using FFT algorithm. Use ``enable_fft`` keyword argument
+to enable the FFT algorithm in regression::
+
+  from numpy import *
+  from iocbio.ops import regress
+  x = arange(0,2*pi,0.01)
+  data = 50+7*sin(x)+5*sin(2*x)  
+  data_estimate = regress(data, (0.01, ), method='average',\
+    kernel='tricube', boundary='periodic', enable_fft=True)
+  # this is approximately 6x faster than with enable_fft=False
+
+Note that such a speed up is effective only when the size of input
+array is relatively large or the kernel is relatively wide (scales are
+very small). Otherwise direct regression (``enable_fft=False``) might
+still be faster.
 
 
 Module content
@@ -64,6 +85,8 @@ Module content
 __all__ = ['regress', 'kernel']
 
 import sys
+
+from .. import utils
 
 try:
     from . import regress_ext
@@ -119,7 +142,8 @@ def regress(data, scales,
             method='average',
             boundary='finite',
             verbose = True,
-            options = None):
+            options = None,
+            enable_fft = False):
     """
     Estimate a scalar field from noisy observations (data).
 
@@ -177,12 +201,16 @@ def regress(data, scales,
       parameters specified in function call. The following options attributes
       are used: ``options.kernel``, ``options.method``, ``options.boundary``.
 
+    enable_fft : bool
+      When True and with periodic boundary conditions and averaging method use
+      FFT to compute regression data.
+
     Returns
     -------
     new_data : numpy.ndarray
-      Smoothed data.
+      Regression data.
     new_data_grad : numpy.ndarray
-      Gradient of smoothed data only if method=='linear', otherwise
+      Gradient of regression data only if method=='linear', otherwise
       nothing is returned.
 
     See also
@@ -197,10 +225,11 @@ def regress(data, scales,
                                periodic=2,   # periodic boundaries
                                reflective=3, # boundary is a mirror
                                )
-    if options is not None:
-        kernel = options.get(kernel=kernel)
-        method = options.get(method=method)
-        boundary = options.get(boundary=boundary)
+    if options is None:
+        options = utils.Options()
+    kernel = options.get(kernel=kernel)
+    method = options.get(method=method)
+    boundary = options.get(boundary=boundary)
 
     if kernel not in kernel_types:
         raise ValueError('kernel type must be %s but got %s' \
@@ -217,6 +246,12 @@ def regress(data, scales,
             sys.stdout.flush()
     else:
         write_func = None
+
+    if enable_fft and method=='average' and boundary=='periodic':
+        kernel_values = regress_ext.kernel(tuple(scales), kernel_types[kernel])
+        from .convolution import convolve
+        return convolve(kernel_values, data, kernel_background = 0, options=options)
+
     result, grad = regress_ext.regress (data, tuple(scales), kernel_types[kernel],
                                         smoothing_methods[method], boundary_conditions[boundary],
                                         write_func)
