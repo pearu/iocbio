@@ -1,8 +1,9 @@
 """Provides regression functions.
 
-The :func:`regress` function can be used to smoothen noisy 3D images
-using local averaging or local linear regression with various kernels
-and boundary conditions.
+The :func:`regress` function can be used to smoothen noisy images
+(upto 3D) using local averaging or local linear regression with
+various kernels and boundary conditions. In addition, the
+:func:`regress` function can be used for computing gradients of images
 
 The :func:`kernel` function can be used for calculating the values
 of regression kernels.
@@ -19,12 +20,39 @@ The following example illustrates local linear regression method for
   from iocbio.ops import regress
   x = arange(0,2*pi,0.1)
   data = 50+7*sin(x)+5*sin(2*x)
-  data_with_noise = poisson.rvs (data)
-  data_estimate = regress(data_with_noise, (0.1, ), method='linear', kernel='tricube', boundary='periodic')
+  data_with_noise = poisson.rvs (data).astype(data.dtype)
+  data_estimate, data_gradient = regress(data_with_noise, (0.1, ), method='linear', kernel='tricube', boundary='periodic')
+
+..
+   import matplotlib.pyplot as plt
+   plt.plot(x,data,x,data_with_noise,x,data_estimate)
+   plt.title('Local linear regression for recovering data = 50+7*sin(x)+5*sin(2*x)')
+   plt.legend(['data', 'data with Poisson noise', 'estimated data'])
+   plt.xlabel('x'); plt.ylabel('y')
+   plt.savefig('regress_1d.png')
 
 .. image:: ../_static/regress_1d.png
   :width: 60%
 
+..
+   import matplotlib.pyplot as plt
+   from iocbio.ops.regression import kernel_types, kernel
+   x = arange(-(1/0.1),(1/0.1)+1)
+   l = []
+   for kernel_name in kernel_types:
+       l.append(kernel_name)
+       y = kernel((0.1,), kernel_name)
+       plt.plot(x, y)
+   plt.legend(l)
+   plt.savefig('regress_kernels.png')
+
+Available kernels
+-----------------
+
+The following plot shows regression kernels for ``scales=(0.1, )``:
+
+.. image:: ../_static/regress_kernels.png
+  :width: 60%
 
 
 Module content
@@ -56,14 +84,15 @@ def kernel (scales, kernel = 'uniform'):
       half-width of a kernel for i-th dimension. For example, if
       ``scales=(0.1, 0.5)`` then ``2/0.1+1=21`` and ``2/0.5+1=5``
       node points will be used in 1st and 2nd dimension,
-      respectively.
+      respectively. Normally, scales[i] is smaller or equal to 1.
 
     kernel : {'epanechnikov', 'uniform', 'triangular', 'quartic', 'triweight', 'tricube', 'gaussian'}
       Smoothing kernel type, see `kernel types
       <http://en.wikipedia.org/wiki/Kernel_(statistics)>`_ and
       `tri-cube kernel
       <http://en.wikipedia.org/wiki/Local_regression>`_ for
-      definitions.
+      definitions. Available kernels are visualized also in
+      :mod:`iocbio.ops.regression`.
 
     Returns
     -------
@@ -106,17 +135,19 @@ def regress(data, scales,
       `scales=(0.1, 0.5)` then `2/0.1+1=21` and `2/0.5+1=5`
       neighboring data points will averaged (using kernel weights) in
       1st and 2nd dimension, respectively.
+      Normally, scales[i] is smaller or equal to 1.
 
     kernel : {'epanechnikov', 'uniform', 'triangular', 'quartic', 'triweight', 'tricube', 'gaussian'}
       Smoothing kernel type, see `kernel types
       <http://en.wikipedia.org/wiki/Kernel_(statistics)>`_ and 
       `tri-cube kernel <http://en.wikipedia.org/wiki/Local_regression>`_ for
-      definitions.
+      definitions. Available kernels are visualized also in
+      :mod:`iocbio.ops.regression`.
 
     method : {'average', 'linear'} 
       Smoothing method, see `kernel smoothers
       <http://en.wikipedia.org/wiki/Kernel_smoother>`_ for method
-      descriptions.
+      descriptions. 
 
     boundary : {'constant', 'finite', 'periodic', 'reflective'}
 
@@ -149,7 +180,10 @@ def regress(data, scales,
     Returns
     -------
     new_data : numpy.ndarray
-      smoothed data
+      Smoothed data.
+    new_data_grad : numpy.ndarray
+      Gradient of smoothed data only if method=='linear', otherwise
+      nothing is returned.
 
     See also
     --------
@@ -183,6 +217,9 @@ def regress(data, scales,
             sys.stdout.flush()
     else:
         write_func = None
-    return regress_ext.regress (data, tuple(scales), kernel_types[kernel],
-                                smoothing_methods[method], boundary_conditions[boundary],
-                                write_func)
+    result, grad = regress_ext.regress (data, tuple(scales), kernel_types[kernel],
+                                        smoothing_methods[method], boundary_conditions[boundary],
+                                        write_func)
+    if method=='average':
+        return result
+    return result, grad

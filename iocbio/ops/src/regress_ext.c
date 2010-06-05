@@ -10,7 +10,7 @@
   - support different kernel types/smoothing methods/boundary conditions for different dimensions
   - support for rank>=4 arrays
   - implement polynomial regression
-  - optionally return gradients of regression fits
+  - optionally return gradients of regression fits [DONE]
  */
 
 #include <Python.h>
@@ -94,16 +94,24 @@
     }
 
 
-/* constant in gaussian kernel exponent is choosed such that the
-   boundary value is 100x smaller than the center value */
+/* 
+   Notes
+   -----
+   The constant in gaussian kernel exponent is choosed such that the
+   boundary value is 100x smaller than the center value
+
+   The calculated kernel values lack proper coefficients because
+   kernels are always normalized such that the sum of kernel values
+   is 1.0.
+*/
 #define REGRESS_EVAL_KERNEL						\
   switch (kernel_type)							\
     {									\
-    case KT_EPANECHNIKOV: kv = 0.75*(1-r2); break;			\
-    case KT_UNIFORM: kv = 0.5; break;			\
+    case KT_EPANECHNIKOV: kv = (1.0-r2); break;			\
+    case KT_UNIFORM: kv = 1.0; break;			\
     case KT_TRIANGULAR: kv = 1.0 - sqrt(r2); break;			\
-    case KT_QUARTIC: kv=1-r2; kv = 15.0/16.0*kv*kv; break;		\
-    case KT_TRIWEIGHT: kv=1-r2; kv = 35.0/32.0*kv*kv*kv; break;		\
+    case KT_QUARTIC: kv=1-r2; kv = kv*kv; break;		\
+    case KT_TRIWEIGHT: kv=1-r2; kv = kv*kv*kv; break;		\
     case KT_TRICUBE: kv = 1-r2*sqrt(r2); kv=kv*kv*kv; break;		\
     case KT_GAUSSIAN: kv = exp((-4.6051701859880909) * r2); break;	\
     default:								\
@@ -129,10 +137,9 @@
 #define CALL_WRITE(ARGS) \
   if (verbose && PyObject_CallFunctionObjArgs ARGS == NULL) return NULL;
 
-
-double compute_dot2(double a[2][2], double b[2], int i0);
-double compute_dot3(double a[3][3], double b[3], int i0, int i1);
-double compute_dot4(double a[4][4], double b[4], int i0, int i1, int i2);
+double compute_dot2(double a[2][2], double b[2], double y[2], int i0);
+double compute_dot3(double a[3][3], double b[3], double y[3], int i0, int i1);
+double compute_dot4(double a[4][4], double b[4], double y[4], int i0, int i1, int i2);
 
 typedef enum {KT_EPANECHNIKOV=0, KT_UNIFORM=1, KT_TRIANGULAR=2, KT_QUARTIC=3, KT_TRIWEIGHT=4, KT_TRICUBE=5,
               KT_GAUSSIAN=6 } KernelType;
@@ -282,16 +289,18 @@ static PyObject *regress(PyObject *self, PyObject *args)
   PyObject* scales_obj = NULL;
   npy_float64* scales = NULL;
   PyObject* r=NULL;
+  PyObject* grad=NULL;
   int *kdims = NULL;
+  npy_intp *gdims = NULL;
   npy_intp* di = NULL;
   double eta;
   int count;
   int kn;
-  int i0, i1, i2;
+  int im1, i0, i1, i2;
   int j0, j1, j2;
   int ki0, ki1, ki2;
   double d0, d1, d2;
-  double r2, kv, value;
+  double r2, kv, value = 0;
   double kernel_sum;
   int verbose;
   PyObject* write_func = NULL;
@@ -349,9 +358,22 @@ static PyObject *regress(PyObject *self, PyObject *args)
       kdims[i] = 2*di[i]+1;
       //printf("kdims[%d]=%d\n",(int)i,(int)kdims[i]);
     }
+  if (smoothing_method==SM_LINEAR)
+    {
+      gdims = (npy_intp*)malloc(sizeof(npy_intp)*(rank+1));
+      gdims[0] = rank;
+      for (i=0; i<rank; ++i)
+	gdims[i+1] = PyArray_DIMS(a)[i];
+    }
 
   r = PyArray_SimpleNew(rank, PyArray_DIMS(a), PyArray_TYPE(a));
-
+  if (smoothing_method==SM_LINEAR)
+    grad = PyArray_SimpleNew(rank+1, gdims, PyArray_TYPE(a));
+  else
+    {
+      grad = Py_None;
+      Py_INCREF(grad);
+    }
   kernel_sum = calc_kernel_sum(kernel_type, rank, scales, di);
   if (kernel_sum==0.0)
     goto fail;
@@ -364,6 +386,7 @@ static PyObject *regress(PyObject *self, PyObject *args)
       {
 	double mat[2][2] = {{0,0},{0,0}};
 	double rhs[2] = {0,0};
+	double solution[2];
 	int kkdims[1] = {-1};
 	REGRESS_LOOP(0);
 	REGRESS_INIT_KERNEL_LOOP;
@@ -402,13 +425,16 @@ static PyObject *regress(PyObject *self, PyObject *args)
 	    break;
 	  case SM_LINEAR:
 	    REGRESS_APPLY_KKDIMS;
-	    value = compute_dot2(mat, rhs, i0);
+	    value = compute_dot2(mat, rhs, solution, i0);
 	    break;
 	  default: 
 	    PyErr_SetString(PyExc_ValueError,"regress: unknown smoothing method");
 	    goto fail;
 	  }
 	REGRESS_SET_VALUE(r, PyArray_GETPTR1(r, i0), value);
+	if (smoothing_method==SM_LINEAR)
+	  for (im1=0;im1<rank;im1++)
+	    REGRESS_SET_VALUE(grad, PyArray_GETPTR2(grad, im1, i0), solution[im1+1]);
 	//printf("r[%d] = %f\n",i0, value);
 	count ++;
 	REGRESS_LOOP_END;
@@ -419,6 +445,7 @@ static PyObject *regress(PyObject *self, PyObject *args)
       {	
 	double mat[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
 	double rhs[3] = {0,0,0};
+	double solution[3];
 	int kkdims[2] = {-1, -1};
 	if (verbose)
 	  {
@@ -472,13 +499,16 @@ static PyObject *regress(PyObject *self, PyObject *args)
 	    break;
 	  case SM_LINEAR:
 	    REGRESS_APPLY_KKDIMS;
-	    value = compute_dot3(mat, rhs, i0, i1);
+	    value = compute_dot3(mat, rhs, solution, i0, i1);
 	    break;
 	  default: 
 	    PyErr_SetString(PyExc_ValueError,"regress: unknown smoothing method");
 	    goto fail;
 	  }
 	REGRESS_SET_VALUE(r, PyArray_GETPTR2(r, i0, i1), value);
+	if (smoothing_method==SM_LINEAR)
+	  for (im1=0;im1<rank;im1++)
+	    REGRESS_SET_VALUE(grad, PyArray_GETPTR3(grad, im1, i0, i1), solution[im1+1]);
 	count ++;
       }
       if (verbose)
@@ -499,6 +529,7 @@ static PyObject *regress(PyObject *self, PyObject *args)
       {
 	double mat[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
 	double rhs[4] = {0,0,0,0};
+	double solution[4];
 	int kkdims[3] = {-1, -1, -1};
 
 	if (verbose)
@@ -558,13 +589,16 @@ static PyObject *regress(PyObject *self, PyObject *args)
 	      break;
 	    case SM_LINEAR:
 	      REGRESS_APPLY_KKDIMS;
-	      value = compute_dot4(mat, rhs, i0, i1, i2);
+	      value = compute_dot4(mat, rhs, solution, i0, i1, i2);
 	      break;
 	    default: 
 	      PyErr_SetString(PyExc_ValueError,"regress: unknown smoothing method");
 	      goto fail;
 	    }
 	REGRESS_SET_VALUE(r, PyArray_GETPTR3(r, i0, i1, i2), value);
+	if (smoothing_method==SM_LINEAR)
+	  for (im1=0;im1<rank;im1++)
+	    REGRESS_SET_VALUE(grad, PyArray_GETPTR4(grad, im1, i0, i1, i2), solution[im1+1]);
 	count ++;
       }
       REGRESS_LOOP_END;
@@ -588,19 +622,23 @@ static PyObject *regress(PyObject *self, PyObject *args)
     }
   free(scales);
   free(kdims);
+  if (gdims!=NULL) free(gdims);
   free(di);
-  return Py_BuildValue("N", r);
+  return Py_BuildValue("NN", r, grad);
  fail:
+  Py_DECREF(r);
+  Py_DECREF(grad);
   free(scales);
   free(kdims);
+  if (gdims!=NULL) free(gdims);
   free(di);
   return NULL;
 
 }
 
 static PyMethodDef module_methods[] = {
-  {"kernel", kernel, METH_VARARGS, "kernel(scales, kernel_type_code)"},
-  {"regress", regress, METH_VARARGS, "regress(a, scales, kernel_type_code, smoother_method_code, boundary_condition_code, verbose)"},
+  {"kernel", kernel, METH_VARARGS, "kernel(scales, kernel_type_code)->array"},
+  {"regress", regress, METH_VARARGS, "regress(a, scales, kernel_type_code, smoother_method_code, boundary_condition_code, verbose)->(array,gradient)"},
   {NULL}  /* Sentinel */
 };
 
@@ -745,24 +783,21 @@ void compute_solution4(double x[4], double a[4][4], double b[4])
       x[i] += imat[i][j] * b[j];
 }
 
-double compute_dot2(double a[2][2], double b[2], int i0)
+double compute_dot2(double a[2][2], double b[2], double y[2], int i0)
 {
-  double y[2];
   compute_solution2(y, a, b);
   //printf("i0,y[0],y[1]=%d,%f,%f\n",i0,y[0],y[1]);
   return y[0] + y[1] * i0;
 }
 
-double compute_dot3(double a[3][3], double b[3], int i0, int i1)
+double compute_dot3(double a[3][3], double b[3], double y[3], int i0, int i1)
 {
-  double y[3];
   compute_solution3(y, a, b);
   return y[0] + y[1] * i0 + y[2] * i1;
 }
 
-double compute_dot4(double a[4][4], double b[4], int i0, int i1, int i2)
+double compute_dot4(double a[4][4], double b[4], double y[4], int i0, int i1, int i2)
 {
-  double y[4];
   compute_solution4(y, a, b);
   return y[0] + y[1] * i0 + y[2] * i1 + y[3] * i2;
 }
