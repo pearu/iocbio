@@ -87,7 +87,6 @@ import numpy
 from . import io
 from .pathinfo import PathInfo
 
-
 class ImageStack(object):
     """
     Holds a 3D stack of images and its parameters.
@@ -127,8 +126,9 @@ class ImageStack(object):
         :class:`iocbio.io.image_stack.ImageStack`
         """
         images, pathinfo = io.load_image_stack(path, options=options)
-        return cls (images, pathinfo=pathinfo, options=options)
-
+        stack = cls (images, pathinfo=pathinfo, options=options)
+        return stack
+    
     def __init__(self, images, pathinfo = None, options=None, **kws):
         """
         Construct `ImageStack` from an array.
