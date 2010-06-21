@@ -12,6 +12,7 @@ import hashlib
 
 import numpy
 import optparse
+import numpy.testing.utils as numpy_utils
 
 file_extensions = ['.tif', '.lsm', 'tiff', '.raw']
 
@@ -574,3 +575,35 @@ def splitquote(line, stopchar=None, lower=False, quotechars = '"\''):
             item = str(''.join(l))
             items.append(item)
     return items, stopchar
+
+def bytes2str(bytes):
+    l = []
+    Pbytes = bytes//1024**5
+    if Pbytes:
+        l.append('%sPi' % (Pbytes))
+        bytes = bytes - 1024**5 * Pbytes
+    Tbytes = bytes//1024**4
+    if Tbytes:
+        l.append('%sTi' % (Tbytes))
+        bytes = bytes - 1024**4 * Tbytes
+    Gbytes = bytes//1024**3
+    if Gbytes:
+        l.append('%sGi' % (Gbytes))
+        bytes = bytes - 1024**3 * Gbytes
+    Mbytes = bytes//1024**2
+    if Mbytes:
+        l.append('%sMi' % (Mbytes))
+        bytes = bytes - 1024**2 * Mbytes
+    kbytes = bytes//1024
+    if kbytes:
+        l.append('%sKi' % (kbytes))
+        bytes = bytes - 1024*kbytes
+    if bytes: l.append('%s' % (bytes))
+    if not l: return '0 bytes'
+    return '+'.join(l) + ' bytes'
+
+def show_memory(msg):
+    if VERBOSE:
+        m = numpy_utils.memusage()
+        sys.stdout.write('%s: %s\n' % (msg, bytes2str(m)))
+        sys.stdout.flush()
