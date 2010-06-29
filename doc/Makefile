@@ -2,7 +2,6 @@
 #
 
 HTML_TARGET = ../apidocs
-HTML_TARGET = /net/cens/home/www/sysbio/download/software/iocbio
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
@@ -30,7 +29,10 @@ help:
 	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-rm -rf _build/*
+	-rm -rf _build source/generated $(HTML_TARGET)
+	-mkdir $(HTML_TARGET)
+	-touch $(HTML_TARGET)/index.html
+	-echo `date -u` ": documentation is being updated... try again in few minutes." >  $(HTML_TARGET)/index.html
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(HTML_TARGET)
