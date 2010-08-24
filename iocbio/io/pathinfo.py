@@ -762,8 +762,12 @@ class Configuration(PathInfo):
                 imagesize_y = int(get_tag_from_configuration(path, 'CONFOCAL_ImageSizeY')) #px
                 shape = (n, imagesize_y, imagesize_x)
             elif protocol_mode in self._widefield_protocol_modes:
-                imagesize_x = int(get_tag_from_configuration(path, 'CAMERA_ANDOR_ImageSizeX')) #px
-                imagesize_y = int(get_tag_from_configuration(path, 'CAMERA_ANDOR_ImageSizeY')) #px
+                if 'Imperx' in path:
+                    imagesize_x = int(get_tag_from_configuration(path, 'CAMERA_IMPERX_ImageSizeX')) #px
+                    imagesize_y = int(get_tag_from_configuration(path, 'CAMERA_IMPERX_ImageSizeY')) #px
+                else:
+                    imagesize_x = int(get_tag_from_configuration(path, 'CAMERA_ANDOR_ImageSizeX')) #px
+                    imagesize_y = int(get_tag_from_configuration(path, 'CAMERA_ANDOR_ImageSizeY')) #px
                 shape = (n, imagesize_y, imagesize_x)
             else:
                 raise NotImplementedError (`protocol_mode`)
@@ -782,7 +786,10 @@ class Configuration(PathInfo):
                 pixelsize_y = float(get_tag_from_configuration(path, 'CONFOCAL_PixelSizeY')) #um
                 voxel_sizes = (1e-6*(mx-mn)/(n), 1e-6*pixelsize_y, 1e-6*pixelsize_x)
             elif protocol_mode in self._widefield_protocol_modes:
-                pixelsize_x = float (get_tag_from_configuration(path, 'CAMERA_ANDOR_PixelSize'))
+                if 'Imperx' in path:
+                    pixelsize_x = float (get_tag_from_configuration(path, 'CAMERA_IMPERX_PixelSize'))
+                else:
+                    pixelsize_x = float (get_tag_from_configuration(path, 'CAMERA_ANDOR_PixelSize'))
                 pixelsize_y = pixelsize_x
                 voxel_sizes = (1e-6*(mx-mn)/(n), 1e-6*pixelsize_y, 1e-6*pixelsize_x)
             else:

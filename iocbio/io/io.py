@@ -63,7 +63,7 @@ def get_indexed_files(path, file_prefix):
     """
     files = []
     for ext in raw_extensions + tif_extensions:
-        files = glob(os.path.join(path,file_prefix+'[0-9][0-9]*'+ext))
+        files = glob(os.path.join(path,file_prefix+'[0-9]*'+ext))
         if files: break
     l = []
     prefix = None
@@ -76,6 +76,7 @@ def get_indexed_files(path, file_prefix):
         elif f[:i+1] != prefix:
             raise ValueError('All files must have the same prefix %r but got %r' % (prefix, f[:i+1]))
     if not l:
+        print len (files)
         raise ValueError('No image files with prefix %r found in %r' % (file_prefix, path))
     l.sort()
     return [x[1] for x in l]
