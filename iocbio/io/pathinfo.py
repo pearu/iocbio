@@ -21,8 +21,9 @@ Module content
 """
 
 __autodoc__ = ['PathInfo']
-__all__ = ['Scaninfo', 'Configuration', 'Tiffinfo']
+__all__ = ['Scaninfo', 'Configuration', 'Tiffinfo', 'Rawinfo']
 
+import os
 import sys
 import time
 import numpy
@@ -1012,3 +1013,34 @@ class Tiffinfo(PathInfo):
             unit = {'\xb5'+'m':1e6}.get (unit, 1)
             l.append (dict(name=name, index=n-1, pinhole=float(pinhole) * unit))
         return l
+
+class Rawinfo(PathInfo):
+
+    def _get_header_file(self):
+        fn, ext = os.path.splitext(self.path)
+        hdr = fn + '.hdr'
+        return hdr
+
+    def _get_ext_type(self):
+        fn, ext = os.path.splitext(self.path)
+        return ext[1:]
+
+    def get_shape(self):
+        if self.shape is None:
+            shape = []
+            for line in file (self._get_header_file ()):
+                try:
+                    d = int(line.strip())
+                except ValueError:
+                    break
+                shape.append(d)
+            self.set_shape (*shape)
+        return self.shape
+
+    def get_sample_format(self):
+        if self.sample_format is None:
+            e = self._get_ext_type ()
+            sample_format = dict (f='float', i='int', u='uint').get (e[0])
+            if sample_format is not None:
+                self.set_sample_format (sample_format)
+        return self.sample_format

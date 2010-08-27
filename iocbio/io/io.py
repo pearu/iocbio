@@ -11,6 +11,7 @@ __autodoc__ = ['RowFile', 'load_image_stack', 'save_image_stack']
 
 __all__ = ['load_image_stack', 'save_image_stack', 'RowFile']
 
+import re
 import os
 import sys
 import time
@@ -20,7 +21,7 @@ from .tifffile20100410_py25 import TIFFfile
 from .libtiff import TIFF
 from glob import glob
 from .. import utils
-from .pathinfo import Tiffinfo, Scaninfo, Configuration
+from .pathinfo import Tiffinfo, Scaninfo, Configuration, Rawinfo
 
 
 tif_extensions = ['.tif', '.tiff', '.lsm'] # files will be read with tifffile
@@ -33,6 +34,14 @@ else:
     psflib_dir = os.path.join(os.environ['HOME'], 'iocbio/psflib')
     if not os.path.exists (psflib_dir):
         psflib_dir = '/usr/local/share/iocbio/psflib'
+
+def israwfile(path):
+    ext = os.path.splitext(path)[1]
+    if ext in raw_extensions:
+        return True
+    if re.match(r'[.][fuic](8|16|32|64|128|256|512)', ext):
+        return True
+    return False
 
 def get_psf_libs():
     """
@@ -184,6 +193,8 @@ def load_image_stack(path, options=None):
         pathinfo = Scaninfo(scaninfo_txt)
     elif os.path.isfile(configuration_txt):
         pathinfo = Configuration(configuration_txt)
+    elif israwfile(path):
+        pathinfo = Rawinfo(path)
     else:
         pathinfo = None
 
@@ -191,6 +202,7 @@ def load_image_stack(path, options=None):
         base, ext = os.path.splitext (path)
         ext = ext.lower()
         if ext in tif_extensions:
+
             if pathinfo is None:
                 pathinfo = Tiffinfo(path)
                 images = pathinfo.tif.asarray()
@@ -200,11 +212,12 @@ def load_image_stack(path, options=None):
                     print 'Using detector with non-zero pinhole:', detector                    
                     images = images[:,detector['index'],:,:]
             else:
-                tif = TIFFfile(path)
+                sample_format = pathinfo.get_sample_format()
+                tif = TIFFfile(path, sample_format = sample_format)
                 images = tif.asarray()
             pathinfo.set_shape(*images.shape)
             return images, pathinfo
-        elif ext in raw_extensions:
+        elif israwfile(path):
             if pathinfo is None:
                 raise ValueError('Cannot determine the shape information of image stacks from '\
                                      +`path`+' (no info files in the path directory)')
@@ -212,7 +225,11 @@ def load_image_stack(path, options=None):
             sz = os.path.getsize(path)
             bytes = sz // (shape[0]*shape[1]*shape[2])
             assert bytes * shape[0] * shape[1] * shape[2] == sz, `sz, bytes, shape`
-            sample_format = pathinfo.get_sample_format() or 'uint'
+            sample_format = pathinfo.get_sample_format()
+            if not sample_format:
+                print 'Warning: failed to determine sample format from %r, assuming uint' % (path)
+                print '         pathinfo=',pathinfo
+                sample_format = 'uint'
             bits = 8*bytes
             image_type = numpy.typeDict[sample_format+str(bits)]
             images = numpy.fromfile(path, image_type)
