@@ -1256,7 +1256,7 @@ TIFF_BYTE_ORDERS = {
 TIFF_SAMPLE_FORMATS = {
     1: 'uint',
     2: 'int',
-    3: 'float'
+    3: 'float',
     #4: 'void',
     #5: 'complex_int',
     6: 'complex',
