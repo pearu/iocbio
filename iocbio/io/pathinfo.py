@@ -10,6 +10,7 @@ returns instances of one of the following classes:
   Scaninfo
   Configuration
   Tiffinfo
+  Rawinfo
 
 The following mappings are used to hold microscope information:
 
@@ -1015,6 +1016,10 @@ class Tiffinfo(PathInfo):
         return l
 
 class Rawinfo(PathInfo):
+
+    """
+    PathInfo subclass to represent raw data (.f32, .u8 etc) files with shape information stored in a .hdr file.
+    """
 
     def _get_header_file(self):
         fn, ext = os.path.splitext(self.path)
