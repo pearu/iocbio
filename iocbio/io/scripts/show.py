@@ -44,24 +44,29 @@ def runner (parser, options, args):
     dr = stack.get_lateral_resolution()
     dz = stack.get_axial_resolution()
 
-
-    if dr is not None:
-        resolution[1] = tostr(dr/voxel_sizes[1]) + 'px'
-        resolution[2] = tostr(dr/voxel_sizes[2]) + 'px'
-    if dz is not None:
-        resolution[0] = tostr(dz/voxel_sizes[0]) + 'px'
+    if voxel_sizes:
+        if dr is not None:
+            resolution[1] = tostr(dr/voxel_sizes[1]) + 'px'
+            resolution[2] = tostr(dr/voxel_sizes[2]) + 'px'
+        if dz is not None:
+            resolution[0] = tostr(dz/voxel_sizes[0]) + 'px'
 
     resolution = tuple (resolution)
     if roll_axis:
         images = numpy.rollaxis(images, roll_axis)
-        voxel_sizes = (voxel_sizes[roll_axis],) + voxel_sizes[:roll_axis] + voxel_sizes[roll_axis+1:]
+        if voxel_sizes:
+            voxel_sizes = (voxel_sizes[roll_axis],) + voxel_sizes[:roll_axis] + voxel_sizes[roll_axis+1:]
         axis_labels = (axis_labels[roll_axis],) + axis_labels[:roll_axis] + axis_labels[roll_axis+1:]
         resolutions = (resolution[roll_axis],) + resolution[:roll_axis] + resolution[roll_axis+1:]
 
-    xlabel = '%s, resol=%s, px size=%sum, size=%sum' \
-        % (axis_labels[-1], resolution[-1], tostr(voxel_sizes[-1]*1e6),  tostr(voxel_sizes[-1]*1e6*images.shape[-1]))
-    ylabel = '%s, resol=%s, px size=%sum, size=%sum' \
-        % (axis_labels[-2], resolution[-2], tostr(voxel_sizes[-2]*1e6),  tostr(voxel_sizes[-2]*1e6*images.shape[-2]))
+    if voxel_sizes:
+        xlabel = '%s, resol=%s, px size=%sum, size=%sum' \
+            % (axis_labels[-1], resolution[-1], tostr(voxel_sizes[-1]*1e6),  tostr(voxel_sizes[-1]*1e6*images.shape[-1]))
+        ylabel = '%s, resol=%s, px size=%sum, size=%sum' \
+            % (axis_labels[-2], resolution[-2], tostr(voxel_sizes[-2]*1e6),  tostr(voxel_sizes[-2]*1e6*images.shape[-2]))
+    else:
+        xlabel = '%s' % (axis_labels[-1])
+        ylabel = '%s' % (axis_labels[-2])
 
     import matplotlib.cm as cm
     import matplotlib.pyplot as pyplot
