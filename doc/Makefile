@@ -29,12 +29,13 @@ help:
 	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-rm -rf _build source/generated $(HTML_TARGET)
-	-mkdir $(HTML_TARGET)
-	-touch $(HTML_TARGET)/index.html
-	-echo `date -u` ": documentation is being updated... try again in few minutes." >  $(HTML_TARGET)/index.html
+	-rm -rf _build source/generated $(HTML_TARGET)/*
+
 
 html:
+	-mkdir -p $(HTML_TARGET)
+	-touch $(HTML_TARGET)/index.html
+	-echo `date -u` ": documentation is being updated... try again in few minutes." >  $(HTML_TARGET)/index.html
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(HTML_TARGET)
 	@echo
 	@echo "Build finished. The HTML pages are in $(HTML_TARGET)."
