@@ -143,11 +143,12 @@ class TIFFfile(object):
 
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, sample_format = None):
         """Initialize object from file."""
         self.fhandle = open(filename, 'rb')
         self.fname = filename
         self.fstat = os.fstat(self.fhandle.fileno())
+        self.sample_format = sample_format
         try:
             self._fromfile()
         except Exception:
@@ -428,13 +429,20 @@ class TIFFpage(object):
                     "samples must be of same type %s" % str(tag))
             self.bits_per_sample = bps
 
+        sample_format = self._parent.sample_format
         tag = tags['sample_format']
         if tag.count != 1:
             fmt = tag.value[0]
             if all((i-fmt for i in tag.value)):
                 raise ValueError(
                     "samples must be of same format %s" % str(tag))
-            self.sample_format = TIFF_SAMPLE_FORMATS[fmt]
+            page_sample_format = TIFF_SAMPLE_FORMATS[fmt]
+            if sample_format is not None:
+                if sample_format != page_sample_format:
+                    print 'Warning: overriding pages sample format %r with %r from TIFFfile constructor.' % (page_sample_format, sample_format)
+            else:
+                sample_format = page_sample_format
+        self.sample_format = sample_format
 
         self.strips_per_image = int(math.floor((self.image_length +
                             self.rows_per_strip - 1) / self.rows_per_strip))
@@ -1248,10 +1256,11 @@ TIFF_BYTE_ORDERS = {
 TIFF_SAMPLE_FORMATS = {
     1: 'uint',
     2: 'int',
-    3: 'float'}
+    3: 'float'
     #4: 'void',
     #5: 'complex_int',
-    #6: 'complex',
+    6: 'complex',
+}
 
 TIFF_SAMPLE_DTYPES = {
     ('uint', 1): '?',  # bitmap
@@ -1265,11 +1274,16 @@ TIFF_SAMPLE_DTYPES = {
     ('uint', 16): 'H',
     ('uint', 24): 'I',
     ('uint', 32): 'I',
+    ('uint', 64): 'L',
     ('int', 8): 'b',
     ('int', 16): 'h',
     ('int', 32): 'i',
+    ('int', 64): 'l',
     ('float', 32): 'f',
-    ('float', 64): 'd'}
+    ('float', 64): 'd',
+    ('complex', 64): 'F',
+    ('complex', 128): 'D',
+}
 
 TIFF_PREDICTORS = {
     1: None,
