@@ -1,5 +1,5 @@
 #!/usr/bin/env python 
-# -*- python-mode -*-
+# -*- python -*-
 # Author: Pearu Peterson
 # Created: May 2009
 

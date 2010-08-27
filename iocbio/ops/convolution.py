@@ -58,6 +58,8 @@ def convolve(kernel, data, kernel_background = None, options = None):
     """
     if options is None:
         options = utils.Options()
+    else:
+        options = utils.Options(options)
     float_type = options.get (float_type='double')
     task = fft_tasks.FFTTasks(data.shape, float_type, options=options)
     if kernel.shape != data.shape:
