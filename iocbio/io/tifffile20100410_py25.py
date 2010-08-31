@@ -445,11 +445,13 @@ class TIFFpage(object):
         if sample_format is None:
             sample_format = 'uint'
         self.sample_format = sample_format
-
+            
         self.strips_per_image = int(math.floor((self.image_length +
                             self.rows_per_strip - 1) / self.rows_per_strip))
 
         key = (self.sample_format, self.bits_per_sample)
+        #if key == ('uint', 64):
+        #    key = ('float', 64)
         try:
             self.dtype = TIFF_SAMPLE_DTYPES[key]
         except KeyError:
