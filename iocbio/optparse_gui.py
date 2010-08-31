@@ -22,6 +22,8 @@ import os
 import signal
 import sys
 import re
+import shutil
+import tempfile
 import optparse
 import wx
 import subprocess as std_subprocess
@@ -918,7 +920,10 @@ class OptionParser( optparse.OptionParser ):
         dirname = os.path.dirname(script_history)
         if not os.path.isdir (dirname):
             os.makedirs(dirname)
-        f = open(script_history, 'w')
+
+        tmp_file = tempfile.mktemp()
+            
+        f = open(tmp_file, 'w')
         f.write ('#cwd:%r\n' % (cwd))
         f.write ('#args:%r\n' % (args,))
         for option in self._get_all_options():
@@ -928,6 +933,8 @@ class OptionParser( optparse.OptionParser ):
                     f.write('%s: %r\n' % (option.dest, value))
         f.close()        
 
+        shutil.move(tmp_file, script_history)
+        
     def load_options(self):
         script_history = self.get_history_file ()
         if debug>1:
@@ -938,8 +945,11 @@ class OptionParser( optparse.OptionParser ):
         if os.path.isfile(script_history):
             f = open (script_history)
             for line in f.readlines():
-                dest, value = line.split(':', 1)
-                value = eval(value)
+                try:
+                    dest, value = line.split(':', 1)
+                    value = eval(value)
+                except Exception, msg:
+                    print 'optparse_gui.load_options: failed parsing options file, line=%r: %s' % (line, msg)
                 if dest=='#args':
                     h_args = value
                 elif dest=='#cwd':
