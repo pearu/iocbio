@@ -442,6 +442,8 @@ class TIFFpage(object):
                     print 'Warning: overriding pages sample format %r with %r from TIFFfile constructor.' % (page_sample_format, sample_format)
             else:
                 sample_format = page_sample_format
+        if sample_format is None:
+            sample_format = 'uint'
         self.sample_format = sample_format
 
         self.strips_per_image = int(math.floor((self.image_length +
