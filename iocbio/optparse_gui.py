@@ -950,6 +950,7 @@ class OptionParser( optparse.OptionParser ):
                     value = eval(value)
                 except Exception, msg:
                     print 'optparse_gui.load_options: failed parsing options file, line=%r: %s' % (line, msg)
+                    continue
                 if dest=='#args':
                     h_args = value
                 elif dest=='#cwd':
