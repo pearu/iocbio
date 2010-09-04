@@ -318,7 +318,7 @@ class FFTTasks(object):
         self.convolve_kernel_fourier_normal = kernel_f / mul_seq(kernel_f.shape)
         self.convolve_kernel_fourier_conj = kernel_f.conj()
 
-    def convolve(self, data):
+    def convolve(self, data, inplace=True):
         """Compute convolution of data and convolve kernel.
 
         Parameters
@@ -340,8 +340,13 @@ class FFTTasks(object):
         if kernel_f is None:
             raise TypeError ('Convolve kernel not specified')
         cache = self._cache
+        if not inplace:
+            orig_cache = cache.copy()
         cache[:] = data
         self._fft_plan.execute()
         cache *= kernel_f
         self._ifft_plan.execute()
-        return cache.real.copy()
+        result = cache.real.copy()
+        if not inplace:
+            self._cache[:] = orig_cache
+        return result
