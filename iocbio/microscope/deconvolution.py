@@ -164,6 +164,7 @@ class Deconvolve(FFTTasks):
 
         self.set_save_data(None, shape, self.float_dtype)
         self.lambda_ = options.get(rltv_lambda=0.0)
+        self.count = None
 
     def get_suffix(self):
         return '_deconvolved'
@@ -189,20 +190,48 @@ class Deconvolve(FFTTasks):
         """
         self.test_data = None
         options = self.options
+        snr = None
         if options.get(degrade_input=False):
             self.test_data = self.data
             if options.get(first_estimate='input image')=='last result':
                 print 'Loading degraded image.'
                 self.data = ImageStack.load(os.path.join(self.cache_dir, 'degraded.tif')).images
             else:
+                snr = options.get(degrade_input_snr=0.0)
                 print 'Degrading image with Poisson noise..',
                 import scipy.stats
                 data = self.convolve(self.data)
+                max_data = data.max()
+                if snr==0.0:
+                    snr = numpy.sqrt(max_data)
+                else:
+                    coeff = snr*snr/max_data
+                    data *= coeff
+                    self.test_data *= coeff
                 data = np.where(data<=0, 1e-16, data)
                 self.data = scipy.stats.poisson.rvs(data).astype(data.dtype)
                 print 'done.'
                 print 'Saving degraded image.'
-                self.save(self.data, 'degraded.tif', True)            
+                self.save(self.data, 'degraded.tif', True)
+        if snr is None:
+            data = self.data
+            values = []
+            for indices in zip (*np.where(data==data.max())):
+                for i0 in range (indices[0]-1,indices[0]+2):
+                    if i0>=data.shape[0]:
+                        i0 -= data.shape[0]
+                    for i1 in range (indices[1]-1,indices[1]+2):
+                        if i1>=data.shape[1]:
+                            i1 -= data.shape[1]
+                        for i2 in range (indices[2]-1,indices[2]+2):
+                            if i2>=data.shape[2]:
+                                i2 -= data.shape[2]
+                            values.append (data[i0,i1,i2])
+            mx = numpy.mean(values)
+            snr = numpy.sqrt(mx)
+        print 'Input image has signal-to-noise ratio', snr
+        print 'Suggested RLTV regularization parameter: %s[blocky]..%s[honeycomb]' % (43/snr, 60/snr)
+        self.snr = snr
 
     def compute_estimate(self, estimate):
         """
@@ -335,6 +364,7 @@ class Deconvolve(FFTTasks):
             max_lambda = 0.0
             while not stop:
                 count += 1
+                self.count = count
                 info_map = {}
                 ittime = time.time()
                 
@@ -358,7 +388,7 @@ class Deconvolve(FFTTasks):
                     mn, mx = estimate.min(), estimate.max()
 
                 if 'mse' in data_to_save:
-                    mse = ((self.convolve(estimate) - input_data)**2).sum() / data_norm2
+                    mse = ((self.convolve(estimate, inplace=False) - input_data)**2).sum() / data_norm2
                     info_map['MSE=%s'] = mse
 
                 if 'mseo' in data_to_save:
@@ -450,6 +480,7 @@ class DeconvolveRLPoisson (Deconvolve):
         self.data = stack_images.astype(self.float_dtype)
         self.voxel_sizes = [s*1e9 for s in voxel_sizes]
         self.lambda_lsq = None
+        self.lambda_lsq_coeff = None
 
     def get_suffix(self):
         if self.options.get(rltv_estimate_lambda=False):
@@ -462,7 +493,7 @@ class DeconvolveRLPoisson (Deconvolve):
         adj_psf_f = self.convolve_kernel_fourier_conj
         cache = self._cache
 
-        # Execute: cache = convolve(PSF, estimate)
+        # Execute: cache = convolve(PSF, estimate), non-normalized
         cache[:] = estimate
         self._fft_plan.execute()
         cache *= psf_f
@@ -471,7 +502,7 @@ class DeconvolveRLPoisson (Deconvolve):
         # Execute: cache = data/cache
         ops_ext.inverse_division_inplace(cache, self.data)
 
-        # Execute: cache = convolve(PSF(-), cache)
+        # Execute: cache = convolve(PSF(-), cache), inverse of non-normalized
         self._fft_plan.execute()
         cache *= adj_psf_f
         self._ifft_plan.execute()
@@ -481,7 +512,18 @@ class DeconvolveRLPoisson (Deconvolve):
         if options.get(rltv_compute_lambda_lsq=False) or options.get(rltv_estimate_lambda=False):
             dv_estimate = ops_ext.div_unit_grad(estimate, self.voxel_sizes)
             lambda_lsq = ((1.0-cache.real)*dv_estimate).sum() / (dv_estimate*dv_estimate).sum()
-            lambda_lsq *= options.get(rltv_lambda_lsq_coeff=1.0)
+            if self.lambda_lsq_coeff is None:
+                lambda_lsq_coeff = options.get(rltv_lambda_lsq_coeff=0.0)
+                if lambda_lsq_coeff == 0.0:
+                    lambda_lsq_coeff = self.snr/50.0 * lambda_lsq
+                if lambda_lsq_coeff < 0:
+                    print 'Negative lambda_lsq, skip storing lambda_lsq_coeff'
+                else:
+                    self.lambda_lsq_coeff = lambda_lsq_coeff
+                print 'lambda-lsq-coeff=', lambda_lsq_coeff
+            else:
+                lambda_lsq_coeff = self.lambda_lsq_coeff
+            lambda_lsq *= lambda_lsq_coeff
             self.lambda_lsq = lambda_lsq
         elif self.lambda_:
             dv_estimate = ops_ext.div_unit_grad(estimate, self.voxel_sizes)
@@ -491,9 +533,12 @@ class DeconvolveRLPoisson (Deconvolve):
             cache /= (1.0 - lambda_lsq*dv_estimate)
         elif self.lambda_:
             cache /= (1.0 - self.lambda_*dv_estimate)
-        
+        else: # TV is disabled
+            pass
+
         # Execute: estimate *= cache.real
-        return ops_ext.update_estimate_poisson(estimate, cache, self.convergence_epsilon)
+        result = ops_ext.update_estimate_poisson(estimate, cache, self.convergence_epsilon)
+        return result
 
 class DeconvolveRLGauss (Deconvolve):
     """

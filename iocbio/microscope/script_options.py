@@ -128,6 +128,10 @@ def set_deconvolve_options(parser):
                       help = 'Degrade input: apply noise to convolved input.')
     parser.add_option('--no-degrade-input', action='store_false', dest='degrade_input',
                       help = 'See ``--degrade-input``.')
+    parser.add_option('--degrade-input-snr',
+                      type = 'float', default=0.0,
+                      help = 'Specify the signal-to-noise ratio when using --degrade-input.'\
+                          'If set to 0, then snr will be estimated as sqrt(max(input image)).')
     parser.add_option ('--first-estimate',
                       choices = ['input image',
                                  'convolved input image',
@@ -156,10 +160,6 @@ def get_rltv_options_group(parser):
     group = OptionGroup (parser, 'Richardson-Lucy algorithm options',
                          description = '''\
 Specify options for Richardson-Lucy deconvolution algorithm with total variation term.''')
-
-    group.add_option ('--rltv-lambda',
-                      type = 'float',
-                      help = 'Specify RLTV regularization parameter.')
     group.add_option ('--rltv-estimate-lambda', dest='rltv_estimate_lambda',
                       action='store_true',
                       help = 'Enable estimating RLTV parameter lambda.')
@@ -168,7 +168,11 @@ Specify options for Richardson-Lucy deconvolution algorithm with total variation
                       help = 'See ``--rltv-estimate-lambda`` option.')
     group.add_option ('--rltv-lambda-lsq-coeff',
                       type = 'float',
-                      help = 'Specify coefficient in RLTV parameter estimate lambda_lsq.')
+                      help = 'Specify coefficient for RLTV regularization parameter.'\
+                          'If set to 0 then the coefficent will be chosed such that lambda_lsq_0==50/SNR.')
+    group.add_option ('--rltv-lambda',
+                      type = 'float',
+                      help = 'Specify RLTV regularization parameter.')
     group.add_option ('--rltv-compute-lambda-lsq',
                       action='store_true',
                       help = 'Compute RLTV parameter estimation lambda_lsq.')
