@@ -725,9 +725,71 @@ static PyObject *div_unit_grad(PyObject *self, PyObject *args)
 		  Dzmc = (cijk - ckm) / hz;
 
 		  //*((npy_float64*)PyArray_GETPTR3(r, i, j, k)) = Dxma/hx + Dymb/hy + Dzmc/hz;
-		  *((npy_float64*)PyArray_GETPTR3(r, i, j, k)) = hx + hy + hz;
+		  *((npy_float64*)PyArray_GETPTR3(r, i, j, k)) = Dxma + Dymb + Dzmc;
 		}
 	    }
+	}
+    }
+  else
+    {
+      PyErr_SetString(PyExc_TypeError,"array argument type must be float64");
+      return NULL;
+    }
+  return Py_BuildValue("N", r);
+}
+
+static PyObject *div_unit_grad1(PyObject *self, PyObject *args)
+{
+  PyObject* f = NULL;
+  npy_intp Nx;
+  int i, im1, im2, ip1;
+  npy_float64* f_data_dp = NULL;
+  npy_float64* r_data_dp = NULL;
+  npy_float32* f_data_sp = NULL;
+  npy_float32* r_data_sp = NULL;
+  double hx;
+  double hx2;
+  PyArrayObject* r = NULL;
+  double fip, fim, fijk;
+  double aim, aijk;
+  double Dxpf, Dxmf;
+  double Dxma;
+  if (!PyArg_ParseTuple(args, "Od", &f, &hx))
+    return NULL;
+  hx2 = 2*hx;
+  if (!PyArray_Check(f))
+    {
+      PyErr_SetString(PyExc_TypeError,"first argument must be array");
+      return NULL;
+    }
+  if (PyArray_NDIM(f) != 1)
+    {
+      PyErr_SetString(PyExc_TypeError,"array argument must have rank 1");
+      return NULL;
+    }
+  Nx = PyArray_DIM(f, 0);
+  r = (PyArrayObject*)PyArray_SimpleNew(1, PyArray_DIMS(f), PyArray_TYPE(f));
+
+  if (PyArray_TYPE(f) == PyArray_FLOAT64)
+    {
+      f_data_dp = (npy_float64*)PyArray_DATA(f);
+      r_data_dp = (npy_float64*)PyArray_DATA(r);
+      for (i=0; i<Nx; ++i)
+	{
+	  im1 = (i?i-1:0);
+	  im2 = (im1?im1-1:0);
+      	  ip1 = (i+1==Nx?i:i+1);
+	  fim = *((npy_float64*)PyArray_GETPTR1(f, im1));
+	  fijk = *((npy_float64*)PyArray_GETPTR1(f, i));
+	  fip = *((npy_float64*)PyArray_GETPTR1(f, ip1));
+	  Dxpf = (fip - fijk) / hx;
+	  aijk = abs(Dxpf);
+	  aijk = (aijk>FLOAT64_EPS?Dxpf / aijk:0.0);
+	  Dxpf = (fijk - fim) / hx;
+	  aim = abs(Dxpf);
+	  aim = (aim>FLOAT64_EPS?Dxpf/aim:0.0); 		  
+	  Dxma = (aijk - aim) / hx;
+	  *((npy_float64*)PyArray_GETPTR1(r, i)) = Dxma;
 	}
     }
   else
@@ -891,6 +953,7 @@ static PyMethodDef module_methods[] = {
   {"update_estimate_poisson", update_estimate_poisson, METH_VARARGS, "update_estimate_poisson(a,b,epsilon) -> e,s,u,n == `a *= b, s,u are photon counts`"},
   {"update_estimate_gauss", update_estimate_gauss, METH_VARARGS, "update_estimate_gauss(a,b,epsilon, alpha) -> e,s,u,n == `a += alpha * b, s,u are photon counts`"},
   {"div_unit_grad", div_unit_grad, METH_VARARGS, "div_unit_grad(f, (hx,hy,hz)) == `div(grad f/|grad f|)`"},
+  {"div_unit_grad1", div_unit_grad1, METH_VARARGS, "div_unit_grad1(f, hx) == `div(grad f/|grad f|)`"},
   {"fourier_sphere", fourier_sphere, METH_VARARGS, "fourier_sphere((Nx, Ny, Nz), (Dx, Dy, Dz), eps or pcount)"},
   //  {"zero_if_zero_inplace", zero_if_zero_inplace, METH_VARARGS, "zero_if_zero_inplace(a,b) == `a = a if b!=0 else 0`"},
   //{"poisson_hist_factor_estimate", poisson_hist_factor_estimate, METH_VARARGS, "poisson_hist_factor_estimate(a,b,c) -> (stable,unstable)"},
