@@ -14,6 +14,6 @@ Package content
 """
 
 __autodoc__ = ['cluster_tools', 'psf', 'deconvolution',
-               'spots_to_psf']
+               'spots_to_psf', 'snr']
 
 from .psf import spots_to_psf
