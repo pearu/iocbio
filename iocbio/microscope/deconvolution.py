@@ -44,6 +44,7 @@ import time
 import numpy
 import numpy as np
 from .dv import dv
+from .snr import estimate_snr
 from scipy import fftpack
 from scipy import ndimage
 import scipy.stats
@@ -129,6 +130,11 @@ def mse(a, b):
 def idiv(a, b):
     return (a * numpy.log(a/b) - a + b).mean()
 
+
+def hasharr(arr):
+    import hashlib
+    return hashlib.sha1 (arr).hexdigest()
+
 class Deconvolve(FFTTasks):
     """
     Base class for deconvolution worker classes.
@@ -193,46 +199,39 @@ class Deconvolve(FFTTasks):
         snr = None
         if options.get(degrade_input=False):
             self.test_data = self.data
-            if options.get(first_estimate='input image')=='last result':
-                print 'Loading degraded image.'
-                self.data = ImageStack.load(os.path.join(self.cache_dir, 'degraded.tif')).images
+
+            degraded_path = os.path.join(self.cache_dir, 'degraded.tif')
+
+            print 'Adjusting SNR of input data..',
+            snr = options.get(degrade_input_snr=0.0)
+            data = self.convolve(self.test_data)
+            data = np.where(data<=0, 1e-16, data)
+            max_data = data.max()
+            if snr==0.0:
+                snr = numpy.sqrt(max_data)
             else:
-                snr = options.get(degrade_input_snr=0.0)
+                coeff = snr*snr/max_data
+                data *= coeff
+                self.test_data *= coeff
+                print 'scaling test data by %r' % (coeff),
+            print 'SNR=',snr,
+            print 'done'
+
+            if options.get(first_estimate='input image')=='last result' and os.path.isfile(degraded_path):
+                print 'Loading degraded image.'
+                self.data = ImageStack.load(degraded_path).images
+            else:
                 print 'Degrading image with Poisson noise..',
                 import scipy.stats
-                data = self.convolve(self.data)
-                max_data = data.max()
-                if snr==0.0:
-                    snr = numpy.sqrt(max_data)
-                else:
-                    coeff = snr*snr/max_data
-                    data *= coeff
-                    self.test_data *= coeff
-                data = np.where(data<=0, 1e-16, data)
                 self.data = scipy.stats.poisson.rvs(data).astype(data.dtype)
                 print 'done.'
                 print 'Saving degraded image.'
                 self.save(self.data, 'degraded.tif', True)
-
-                d4 = ops_ext.kullback_leibler_divergence(self.data.astype(numpy.float64), data.astype (numpy.float64), 5.0)
-                print 'Kullback-Leibler divergence of degraded image', d4, ' (should be close to 1/2)'
+            d4 = ops_ext.kullback_leibler_divergence(self.data.astype(numpy.float64), data.astype (numpy.float64), 5.0)
+            print 'Kullback-Leibler divergence of degraded image', d4, ' (should be close to 1/2)'
 
         if snr is None:
-            data = self.data
-            values = []
-            for indices in zip (*np.where(data==data.max())):
-                for i0 in range (indices[0]-1,indices[0]+2):
-                    if i0>=data.shape[0]:
-                        i0 -= data.shape[0]
-                    for i1 in range (indices[1]-1,indices[1]+2):
-                        if i1>=data.shape[1]:
-                            i1 -= data.shape[1]
-                        for i2 in range (indices[2]-1,indices[2]+2):
-                            if i2>=data.shape[2]:
-                                i2 -= data.shape[2]
-                            values.append (data[i0,i1,i2])
-            mx = numpy.mean(values)
-            snr = numpy.sqrt(mx)
+            snr = estimate_snr(self.data)
         print 'Input image has signal-to-noise ratio', snr
         print 'Suggested RLTV regularization parameter: %s[blocky]..%s[honeycomb]' % (43/snr, 60/snr)
         self.snr = snr
@@ -450,6 +449,8 @@ class Deconvolve(FFTTasks):
                     stop = False
 
                 exec 'data_file.write(%s)' % (', '.join (data_to_save))
+                if not save_intermediate_results and stop:
+                    self.save(estimate, 'result_%s.tif' % (count))
 
         except KeyboardInterrupt:
             stop_message = 'Iteration was interrupted by user.'
