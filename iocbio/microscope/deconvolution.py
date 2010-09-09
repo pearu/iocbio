@@ -213,6 +213,10 @@ class Deconvolve(FFTTasks):
                 print 'done.'
                 print 'Saving degraded image.'
                 self.save(self.data, 'degraded.tif', True)
+
+                d4 = ops_ext.kullback_leibler_divergence(self.data.astype(numpy.float64), data.astype (numpy.float64), 5.0)
+                print 'Kullback-Leibler divergence of degraded image', d4, ' (should be close to 1/2)'
+
         if snr is None:
             data = self.data
             values = []
@@ -286,7 +290,8 @@ class Deconvolve(FFTTasks):
         options = self.options
         save_intermediate_results = options.get(save_intermediate_results=False)
 
-        data_to_save = ('count', 't', 'mn', 'mx', 'tau1', 'tau2', 'leak', 'e', 's', 'u', 'n','u_esu', 'mse', 'mem')
+        data_to_save = ('count', 't', 'mn', 'mx', 'tau1', 'tau2', 'leak', 'e', 's', 'u', 'n','u_esu', 'mse', 'mem',
+                        'klic')
 
         data_file_name = os.path.join(self.cache_dir, 'deconvolve_data.txt')
 
@@ -388,8 +393,13 @@ class Deconvolve(FFTTasks):
                     mn, mx = estimate.min(), estimate.max()
 
                 if 'mse' in data_to_save:
-                    mse = ((self.convolve(estimate, inplace=False) - input_data)**2).sum() / data_norm2
+                    eh = self.convolve(estimate, inplace=False)
+                    mse = ((eh - input_data)**2).sum() / data_norm2
                     info_map['MSE=%s'] = mse
+
+                if 'klic' in data_to_save:
+                    klic = ops_ext.kullback_leibler_divergence(input_data, eh, 1.0)
+                    info_map['KLIC=%s'] = klic
 
                 if 'mseo' in data_to_save:
                     mseo = ((estimate - self.test_data)**2).sum() / test_data_norm2
