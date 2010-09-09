@@ -353,7 +353,11 @@ def expand_to_shape(data, shape, dtype=None, background=None):
             d -= 1
         slices.append(slice(a, b))
         rhs_slices.append(slice(c, d))
-    expanded_data[tuple(slices)] = data[tuple (rhs_slices)]
+    try:
+        expanded_data[tuple(slices)] = data[tuple (rhs_slices)]
+    except ValueError:
+        print data.shape, shape
+        raise
     return expanded_data
 
 def contract_to_shape(data, shape, dtype=None):
