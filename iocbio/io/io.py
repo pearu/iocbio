@@ -583,9 +583,13 @@ class RowFile:
                 continue
             if line.startswith ('#'):
                 continue
-            data = map(float,line.strip().split(self.data_sep))
+            data = line.strip().split(self.data_sep)
             for i, t in enumerate (titles):
-                d[t].append(data[i])
+                try:
+                    v = float(data[i])
+                except ValueError:
+                    v = 0.0
+                d[t].append(v)
         f.close()
         if with_titles:
             return d, titles
