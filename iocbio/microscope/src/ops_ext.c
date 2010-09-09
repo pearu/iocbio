@@ -318,6 +318,77 @@ static PyObject *poisson_hist_factor_estimate(PyObject *self, PyObject *args)
   return Py_BuildValue("dd",stable, unstable);
 }
 
+// kldiv(f,f0)=E(f0-f+f*log(f/f0)) f0,f>=level
+static PyObject* kullback_leibler_divergence(PyObject *self, PyObject *args)
+{
+  PyObject* a = NULL;
+  PyObject* b = NULL;
+  npy_float64 f,f0, level = 1.0;
+  npy_intp sz = 0, i, count=0;
+  if (!PyArg_ParseTuple(args, "OO|f", &a, &b, &level))
+    return NULL; 
+  if (!(PyArray_Check(a) && PyArray_Check(b)))
+    {
+      PyErr_SetString(PyExc_TypeError,"arguments must be array objects");
+      return NULL;
+    }
+  sz = PyArray_SIZE(a);
+
+  if (sz != PyArray_SIZE(b))
+    {
+      PyErr_SetString(PyExc_TypeError,"argument sizes must be equal");
+      return NULL;
+    }
+  if (PyArray_TYPE(a) != PyArray_TYPE(b))
+    {
+      PyErr_SetString(PyExc_TypeError,"argument types must be same");
+      return NULL;
+    }
+  level = (level<0? 0.0 : level);
+  switch(PyArray_TYPE(a))
+    {
+    case PyArray_FLOAT64:
+      {
+	npy_float64 result=0.0;
+	for (i=0; i<sz; ++i)
+	  {
+	    f = *((npy_float64*)PyArray_DATA(a) + i);
+	    f0 = *((npy_float64*)PyArray_DATA(b) + i);
+	    if (f0<=level || f<level)
+	      continue;
+	    if (f==0.0)
+	      result += f0;
+	    else
+	      result += f0 - f + f*log(f/f0);
+	    count ++;
+	  }
+	Py_BuildValue("f", result/count);
+      }
+      break;
+    case PyArray_FLOAT32:
+      {
+	npy_float64 result=0.0;
+	for (i=0; i<sz; ++i)
+	  {
+	    f = *((npy_float32*)PyArray_DATA(a) + i);
+	    f0 = *((npy_float32*)PyArray_DATA(b) + i);
+	    if (f0<=level || f<level)
+	      continue;
+	    if (f==0.0)
+	      result += f0;
+	    else
+	      result += f0 - f + f*log(f/f0);
+	    count ++;
+	  }
+	Py_BuildValue("f", result/count);
+      }
+      break;
+    default:
+      PyErr_SetString(PyExc_TypeError,"argument types must be float64");
+      return NULL;
+    }
+}
+
 static PyObject *zero_if_zero_inplace(PyObject *self, PyObject *args)
 {
   PyObject* a = NULL;
@@ -745,8 +816,6 @@ static PyObject *div_unit_grad1(PyObject *self, PyObject *args)
   int i, im1, im2, ip1;
   npy_float64* f_data_dp = NULL;
   npy_float64* r_data_dp = NULL;
-  npy_float32* f_data_sp = NULL;
-  npy_float32* r_data_sp = NULL;
   double hx;
   double hx2;
   PyArrayObject* r = NULL;
@@ -777,17 +846,26 @@ static PyObject *div_unit_grad1(PyObject *self, PyObject *args)
       for (i=0; i<Nx; ++i)
 	{
 	  im1 = (i?i-1:0);
-	  im2 = (im1?im1-1:0);
       	  ip1 = (i+1==Nx?i:i+1);
 	  fim = *((npy_float64*)PyArray_GETPTR1(f, im1));
 	  fijk = *((npy_float64*)PyArray_GETPTR1(f, i));
 	  fip = *((npy_float64*)PyArray_GETPTR1(f, ip1));
 	  Dxpf = (fip - fijk) / hx;
-	  aijk = abs(Dxpf);
+	  //if (Dxpf==0.0) aijk = 0.0;
+	  //else if (Dxpf<0.0) aijk = -1.0;
+	  //else aijk = 1.0;
+	  aijk = sqrt(Dxpf*Dxpf);
 	  aijk = (aijk>FLOAT64_EPS?Dxpf / aijk:0.0);
+	  //aijk = abs(Dxpf);
+	  //aijk = (aijk>FLOAT64_EPS?Dxpf / aijk:0.0);
 	  Dxpf = (fijk - fim) / hx;
-	  aim = abs(Dxpf);
-	  aim = (aim>FLOAT64_EPS?Dxpf/aim:0.0); 		  
+	  //if (Dxpf==0.0) aim = 0.0;
+	  //else if (Dxpf<0.0) aim = -1.0;
+	  //else aim = 1.0;
+	  //aim = abs(Dxpf);
+	  //aim = (aim>FLOAT64_EPS?Dxpf/aim:0.0); 		  
+	  aim = sqrt(Dxpf*Dxpf);
+	  aim = (aim>FLOAT64_EPS?Dxpf/aim:0.0);
 	  Dxma = (aijk - aim) / hx;
 	  *((npy_float64*)PyArray_GETPTR1(r, i)) = Dxma;
 	}
@@ -955,6 +1033,7 @@ static PyMethodDef module_methods[] = {
   {"div_unit_grad", div_unit_grad, METH_VARARGS, "div_unit_grad(f, (hx,hy,hz)) == `div(grad f/|grad f|)`"},
   {"div_unit_grad1", div_unit_grad1, METH_VARARGS, "div_unit_grad1(f, hx) == `div(grad f/|grad f|)`"},
   {"fourier_sphere", fourier_sphere, METH_VARARGS, "fourier_sphere((Nx, Ny, Nz), (Dx, Dy, Dz), eps or pcount)"},
+  {"kullback_leibler_divergence", kullback_leibler_divergence, METH_VARARGS, "kullback_leibler_divergence(f, f0) -> float"},
   //  {"zero_if_zero_inplace", zero_if_zero_inplace, METH_VARARGS, "zero_if_zero_inplace(a,b) == `a = a if b!=0 else 0`"},
   //{"poisson_hist_factor_estimate", poisson_hist_factor_estimate, METH_VARARGS, "poisson_hist_factor_estimate(a,b,c) -> (stable,unstable)"},
 
