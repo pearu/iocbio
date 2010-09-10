@@ -1,4 +1,4 @@
-# To make ioc directory a Python package. Keep this file empty!!
+# To make iocbio directory a Python package. Keep this file empty!!
 """
 ================
 Python interface

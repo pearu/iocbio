@@ -587,7 +587,7 @@ class RowFile:
             for i, t in enumerate (titles):
                 try:
                     v = float(data[i])
-                except ValueError:
+                except (IndexError,ValueError):
                     v = 0.0
                 d[t].append(v)
         f.close()
