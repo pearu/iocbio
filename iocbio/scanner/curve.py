@@ -4,7 +4,7 @@ import time
 
 VERBOSE = 1
 
-from ioc.microscope.utils import argument_string
+from iocbio.utils import argument_string
 
 def time_it(func):
     """ Print how long calling given function took.
