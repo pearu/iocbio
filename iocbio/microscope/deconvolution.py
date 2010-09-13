@@ -532,7 +532,8 @@ class DeconvolveRLPoisson (Deconvolve):
                     except Exception, msg:
                         print 'Failed to read lambda_lsq_coeff cache: %s' % (msg)
                 if lambda_lsq_coeff == 0.0:
-                    lambda_lsq_coeff = self.snr/50.0 * lambda_lsq
+                    # C * lambda_0 = 50/SNR
+                    lambda_lsq_coeff = 50.0/self.snr/lambda_lsq
                 if lambda_lsq_coeff < 0:
                     print 'Negative lambda_lsq, skip storing lambda_lsq_coeff'
                 else:
@@ -540,6 +541,8 @@ class DeconvolveRLPoisson (Deconvolve):
                     f = open(lambda_lsq_coeff_path, 'w')
                     f.write(str (lambda_lsq_coeff))
                     f.close()
+                print 'lambda-opt=',50.0/self.snr
+                print 'lambda-lsq-0=',lambda_lsq
                 print 'lambda-lsq-coeff=', lambda_lsq_coeff
             else:
                 lambda_lsq_coeff = self.lambda_lsq_coeff
