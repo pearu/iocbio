@@ -524,13 +524,22 @@ class DeconvolveRLPoisson (Deconvolve):
             dv_estimate = ops_ext.div_unit_grad(estimate, self.voxel_sizes)
             lambda_lsq = ((1.0-cache.real)*dv_estimate).sum() / (dv_estimate*dv_estimate).sum()
             if self.lambda_lsq_coeff is None:
+                lambda_lsq_coeff_path = os.path.join(self.cache_dir, 'lambda_lsq_coeff.txt')
                 lambda_lsq_coeff = options.get(rltv_lambda_lsq_coeff=0.0)
+                if lambda_lsq_coeff in [None, 0.0] and options.get(first_estimate='input image')=='last result' and os.path.isfile (lambda_lsq_coeff_path):
+                    try:
+                        lambda_lsq_coeff = float(open (lambda_lsq_coeff_path).read ())
+                    except Exception, msg:
+                        print 'Failed to read lambda_lsq_coeff cache: %s' % (msg)
                 if lambda_lsq_coeff == 0.0:
                     lambda_lsq_coeff = self.snr/50.0 * lambda_lsq
                 if lambda_lsq_coeff < 0:
                     print 'Negative lambda_lsq, skip storing lambda_lsq_coeff'
                 else:
                     self.lambda_lsq_coeff = lambda_lsq_coeff
+                    f = open(lambda_lsq_coeff_path, 'w')
+                    f.write(str (lambda_lsq_coeff))
+                    f.close()
                 print 'lambda-lsq-coeff=', lambda_lsq_coeff
             else:
                 lambda_lsq_coeff = self.lambda_lsq_coeff
