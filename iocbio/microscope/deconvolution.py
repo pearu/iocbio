@@ -307,22 +307,33 @@ class Deconvolve(FFTTasks):
         elif first_estimate=='last result':
             if os.path.isfile(data_file_name):
                 data_file = RowFile(data_file_name)
-                data = data_file.read()
+                data,data_titles = data_file.read(with_titles=True)
                 data_file.close()
-                counts = map (int, data['count'])
-                count = counts[-1]
-                fn =os.path.join(self.cache_dir, 'result_%s.tif' % (count)) 
-                append_data_file = True
-                print 'Loading the last result from %r.' % (fn)
-                stack = ImageStack.load(fn)
-                estimate = numpy.array(stack.images, dtype=self.float_type)
-                f = open(os.path.join(self.cache_dir, 'deconvolve_data_%s_%s.txt' % (counts[0],count)), 'w')
-                fi = open(data_file_name)
-                f.write(fi.read())
-                fi.close()
-                f.close()
-            else:
+                counts = map(int, data['count'])
+                for count in reversed (counts):
+                    fn =os.path.join(self.cache_dir, 'result_%s.tif' % (count))
+                    if os.path.isfile(fn):
+                        append_data_file = True
+                        break
+                if append_data_file:
+                    print 'Loading the last result from %r.' % (fn)
+                    stack = ImageStack.load(fn)
+                    estimate = numpy.array(stack.images, dtype=self.float_type)
+                    f = open(os.path.join(self.cache_dir, 'deconvolve_data_%s_%s.txt' % (counts[0],count)), 'w')
+                    fi = open(data_file_name)
+                    f.write(fi.read())
+                    fi.close()
+                    f.close()
+                    if count != counts[-1]:
+                        print 'Expected result %s but got %s, fixing %r' % (counts[-1], count, data_file_name)
+                        data_file = RowFile(data_file_name, titles=data_titles)
+                        for c in range(count+1):
+                            data_file.write(', '.join([str(data[t][c]) for t in data_titles]))
+                        data_file.close()
+
+            if not append_data_file:
                 print 'Found no results in %r, using input image as estimate.' % (self.cache_dir)
+                count = -1
                 estimate = input_data.copy()
         else:
             raise NotImplementedError(`first_estimate`)
