@@ -15,7 +15,7 @@ See http://code.google.com/p/iocbio/ for more information.
 CLASSIFIERS = ''
 PLATFORMS = ['Linux', 'Windows']
 MAJOR               = 1
-MINOR               = 1
+MINOR               = 2
 MICRO               = 0
 ISRELEASED          = not True
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
