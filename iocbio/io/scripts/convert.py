@@ -108,7 +108,7 @@ def runner (parser, options, args):
 
     print 'Saving new stack to',output_path
     if output_ext=='tif':
-        ImageStack(new_images, stack.pathinfo).save(output_path)
+        ImageStack(new_images, stack.pathinfo, options=options).save(output_path)
     elif output_ext=='data':
         from iocbio.microscope.psf import normalize_unit_volume, discretize
         value_resolution = stack.pathinfo.get_value_resolution()

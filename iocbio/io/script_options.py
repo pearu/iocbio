@@ -49,6 +49,9 @@ def set_show_options(parser):
     parser.add_option ('--auto-scale', action='store_true', default=False,
                        help = 'Automatically scale each frame.')
 
+    parser.add_option ('--view-3d', type='string', default='',
+                       help = 'Specify z=const, y=const, x=const planes for viewing 3d stack.')
+
     parser.add_option_group(get_io_options_group(parser))
     parser.add_option_group(get_microscope_options_group (parser))
 
