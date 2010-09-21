@@ -13,10 +13,12 @@ import numpy
 from iocbio.io import ImageStack
 from iocbio.optparse_gui import OptionParser
 from iocbio.io.io import fix_path, RowFile
-from iocbio.utils import tostr
+from iocbio.utils import tostr, Options
 
 def runner (parser, options, args):
     
+    options = Options (options)
+
     run_method = getattr(parser, 'run_method', 'subcommand')
     if os.name=='posix' and run_method == 'subprocess':
         print 'This script cannot be run using subprocess method. Choose subcommand to continue.'
@@ -111,6 +113,12 @@ def runner (parser, options, args):
     fig.canvas.mpl_connect('key_press_event', on_keypressed)
 
     plt.draw()
+
+    output_path = options.get (output_path='')
+    if output_path:
+        plt.savefig (output_path)
+        print 'wrote',output_path
+        sys.exit(0)
     plt.show()
 
 def main ():

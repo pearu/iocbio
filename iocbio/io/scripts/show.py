@@ -150,11 +150,33 @@ def runner (parser, options, args):
         pyplot.title(title, size=11)
         axes = pyplot.gca()
 
-        axes.set_xticks([0, yx_image.shape[1]/2, yx_image.shape[1], (yx_image.shape[1]+image.shape[1])/2, image.shape[1]-1])
-        axes.set_xticklabels (['0', 'X', '%.1fum' % (voxel_sizes[2]*images.shape[2]*1e6), 'Z', '%.1fum' % (voxel_sizes[0]*images.shape[0]*1e6)])
+        xtickdata = [(0,'0'),
+                     #(yx_image.shape[1]/2, 'X'),
+                     (yx_image.shape[1],  '%.1fum' % (voxel_sizes[2]*images.shape[2]*1e6)),
+                     ( (yx_image.shape[1]+image.shape[1])/2, 'Z'),
+                     (image.shape[1]-1, '%.1fum' % (voxel_sizes[0]*images.shape[0]*1e6)),
+                     (yx_image.shape[1]*view_3d[2]/images.shape[2],'X=%spx' % (view_3d[2])),
+                     ]
+        ytickdata = [(0,'0'),
+                     #(yx_image.shape[0]/2, 'Y'),
+                     (yx_image.shape[0], '%.1fum' % (voxel_sizes[1]*images.shape[1]*1e6)),
+                     #((yx_image.shape[0]+image.shape[0])/2, 'Z'),
+                     ( image.shape[0]-1, '%.1fum' % (voxel_sizes[0]*images.shape[0]*1e6)),
+                     (yx_image.shape[0]*view_3d[1]/images.shape[1],'Y=%spx' % (view_3d[1])),
+                     (yx_image.shape[0]+yz_image.shape[1]*view_3d[0]/images.shape[0], 'Z=%spx' % (view_3d[0])),
+                     ]
 
-        axes.set_yticks([0, yx_image.shape[0]/2, yx_image.shape[0], (yx_image.shape[0]+image.shape[0])/2, image.shape[0]-1])
-        axes.set_yticklabels (['0', 'Y', '%.1fum' % (voxel_sizes[1]*images.shape[1]*1e6),'Z', '%.1fum' % (voxel_sizes[0]*images.shape[0]*1e6)])
+        xtickdata.sort ()
+        xticks, xticklabels = zip(*xtickdata)
+
+        ytickdata.sort ()
+        yticks, yticklabels = zip(*ytickdata)
+
+
+        axes.set_xticks(xticks)
+        axes.set_xticklabels (xticklabels)
+        axes.set_yticks(yticks)
+        axes.set_yticklabels (yticklabels)
 
         cbar = pyplot.colorbar(shrink=0.8)
 
@@ -175,6 +197,11 @@ def runner (parser, options, args):
         axes = figure.get_axes()[0]
         axes.set_xlabel(xlabel)
         axes.set_ylabel(ylabel)
+    output_path = options.get (output_path='')
+    if output_path:
+        pyplot.savefig (output_path)
+        print 'wrote',output_path
+        sys.exit(0)
     pyplot.show()
 
 def main ():

@@ -52,6 +52,11 @@ def set_show_options(parser):
     parser.add_option ('--view-3d', type='string', default='',
                        help = 'Specify z=const, y=const, x=const planes for viewing 3d stack.')
 
+    parser.add_option ('--output-path', '-o',
+                       type = 'file', metavar='OUTPUT_PATH',
+                       help = 'Specify output PATH for saving figure.'
+                       )
+
     parser.add_option_group(get_io_options_group(parser))
     parser.add_option_group(get_microscope_options_group (parser))
 
@@ -164,3 +169,8 @@ def set_rowfile_plot_options (parser):
                       help = 'Specify keys for x-axis.')
     parser.add_option('--y-keys',
                       help = 'Specify keys for y-axis. When not specified then use all keys.')
+
+    parser.add_option ('--output-path', '-o',
+                       type = 'file', metavar='OUTPUT_PATH',
+                       help = 'Specify output PATH for saving figure.'
+                       )
