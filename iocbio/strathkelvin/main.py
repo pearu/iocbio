@@ -34,6 +34,8 @@ import wx
 import wx.gizmos as gizmos
 import wx.lib.dialogs
 
+from ..timeunit import Seconds, Time
+
 class GlobalAttr:
 
     def _setattr_from_parents(self, name):
@@ -897,12 +899,13 @@ add a comment.
                 except ValueError, msg:
                     self.error('Failed to convert dt=%r to float. Try stopping and starting the experiment.' % (dt))
                     raise
+                dt = Seconds(dt)
                 self.experiment_title = message
                 self.model.set_title(message)
                 self.model.start()
                 self.dt = dt
                 self.model.init_slope(dt, s=10)
-                update = int(dt*1e3/2.1)
+                update = int(dt*1e3/2.1) # milliseconds
                 self.timer_get_data.Start(update)
                 self.timer_draw_data.Start(max(self.min_draw_ms, update))
                 self.experiment_started = True
@@ -938,11 +941,11 @@ add a comment.
         x,y = event.xdata, event.ydata
         if x is not None:
             channel = self.model.channels[chamber_index-1]
-            t = channel.convert_time(x, inverse=True)
+            t = Time(x, unit=channel.get_time_unit())
         #print 'onpress: clicked in axes %d at (x,y)=%s, %s' % (chamber_index, x, y)
         if event.button==3:
             if os.name=='nt':
-                t = channel.convert_time(t)
+                # TODO: test this path
                 self.select_task_dialog(chamber_index, t)
             else:
                 # on linux select_task_dialog will hang, could be matplotlib/wx bug.
@@ -953,12 +956,13 @@ add a comment.
                 items = [(abs(t-xx),(ci,xx)) for ci,xx in self.marks if ci==chamber_index]
                 if items:
                     item = min(items)[1]
-                    self.info("Chamber %s event@%.3fsecs: %s" % (item[0], item[1], self.marks[item]))
+                    self.info("Chamber %s event@%s: %s" % (item[0], item[1], self.marks[item]))
             self.disable_draw = False
         return
 
     def select_task_dialog(self, channel_index, t):
         self.disable_draw = True
+        channel = self.model.channels[channel_index - 1]
         dlg = SelectTaskDialog(self, channel_index, t)
         dlg.CenterOnScreen()
         val = dlg.ShowModal()
@@ -969,8 +973,8 @@ add a comment.
             comment = dlg.get_comment()
             if comment:
                 task = '%s [%s]' % (task, comment)
-            channel = self.model.channels[channel_index - 1]
-            t = channel.convert_time(t, inverse=True)
+
+            t = Time (t, unit=channel.get_time_unit())
             self.model.add_channel_task(channel_index, t, task)
             if self.have_axes:
                 self.marks[channel_index, t] = task
@@ -989,9 +993,9 @@ add a comment.
         if self.have_axes:
             channel = self.model.channels[channel_index-1]
             axes1 = self.axes1_lst[channel_index-1]
-            t = channel.convert_time(t)
+            t = Time(t, unit=channel.get_time_unit())
+            t = float(t)
             line = axes1.axvline(t, color='g')
-            
             ylim = axes1.get_ylim ()
             axes1.annotate(task, (t, 0.5*(ylim[0]+ylim[1])))
 
@@ -1000,7 +1004,10 @@ add a comment.
         if t is None:
             return
         if event.key in '123456':
-            self.select_task_dialog(int(event.key), t)
+            chamber_index = int(event.key)
+            channel = self.model.channels[chamber_index-1]
+            t = Time (t, unit=channel.get_time_unit())
+            self.select_task_dialog(chamber_index, t)
 
     def need_axis_update(self):
         if not self.axes1_lst:
@@ -1029,7 +1036,6 @@ add a comment.
             axes1.set_ylim(axis1range)
             axes2.set_xlim(axis0range)
             axes2.set_ylim(axis2range)
-
 
     def create_axes(self):
         del self.axes1_lst[:]
@@ -1199,12 +1205,8 @@ class SelectTaskDialog(wx.Dialog, GlobalAttr):
     def get_time(self):
         t = self.time_ctrl.GetValue().strip()
         if not t:
-            return 0
-        try:
-            t = float(t)
-        except Exception, msg:
-            self.warning('Failed to evaluate time string %r, using %s' % (t, self.t))
-            t = self.t
+            t = 0
+        t = Time(t, unit='sec')
         return t
 
     def get_comment (self):

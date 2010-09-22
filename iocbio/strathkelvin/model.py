@@ -4,6 +4,8 @@ import os
 import time
 import glob
 
+from ..timeunit import Time, Seconds, Minutes, Hours
+
 class Channel:
     """ Holds channel data.
 
@@ -150,10 +152,10 @@ class Channel:
         self.value_data.append(value)
         self.data_slope.add(value)
 
-    def add_task (self, t, task):
+    def add_task (self, tm, task):
         """ Add task to data.
         """
-        dist = [(abs(t1-t), i) for i,t1 in enumerate(self.time_data)]
+        dist = [(abs(t1-tm), i) for i,t1 in enumerate(self.time_data)]
         if dist:
             t = self.time_data[min(dist)[1]]
         if t in self.tasks:
@@ -191,20 +193,10 @@ class Channel:
     def set_parameter(self, name, value):
         self.params[name] = value
 
-    def convert_time(self, t, inverse=False):
-        unit = self.get_time_unit()
-        if inverse:
-            factor = dict(s=1, min=60, h=60*60)[unit]
-        else:
-            factor = dict(s=1, min=1/60, h=1/60/60)[unit]
-        if factor==1:
-            return t
-        if isinstance (t, list):
-            return [factor*ts for ts in t]
-        return factor * t
-
     def get_time (self):
-        return self.convert_time(self.time_data)
+        unit = self.get_time_unit()
+        return [Time (t, unit=unit) for t in self.time_data]
+        #return self.time_data
 
     def get_data (self):
         return self.value_data
@@ -254,6 +246,7 @@ class DataSlope:
     def add(self, yn, negative_slope=True):
         self.n += 1
         s, n, dt = self.s, self.n, self.dt
+        dt = float (dt) # seconds
         y = self.y
         sum_y = self.sum_y
         sum_iy = self.sum_iy
@@ -356,6 +349,7 @@ class Model:
         channel = self.channels[0]
         if not channel.time_data:
             return 0
+        return channel.time_data[-1]
         return channel.convert_time(channel.time_data[-1])
 
     def start(self):
@@ -616,28 +610,44 @@ class Model:
             assert axis == 0,`axis`
             t1 = self.get_current_time()
             interval = self.get_parameter_value('%s_axis_interval' % (label), protocol=protocol)
-            try:
-                dt = float(interval)
-            except ValueError, msg:
-                print 'Failed to convert %r to float: %s' % (interval, msg)
-                dt = 1
-            return t1 - dt, t1
+            unit = self.get_parameter_value('%s_units' % (label), protocol=protocol)
+            dt = Time(interval, unit)
+            t1 = Time(t1, unit)
+            return float(t1 - dt), float(t1)
         if mode != 'range':
             return None, None
         range = self.get_parameter_value('%s_axis_range' % (label), protocol=protocol)
         if range is None:
             return None, None
 
-        min, max = range.split('..')
-        try:
-            min = float (min.strip())
-        except ValueError:
-            min = None
-        try:
-            max = float (max.strip())
-        except ValueError:
-            max = None
-
+        if '..' in range:
+            min, max = range.split('..',1)
+        elif '-' in range:
+            min, max = range.rsplit('-',1)
+        else:
+            print 'Unknown range: %r' % (r)
+            return None, None
+        min = min.strip ()
+        max = max.strip ()
+        if label=='time':
+            unit = self.get_parameter_value('%s_units' % (label), protocol=protocol)
+            if min.lower() in ['', 'none']:
+                min = None
+            else:
+                min = float(Time (min, unit))
+            if max.lower() in ['', 'none']:
+                max = None
+            else:
+                max = float(Time (max, unit))
+        else:
+            try:
+                min = float (min)
+            except ValueError:
+                min = None
+            try:
+                max = float (max)
+            except ValueError:
+                max = None
         return min, max
 
     def get_axis_interval(self, axis=1, protocol='_Configuration'):
@@ -646,8 +656,9 @@ class Model:
         if mode != 'interval':
             return
         interval = self.get_parameter_value ('%s_axis_interval'%label, protocol=protocol)
-        try: interval = float (interval)
-        except ValueError: interval = None
+
+        unit = self.get_parameter_value('%s_units' % (label), protocol=protocol)
+        interval = Time(interval, unit)
         return interval
 
     def get_slope_n(self, protocol='_Configuration'):
