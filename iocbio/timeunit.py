@@ -1,6 +1,40 @@
+"""Time units.
+
+Provides number like classes to manipulate time quantity with various
+units (Seconds, Minutes, and Hours).
+
+Examples
+--------
+
+  >>> from iocbio.timeunit import *
+  >>> Seconds(10)
+  Seconds(10.0)
+  >>> print Seconds(10)+Minutes(1)
+  70.0sec
+  >>> print Hours(1) - Minutes(20)
+  0.666667h
+  >>> print Hours(1) - Minutes(30)
+  0.5h
+  >>> print Seconds(Hours(1) - Minutes(30))
+  1800.0sec
+
+The base class, ``Time``, of ``Seconds``, ``Minutes``, and ``Hours`` classes can be used
+to construct time instances from strings and to convert between different
+units. For example::
+
+  >>> Time(20, unit='min')
+  Minutes(20.0)
+  >>> Time('60 seconds', unit='min')
+  Minutes(1.0)
+  >>> Time(Hours(1), unit='min')
+  Minutes(60.0)
+
+Module content
+--------------
 """
-Implementation of time units.
-"""
+
+# Author: Pearu Peterson
+# Created: September 2010
 
 from __future__ import division
 import re
@@ -10,7 +44,11 @@ __all__ = ['Time', 'Seconds', 'Minutes', 'Hours']
 re_time = re.compile (r'(?P<data>[+-]?(\d+(\s*[.]\s*\d+)?|[.]\s*\d+))\s*(?P<unit>(s|sec|seconds|second|m|min|minutes|minute|h|hour|hours|))')
 
 class Time (object):
-    """ Base class to time with units.
+    """ Base class to time quantity with units.
+
+    See also
+    --------
+    iocbio.timeunit
     """
     def __new__(cls, data, unit=None):
         """ Construct a Time instance.
@@ -140,6 +178,10 @@ class Time (object):
 
 class Seconds(Time):
     """ Time in seconds.
+
+    See also
+    --------
+    iocbio.timeunit
     """
 
     unit_label = 'sec'
@@ -152,6 +194,10 @@ class Seconds(Time):
 
 class Minutes(Time):
     """ Time in minutes.
+
+    See also
+    --------
+    iocbio.timeunit
     """
 
     unit_label = 'min'
@@ -164,6 +210,10 @@ class Minutes(Time):
 
 class Hours(Time):
     """ Time in hours.
+
+    See also
+    --------
+    iocbio.timeunit
     """
 
     unit_label = 'h'

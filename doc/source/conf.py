@@ -238,7 +238,7 @@ def scan_for_autodoc(obj, prefix, cache=set([])):
         n = obj.__name__
     else:
         n = prefix + '.' + obj.__name__
-        if not obj.__module__.startswith('iocbio'):
+        if hasattr (obj,'__module') and not obj.__module__.startswith('iocbio'):
             # skip external classes
             return
     if n not in cache:

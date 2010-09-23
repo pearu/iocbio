@@ -24,7 +24,8 @@ Modules
 
   iocbio.optparse_gui
   iocbio.utils
+  iocbio.timeunit
 """
 
 __autodoc__ = ['io', 'ops', 'microscope', 'optparse_gui', 'utils', 'scanner',
-               'strathkelvin']
+               'strathkelvin', 'timeunit']
