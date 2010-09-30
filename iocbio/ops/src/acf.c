@@ -163,8 +163,11 @@ double acf_evaluate(double* f, int n, double y, ACFInterpolationMethod mth)
   double p = 1.0;
   acf_calculate_data(f, n, iy, mth, &data, &sz);
   assert(data!=NULL);
-  for (i=0; i<sz; ++i, p *= dy)
-    result += data[i] * p;
+  if (dy==0.0)
+    result = data[0];
+  else
+    for (i=0; i<sz; ++i, p *= dy)
+      result += data[i] * p;
   return result;
 }
 
@@ -229,4 +232,18 @@ double acf_sine_fit(double* f, int n, int start_j, ACFInterpolationMethod mth)
   free(fvec);
   free(wa);
   return omega;
+}
+
+double acf_sine_power_spectrum(double* f, int n, double omega, ACFInterpolationMethod mth)
+{
+  double *data = NULL;
+  int sz = 0, j;
+  double a = acf_evaluate(f, n, 0.0, mth);
+  double r, result = 0.0;
+  for (j=1; j<n; ++j)
+    {
+      r = acf_evaluate(f, n, j, mth) - a*cos(omega*j)*(n-j)/n;
+      result += r*r;
+    }
+  return result;
 }

@@ -57,7 +57,7 @@ Module content
 # Created: September 2010
 
 from __future__ import division
-__all__ = ['acf', 'acf_argmax', 'acf_sinefit']
+__all__ = ['acf', 'acf_argmax', 'acf_sinefit', 'acf_sine_power_spectrum']
 
 try:
     from . import acf_ext
@@ -86,7 +86,7 @@ def acf(f, y, method='linear'):
 
     See also
     --------
-    acf_argmax, acf_sinefit
+    iocbio.ops.autocorrelation, acf_argmax, acf_sinefit
     """
     mth = dict(constant=0, linear=1, catmullrom=2, cubic=2)[method.lower()]
     return acf_ext.acf(f, y, mth)
@@ -113,7 +113,7 @@ def acf_argmax(f, start_j=1, method='linear'):
 
     See also
     --------
-    acf, acf_sinefit
+    iocbio.ops.autocorrelation, acf, acf_sinefit
     """
     mth = dict(constant=0, linear=1, catmullrom=2, cubic=2)[method.lower()]
     return acf_ext.acf_argmax (f, int(start_j), mth)
@@ -149,7 +149,40 @@ def acf_sinefit(f, start_j=1, method='linear'):
 
     See also
     --------
-    acf, acf_argmax
+    iocbio.ops.autocorrelation, acf, acf_argmax
     """
     mth = dict(constant=0, linear=1, catmullrom=2, cubic=2)[method.lower()]
     return acf_ext.acf_sinefit(f, start_j, mth)
+
+def acf_sine_power_spectrum(f, omega):
+    """ Evaluate sine power spectrum SinePower(f(x))(omega).
+
+    Definition::
+
+      SinePower(f(x))(omega) = int_0^N (ACF(f(x))(y) - A*cos(omega*y)*(N-y)/N)))^2 dy
+
+    Parameters
+    ----------
+    f : {numpy.array, sequence}
+      A sequence of f(x) values at nodal points x=0,...,N-1.
+    omega : {numpy.array, sequence, float}
+      An argument to SinePower(f(x))(omega) where the values should be
+      evaluated.
+
+    Returns
+    -------
+    values : {numpy.array, sequence}
+      The values of SinePower(f(x))(omega) at omega.
+
+    Notes
+    -----
+    The function is currently implemented only for constant
+    interpolation of f (x).
+
+    See also
+    --------
+    iocbio.ops.autocorrelation, acf, acf_sinefit
+    """
+    method = 'constant'
+    mth = dict(constant=0, linear=1, catmullrom=2, cubic=2)[method.lower()]
+    return acf_ext.acf_sine_power_spectrum(f, omega, mth)

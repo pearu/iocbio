@@ -147,11 +147,75 @@ static PyObject *py_acf_sine_fit(PyObject *self, PyObject *args)
   return Py_BuildValue("d",r);
 }
 
+static PyObject *py_acf_sine_power_spectrum(PyObject *self, PyObject *args)
+{
+  int i, n;
+  PyObject* f_py = NULL;
+  PyObject* f1_py = NULL;
+  PyObject* y_py = NULL;
+  PyObject* y1_py = NULL;
+  PyObject* r_py = NULL;
+  ACFInterpolationMethod mth = ACFUnspecified;
+  double y, r;
+  double *f = NULL;
+  if (!PyArg_ParseTuple(args, "OOi", &f1_py, &y1_py, &mth))
+    return NULL;
+  switch (mth)
+    {
+    case ACFInterpolationConstant: ;
+    case ACFInterpolationLinear: ;
+    case ACFInterpolationCatmullRom: break;
+    default:
+      PyErr_SetString(PyExc_TypeError,"third argument must be 0, 1, or 2");
+      return NULL;
+    }
+  f_py = PyArray_ContiguousFromAny(f1_py, PyArray_DOUBLE, 1, 1);
+  if (f_py==NULL)
+    return NULL;
+
+  n = PyArray_SIZE(f_py);
+  f = (double*)PyArray_DATA(f_py);
+
+  if (PyFloat_Check(y1_py))
+    {
+      y = PyFloat_AsDouble(y1_py);
+      r = acf_sine_power_spectrum(f, n, y, mth);
+      if (f1_py != f_py)
+	{
+	  Py_DECREF(f_py);
+	}
+      return Py_BuildValue("d",r);
+    }
+
+  y_py = PyArray_ContiguousFromAny(y1_py, PyArray_DOUBLE, 1, 1);
+  if (y_py==NULL)
+    return NULL;
+  r_py =  PyArray_SimpleNew(PyArray_NDIM(y_py), 
+			    PyArray_DIMS(y_py),
+			    PyArray_DOUBLE);
+  for (i=0; i<PyArray_SIZE(y_py); ++i)
+    {
+      y = *((double*)PyArray_GETPTR1(y_py, i));
+      r = acf_sine_power_spectrum(f, n, y, mth);
+      *(double*)PyArray_GETPTR1(r_py, i) = r;
+    }
+  if (y1_py != y_py)
+    {
+      Py_DECREF(y_py);
+    }
+  if (f1_py != f_py)
+    {
+      Py_DECREF(f_py);
+    }
+  return r_py;
+}
+
 
 static PyMethodDef module_methods[] = {
   {"acf", py_acf_evaluate, METH_VARARGS, "acf(f, y, mth)"},
   {"acf_argmax", py_acf_maximum_point, METH_VARARGS, "acf_argmax(f, start_j, mth)"},
   {"acf_sinefit", py_acf_sine_fit, METH_VARARGS, "acf_sinefit(f, start_j, mth)"},
+  {"acf_sine_power_spectrum", py_acf_sine_power_spectrum, METH_VARARGS, "acf_sine_power_spectrum(f, omega, mth)"},
   {NULL}  /* Sentinel */
 };
 
