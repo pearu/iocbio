@@ -13,15 +13,18 @@ manipulating microscope images.
   convolution
   window
   fft_tasks
+  autocorrelation
 
 Package content
 ---------------
 """
 
 __autodoc__ = ['regression', 'convolution', 'window', 'regress', 'convolve','apply_window',
-               'fft_tasks', 'FFTTasks']
+               'fft_tasks', 'FFTTasks', 
+               'autocorrelation', 'acf', 'acf_argmax', 'acf_sinefit']
 
 from .regression import regress
 from .convolution import convolve
 from .window import apply_window
 from .fft_tasks import FFTTasks
+from .autocorrelation import acf, acf_argmax, acf_sinefit
