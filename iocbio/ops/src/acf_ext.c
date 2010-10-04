@@ -35,7 +35,11 @@ static PyObject *py_acf_evaluate(PyObject *self, PyObject *args)
     {
     case ACFInterpolationConstant: ;
     case ACFInterpolationLinear: ;
-    case ACFInterpolationCatmullRom: break;
+    case ACFInterpolationCatmullRom: 
+    case ACFInterpolationConstantWithSizeReduction: ;
+    case ACFInterpolationLinearWithSizeReduction: ;
+    case ACFInterpolationCatmullRomWithSizeReduction: ;
+      break;
     default:
       PyErr_SetString(PyExc_TypeError,"third argument must be 0, 1, or 2");
       return NULL;
@@ -96,7 +100,11 @@ static PyObject *py_acf_maximum_point(PyObject *self, PyObject *args)
     {
     case ACFInterpolationConstant: ;
     case ACFInterpolationLinear: ;
-    case ACFInterpolationCatmullRom: break;
+    case ACFInterpolationCatmullRom: 
+    case ACFInterpolationConstantWithSizeReduction: ;
+    case ACFInterpolationLinearWithSizeReduction: ;
+    case ACFInterpolationCatmullRomWithSizeReduction: ;
+      break;
     default:
       PyErr_SetString(PyExc_TypeError,"third argument must be 0, 1, or 2");
       return NULL;
@@ -129,7 +137,11 @@ static PyObject *py_acf_sine_fit(PyObject *self, PyObject *args)
     {
     case ACFInterpolationConstant: ;
     case ACFInterpolationLinear: ;
-    case ACFInterpolationCatmullRom: break;
+    case ACFInterpolationCatmullRom: ;
+    case ACFInterpolationConstantWithSizeReduction: ;
+    case ACFInterpolationLinearWithSizeReduction: ;
+    case ACFInterpolationCatmullRomWithSizeReduction: ;
+      break;
     default:
       PyErr_SetString(PyExc_TypeError,"third argument must be 0, 1, or 2");
       return NULL;
@@ -164,7 +176,11 @@ static PyObject *py_acf_sine_power_spectrum(PyObject *self, PyObject *args)
     {
     case ACFInterpolationConstant: ;
     case ACFInterpolationLinear: ;
-    case ACFInterpolationCatmullRom: break;
+    case ACFInterpolationCatmullRom: ;
+    case ACFInterpolationConstantWithSizeReduction: ;
+    case ACFInterpolationLinearWithSizeReduction: ;
+    case ACFInterpolationCatmullRomWithSizeReduction: ;
+      break;
     default:
       PyErr_SetString(PyExc_TypeError,"third argument must be 0, 1, or 2");
       return NULL;

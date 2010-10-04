@@ -64,7 +64,7 @@ try:
 except ImportError, msg:
     print msg
 
-def acf(f, y, method='linear'):
+def acf(f, y, method='linear', enable_size_reduction=False):
     """ Evaluate autocorrelation function ACF(f(x))(y).
 
     Parameters
@@ -89,9 +89,11 @@ def acf(f, y, method='linear'):
     iocbio.ops.autocorrelation, acf_argmax, acf_sinefit
     """
     mth = dict(constant=0, linear=1, catmullrom=2, cubic=2)[method.lower()]
+    if enable_size_reduction:
+        mth += 10
     return acf_ext.acf(f, y, mth)
 
-def acf_argmax(f, start_j=1, method='linear'):
+def acf_argmax(f, start_j=1, method='linear', enable_size_reduction=False):
     """ Find the local maximum point of the autocorrelation function ACF(f(x)).
 
     Parameters
@@ -116,9 +118,11 @@ def acf_argmax(f, start_j=1, method='linear'):
     iocbio.ops.autocorrelation, acf, acf_sinefit
     """
     mth = dict(constant=0, linear=1, catmullrom=2, cubic=2)[method.lower()]
+    if enable_size_reduction:
+        mth += 10
     return acf_ext.acf_argmax (f, int(start_j), mth)
 
-def acf_sinefit(f, start_j=1, method='linear'):
+def acf_sinefit(f, start_j=1, method='linear', enable_size_reduction=False):
     """ Find the parameter omega of a sine-fit function for ACF(f(x)).
 
     The sine-fit function is defined as
@@ -152,6 +156,8 @@ def acf_sinefit(f, start_j=1, method='linear'):
     iocbio.ops.autocorrelation, acf, acf_argmax
     """
     mth = dict(constant=0, linear=1, catmullrom=2, cubic=2)[method.lower()]
+    if enable_size_reduction:
+        mth += 10
     return acf_ext.acf_sinefit(f, start_j, mth)
 
 def acf_sine_power_spectrum(f, omega):

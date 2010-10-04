@@ -37,10 +37,14 @@ Created: September 2010
 #ifndef ACF_H_INCLUDE
 #define ACF_H_INCLUDE
 
-typedef enum {ACFInterpolationConstant=0, 
-	      ACFInterpolationLinear=1, 
-	      ACFInterpolationCatmullRom=2, 
-	      ACFUnspecified=999} ACFInterpolationMethod;
+typedef enum {\
+  ACFInterpolationConstant=0, 
+  ACFInterpolationLinear=1, 
+  ACFInterpolationCatmullRom=2, 
+  ACFInterpolationConstantWithSizeReduction=10, 
+  ACFInterpolationLinearWithSizeReduction=11, 
+  ACFInterpolationCatmullRomWithSizeReduction=12, 
+  ACFUnspecified=999} ACFInterpolationMethod;
 
 extern double acf_evaluate(double* f, int n, double y, ACFInterpolationMethod mth);
 extern double acf_maximum_point(double* f, int n, int start_j, ACFInterpolationMethod mth);

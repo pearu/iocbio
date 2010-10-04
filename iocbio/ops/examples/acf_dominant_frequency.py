@@ -1,3 +1,4 @@
+import sys
 from numpy import *
 from iocbio.ops.autocorrelation import acf, acf_argmax, acf_sinefit, acf_sine_power_spectrum
 from matplotlib import pyplot as plt
@@ -19,12 +20,12 @@ for ii, (f_expr, sp1, sp2, sp3) in enumerate([('7*sin(5*x)+4*sin(9*x)', 321,323,
     acf_data = acf(f, y)
     end = time.time()
     if not ii:
-        print 'ACF computation time per point: %sus' % (1e6*(end-start)/len (y))
+        print 'ACF computation time per point: %.3fus' % (1e6*(end-start)/len (y))
     start = time.time()
     omega = acf_sinefit(f, start_j=1)
     end = time.time()
     if not ii:
-        print 'Sine fit computation time: %sus' % (1e6*(end-start))
+        print 'Sine fit computation time: %.3fus' % (1e6*(end-start))
     omega2 = acf_sinefit(f, start_j=int(2*pi/omega)+2)
     a = acf(f, 0.0)
     sinefit = a*cos(omega*y)*(N-y)/N
@@ -36,7 +37,7 @@ for ii, (f_expr, sp1, sp2, sp3) in enumerate([('7*sin(5*x)+4*sin(9*x)', 321,323,
     sine_power = acf_sine_power_spectrum (f, omega_lst)
     end = time.time()
     if not ii:
-        print 'Sine power spectrum computation time per point: %sus' % (1e6*(end-start)/len (omega_lst))
+        print 'Sine power spectrum computation time per point: %.3fus' % (1e6*(end-start)/len (omega_lst))
 
     plt.subplot(sp1)
     plt.plot(x, f, label='$f(x) = %s$' % (f_expr.replace('*','').replace ('sin','\sin')))
@@ -58,7 +59,8 @@ for ii, (f_expr, sp1, sp2, sp3) in enumerate([('7*sin(5*x)+4*sin(9*x)', 321,323,
         y_max = acf_argmax(f, start_j)
         end = time.time()
         if not ii and n==1:
-            print 'ACF 1stmax computation time: %sus' % (1e6*(end-start))
+            print 'ACF 1stmax computation time: %.3fus' % (1e6*(end-start))
+            #sys.exit ()
         start_j = y_max + 1
         est_period = dx * y_max/n
     
