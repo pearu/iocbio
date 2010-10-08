@@ -187,6 +187,7 @@ class PathInfo(object):
         self.nof_stacks = None
         self.shape = None
         self.voxel_sizes = None
+        self.image_time = None
         self.objective_NA = None
         self.excitation_wavelength = None
         self.emission_wavelength = None
@@ -235,6 +236,12 @@ class PathInfo(object):
         Return a tuple of voxel sizes in meters.
         """
         return self.voxel_sizes
+
+    def get_image_time(self):
+        """
+        Return a list of time moments when image in a stack was taken in seconds.
+        """
+        return self.image_time
 
     def get_objective_NA (self):
         """
@@ -347,6 +354,10 @@ class PathInfo(object):
             self.set_voxel_sizes(*voxel_sizes[0])
         else:
             self.voxel_sizes = voxel_sizes
+
+    def set_image_time(self, lst):
+        assert isinstance(lst, list),`n, type(lst)`
+        self.image_time = lst
 
     def set_objective_NA (self, objective_NA):
         if objective_NA is None:
@@ -712,6 +723,14 @@ class Configuration(PathInfo):
 
     _rics_protocol_modes = ['ConfocalRICS', 'Confocal_RICS']
 
+    def has_imperx(self):
+        path = self.path
+        if 'Imperx' in path:
+            return True
+        protocol_mode = get_tag_from_configuration(path, 'main_protocol_mode')
+        if protocol_mode in ['MyocyteMechanics', 'MyocyteMechanicsFluorescence']:
+            return True
+
     def get_protocol(self):
         if self.protocol is None:
             protocol_mode = get_tag_from_configuration(self.path, 'main_protocol_mode')
@@ -754,6 +773,8 @@ class Configuration(PathInfo):
                 self.set_nof_stacks(nof_stacks)
         return self.nof_stacks
 
+
+
     def get_shape(self):
         if self.shape is None:
             path = self.path
@@ -764,7 +785,7 @@ class Configuration(PathInfo):
                 imagesize_y = int(get_tag_from_configuration(path, 'CONFOCAL_ImageSizeY')) #px
                 shape = (n, imagesize_y, imagesize_x)
             elif protocol_mode in self._widefield_protocol_modes:
-                if 'Imperx' in path:
+                if self.has_imperx():
                     imagesize_x = int(get_tag_from_configuration(path, 'CAMERA_IMPERX_ImageSizeX')) #px
                     imagesize_y = int(get_tag_from_configuration(path, 'CAMERA_IMPERX_ImageSizeY')) #px
                 else:
@@ -788,7 +809,7 @@ class Configuration(PathInfo):
                 pixelsize_y = float(get_tag_from_configuration(path, 'CONFOCAL_PixelSizeY')) #um
                 voxel_sizes = (1e-6*(mx-mn)/(n), 1e-6*pixelsize_y, 1e-6*pixelsize_x)
             elif protocol_mode in self._widefield_protocol_modes:
-                if 'Imperx' in path:
+                if self.has_imperx():
                     pixelsize_x = float (get_tag_from_configuration(path, 'CAMERA_IMPERX_PixelSize'))
                 else:
                     pixelsize_x = float (get_tag_from_configuration(path, 'CAMERA_ANDOR_PixelSize'))
@@ -798,6 +819,29 @@ class Configuration(PathInfo):
                 raise NotImplementedError (`protocol_mode`)
             self.set_voxel_sizes(*voxel_sizes)
         return self.voxel_sizes
+
+    def get_image_time (self):
+        path = self.path
+        print path
+        if self.image_time is None:
+            image_time = None
+            protocol_mode = get_tag_from_configuration(path, 'main_protocol_mode')
+            if protocol_mode in self._widefield_protocol_modes:
+                time_path = None
+                if self.has_imperx():
+                    time_path = os.path.join (os.path.dirname(path), 'Imperx_index.txt')
+                elif 'Andor' in path:
+                    time_path = os.path.join (os.path.dirname(path), 'Andor_index.txt')
+                if time_path is not None:
+                    image_time = []
+                    for line in open (time_path):
+                        t, fn = line.strip().split()
+                        image_time.append (float (t.strip()))
+            if image_time is not None:
+                self.set_image_time(image_time)
+            else:
+                raise NotImplementedError (`protocol_mode, path`)
+        return self.image_time
 
     def get_objective_NA(self):
         path = self.path
