@@ -46,9 +46,9 @@ typedef enum {\
   ACFInterpolationCatmullRomWithSizeReduction=12, 
   ACFUnspecified=999} ACFInterpolationMethod;
 
-extern double acf_evaluate(double* f, int n, double y, ACFInterpolationMethod mth);
-extern double acf_maximum_point(double* f, int n, int start_j, ACFInterpolationMethod mth);
-extern double acf_sine_fit(double* f, int n, int start_j, ACFInterpolationMethod mth);
-extern double acf_sine_power_spectrum(double* f, int n, double omega, ACFInterpolationMethod mth);
+extern double acf_evaluate(double* f, int n, int rows, double y, ACFInterpolationMethod mth);
+extern double acf_maximum_point(double* f, int n, int rows, int start_j, ACFInterpolationMethod mth);
+extern double acf_sine_fit(double* f, int n, int rows, int start_j, ACFInterpolationMethod mth);
+extern double acf_sine_power_spectrum(double* f, int n, int rows, double omega, ACFInterpolationMethod mth);
 
 #endif

@@ -20,7 +20,7 @@
 
 static PyObject *py_acf_evaluate(PyObject *self, PyObject *args)
 {
-  int i, n;
+  int i, n, rows;
   PyObject* f_py = NULL;
   PyObject* f1_py = NULL;
   PyObject* y_py = NULL;
@@ -44,17 +44,27 @@ static PyObject *py_acf_evaluate(PyObject *self, PyObject *args)
       PyErr_SetString(PyExc_TypeError,"third argument must be 0, 1, or 2");
       return NULL;
     }
-  f_py = PyArray_ContiguousFromAny(f1_py, PyArray_DOUBLE, 1, 1);
+  f_py = PyArray_ContiguousFromAny(f1_py, PyArray_DOUBLE, 1, 2);
   if (f_py==NULL)
     return NULL;
 
-  n = PyArray_SIZE(f_py);
+  if (PyArray_NDIM(f_py)==2)
+    {
+      n = PyArray_DIMS(f_py)[0];
+      rows = PyArray_DIMS(f_py)[1];
+    }
+  else
+    {
+      n = PyArray_DIMS(f_py)[0];
+      rows = 1;
+    }
+
   f = (double*)PyArray_DATA(f_py);
 
   if (PyFloat_Check(y1_py))
     {
       y = PyFloat_AsDouble(y1_py);
-      r = acf_evaluate(f, n, y, mth);
+      r = acf_evaluate(f, n, rows, y, mth);
       if (f1_py != f_py)
 	{
 	  Py_DECREF(f_py);
@@ -71,7 +81,7 @@ static PyObject *py_acf_evaluate(PyObject *self, PyObject *args)
   for (i=0; i<PyArray_SIZE(y_py); ++i)
     {
       y = *((double*)PyArray_GETPTR1(y_py, i));
-      r = acf_evaluate(f, n, y, mth);
+      r = acf_evaluate(f, n, rows, y, mth);
       *(double*)PyArray_GETPTR1(r_py, i) = r;
     }
   if (y1_py != y_py)
@@ -87,7 +97,7 @@ static PyObject *py_acf_evaluate(PyObject *self, PyObject *args)
 
 static PyObject *py_acf_maximum_point(PyObject *self, PyObject *args)
 {
-  int n;
+  int n, rows;
   PyObject* f_py = NULL;
   PyObject* f1_py = NULL;
   ACFInterpolationMethod mth = ACFUnspecified;
@@ -109,12 +119,27 @@ static PyObject *py_acf_maximum_point(PyObject *self, PyObject *args)
       PyErr_SetString(PyExc_TypeError,"third argument must be 0, 1, or 2");
       return NULL;
     }
-  f_py = PyArray_ContiguousFromAny(f1_py, PyArray_DOUBLE, 1, 1);
+  f_py = PyArray_ContiguousFromAny(f1_py, PyArray_DOUBLE, 1, 2);
   if (f_py==NULL)
     return NULL;
-  n = PyArray_SIZE(f_py);
+  if (PyArray_NDIM(f_py)==2)
+    {
+      n = PyArray_DIMS(f_py)[0];
+      rows = PyArray_DIMS(f_py)[1];
+      if (rows<=0)
+	{
+	  PyErr_SetString(PyExc_TypeError,"first argument is empty");
+	  return NULL;	  
+	}
+    }
+  else
+    {
+      n = PyArray_DIMS(f_py)[0];
+      rows = 1;
+    }
+  assert(rows>0);
   f = (double*)PyArray_DATA(f_py);
-  r = acf_maximum_point(f, n, start_j, mth);
+  r = acf_maximum_point(f, n, rows, start_j, mth);
   if (f1_py != f_py)
     {
       Py_DECREF(f_py);
@@ -124,7 +149,7 @@ static PyObject *py_acf_maximum_point(PyObject *self, PyObject *args)
 
 static PyObject *py_acf_sine_fit(PyObject *self, PyObject *args)
 {
-  int n;
+  int n, rows;
   PyObject* f_py = NULL;
   PyObject* f1_py = NULL;
   ACFInterpolationMethod mth = ACFUnspecified;
@@ -146,12 +171,21 @@ static PyObject *py_acf_sine_fit(PyObject *self, PyObject *args)
       PyErr_SetString(PyExc_TypeError,"third argument must be 0, 1, or 2");
       return NULL;
     }
-  f_py = PyArray_ContiguousFromAny(f1_py, PyArray_DOUBLE, 1, 1);
+  f_py = PyArray_ContiguousFromAny(f1_py, PyArray_DOUBLE, 1, 2);
   if (f_py==NULL)
     return NULL;
-  n = PyArray_SIZE(f_py);
+  if (PyArray_NDIM(f_py)==2)
+    {
+      n = PyArray_DIMS(f_py)[0];
+      rows = PyArray_DIMS(f_py)[1];
+    }
+  else
+    {
+      n = PyArray_DIMS(f_py)[0];
+      rows = 1;
+    }
   f = (double*)PyArray_DATA(f_py);
-  r = acf_sine_fit(f, n, start_j, mth);
+  r = acf_sine_fit(f, n, rows, start_j, mth);
   if (f1_py != f_py)
     {
       Py_DECREF(f_py);
@@ -161,7 +195,7 @@ static PyObject *py_acf_sine_fit(PyObject *self, PyObject *args)
 
 static PyObject *py_acf_sine_power_spectrum(PyObject *self, PyObject *args)
 {
-  int i, n;
+  int i, n, rows;
   PyObject* f_py = NULL;
   PyObject* f1_py = NULL;
   PyObject* y_py = NULL;
@@ -185,17 +219,26 @@ static PyObject *py_acf_sine_power_spectrum(PyObject *self, PyObject *args)
       PyErr_SetString(PyExc_TypeError,"third argument must be 0, 1, or 2");
       return NULL;
     }
-  f_py = PyArray_ContiguousFromAny(f1_py, PyArray_DOUBLE, 1, 1);
+  f_py = PyArray_ContiguousFromAny(f1_py, PyArray_DOUBLE, 1, 2);
   if (f_py==NULL)
     return NULL;
 
-  n = PyArray_SIZE(f_py);
+  if (PyArray_NDIM(f_py)==2)
+    {
+      n = PyArray_DIMS(f_py)[0];
+      rows = PyArray_DIMS(f_py)[1];
+    }
+  else
+    {
+      n = PyArray_DIMS(f_py)[0];
+      rows = 1;
+    }
   f = (double*)PyArray_DATA(f_py);
 
   if (PyFloat_Check(y1_py))
     {
       y = PyFloat_AsDouble(y1_py);
-      r = acf_sine_power_spectrum(f, n, y, mth);
+      r = acf_sine_power_spectrum(f, n, rows, y, mth);
       if (f1_py != f_py)
 	{
 	  Py_DECREF(f_py);
@@ -212,7 +255,7 @@ static PyObject *py_acf_sine_power_spectrum(PyObject *self, PyObject *args)
   for (i=0; i<PyArray_SIZE(y_py); ++i)
     {
       y = *((double*)PyArray_GETPTR1(y_py, i));
-      r = acf_sine_power_spectrum(f, n, y, mth);
+      r = acf_sine_power_spectrum(f, n, rows, y, mth);
       *(double*)PyArray_GETPTR1(r_py, i) = r;
     }
   if (y1_py != y_py)

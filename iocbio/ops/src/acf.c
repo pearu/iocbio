@@ -102,14 +102,15 @@ int acf_find_size_reduction(double *f, int n, int max_dn)
 static
 int acf_calculate_data(double* f, int n, int iy, 
 		       ACFInterpolationMethod mth,
-		       double** data, int* sz)
+		       double** data, int* sz, int append)
 {
   int start, end, i, j, k, m, k1, mi;
   int nn;
   int* coeff_indices;
   double d, fk0, fk1;
   double* coeffs = NULL;
-  if (mth==acf_state.mth &&
+  if (append==0 &&
+      mth==acf_state.mth &&
       iy==acf_state.iy &&
       f==acf_state.f &&
       acf_state.data != NULL &&
@@ -152,7 +153,8 @@ int acf_calculate_data(double* f, int n, int iy,
       *data = NULL;
       return -1;
     }
-  for (j=0; j<*sz; ++j) (*data)[j] = 0.0;
+  if (append==0)
+    for (j=0; j<*sz; ++j) (*data)[j] = 0.0;
   start = -coeff_indices[0]-2;
   start = MAX(iy, start);
   end = nn + coeff_indices[*sz-1];
@@ -180,7 +182,7 @@ int acf_calculate_data(double* f, int n, int iy,
   return 0;
 }
 
-double acf_evaluate(double* f, int n, double y, ACFInterpolationMethod mth)
+double acf_evaluate(double* f, int n, int rows, double y, ACFInterpolationMethod mth)
 {
   int iy = floor((y<0?-y:y));
   double dy = y - iy;
@@ -188,24 +190,26 @@ double acf_evaluate(double* f, int n, double y, ACFInterpolationMethod mth)
   double *data = NULL;
   double result = 0.0;
   double p = 1.0;
-  acf_calculate_data(f, n, iy, mth, &data, &sz);
+  for (i=0; i<rows; ++i)
+    acf_calculate_data(f + i*n, n, iy, mth, &data, &sz, i);
   assert(data!=NULL);
   for (i=0; i<sz; ++i, p *= dy)
     result += data[i] * p;
   return result;
 }
 
-double acf_evaluate_int(double* f, int n, int y, ACFInterpolationMethod mth)
+double acf_evaluate_int(double* f, int n, int rows, int y, ACFInterpolationMethod mth)
 {
-  int sz;
+  int sz, u, i;
   double *data = NULL;
-  acf_calculate_data(f, n, (y<0?-y:y), mth, &data, &sz);
+  for (i=0; i<rows; ++i)
+    acf_calculate_data(f + i*n, n, (y<0?-y:y), mth, &data, &sz, i);
   return data[0];
 }
 
-double acf_maximum_point(double* f, int n, int start_j, ACFInterpolationMethod mth)
+double acf_maximum_point(double* f, int n, int rows, int start_j, ACFInterpolationMethod mth)
 {
-  int j, sz;
+  int j, i, sz;
   double *data = NULL;
   double a,b,c,d;
   double s;
@@ -216,7 +220,8 @@ double acf_maximum_point(double* f, int n, int start_j, ACFInterpolationMethod m
       case ACFInterpolationLinearWithSizeReduction:
 	for (j=MAX(1,start_j); j<n-1; ++j)
 	  {
-	    acf_calculate_data(f, n, j, mth, &data, &sz);
+	    for (i=0; i<rows; ++i)
+	      acf_calculate_data(f + i*n, n, j, mth, &data, &sz, i);
 	    a = data[3];
 	    b = data[2];
 	    c = data[1];
@@ -236,10 +241,10 @@ double acf_maximum_point(double* f, int n, int start_j, ACFInterpolationMethod m
   return -1.0;
 }
 
-double acf_sine_fit(double* f, int n, int start_j, ACFInterpolationMethod mth)
+double acf_sine_fit(double* f, int n, int rows, int start_j, ACFInterpolationMethod mth)
 {
-  double a = acf_evaluate(f, n, 0.0, mth);
-  double p0 = acf_maximum_point(f, n, start_j, ACFInterpolationLinearWithSizeReduction);
+  double a = acf_evaluate(f, n, rows, 0.0, mth);
+  double p0 = acf_maximum_point(f, n, rows, start_j, ACFInterpolationLinearWithSizeReduction);
   double omega = 2.0*M_PI/p0;
   double tol;
   double *fvec = NULL;
@@ -252,7 +257,7 @@ double acf_sine_fit(double* f, int n, int start_j, ACFInterpolationMethod mth)
     double omega = x[0];
     int j;
     for (j=0; j<*m; ++j)
-      fvec[j] = acf_evaluate_int(f, n, 2*j, mth) - a*cos(omega*2*j)*(n-2*j)/n;
+      fvec[j] = acf_evaluate_int(f, n, rows, 2*j, mth) - a*cos(omega*2*j)*(n-2*j)/n;
   }
   m = n/2;
   n1 = 1;
@@ -267,14 +272,14 @@ double acf_sine_fit(double* f, int n, int start_j, ACFInterpolationMethod mth)
   return omega;
 }
 
-double acf_sine_power_spectrum(double* f, int n, double omega, ACFInterpolationMethod mth)
+double acf_sine_power_spectrum(double* f, int n, int rows, double omega, ACFInterpolationMethod mth)
 {
   int j;
-  double a = acf_evaluate(f, n, 0.0, mth);
+  double a = acf_evaluate(f, n, rows, 0.0, mth);
   double r, result = 0.0;
   for (j=1; j<n; ++j)
     {
-      r = acf_evaluate_int(f, n, j, mth) - a*cos(omega*j)*(n-j)/n;
+      r = acf_evaluate_int(f, n, rows, j, mth) - a*cos(omega*j)*(n-j)/n;
       result += r*r;
     }
   return result;
