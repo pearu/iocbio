@@ -37,6 +37,10 @@ Created: September 2010
 #ifndef ACF_H_INCLUDE
 #define ACF_H_INCLUDE
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {\
   ACFInterpolationConstant=0, 
   ACFInterpolationLinear=1, 
@@ -48,7 +52,13 @@ typedef enum {\
 
 extern double acf_evaluate(double* f, int n, int rows, double y, ACFInterpolationMethod mth);
 extern double acf_maximum_point(double* f, int n, int rows, int start_j, ACFInterpolationMethod mth);
+#ifndef DISABLE_SINFIT
 extern double acf_sine_fit(double* f, int n, int rows, int start_j, ACFInterpolationMethod mth);
+#endif
 extern double acf_sine_power_spectrum(double* f, int n, int rows, double omega, ACFInterpolationMethod mth);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

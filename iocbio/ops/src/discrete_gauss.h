@@ -2,6 +2,10 @@
 #define DISCRETE_GAUSS_H_INCLUDE
 #include "fftw3.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct 
 {
   int rank;
@@ -25,5 +29,9 @@ extern int dg_high_pass_filter(double *seq, int n, int rows, double t);
 extern int dg_high_pass_filter_init(DGR2HCConfig *config, int rank, int dims[3], int howmany, double scale_parameter);
 extern int dg_high_pass_filter_clean(DGR2HCConfig *config);
 extern int dg_high_pass_filter_apply(DGR2HCConfig *config, double *seq);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

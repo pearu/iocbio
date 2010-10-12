@@ -22,6 +22,7 @@ Created: September 2010
 #define M_PI 3.1415926535897932384626433832795
 #endif
 
+#ifndef DISABLE_SINFIT
 #define F77NAME(func) func ## _
 
 extern int F77NAME(lmdif1)(
@@ -37,6 +38,7 @@ extern int F77NAME(lmdif1)(
 			   double*,      // wa
 			   int*          // lwa
 			   );
+#endif
 
 /* Constant: f(x) is piecewise constant */
 static int acf_coeff_indices_Constant[2] = {0,1};
@@ -241,6 +243,7 @@ double acf_maximum_point(double* f, int n, int rows, int start_j, ACFInterpolati
   return -1.0;
 }
 
+#ifndef DISABLE_SINFIT
 double acf_sine_fit(double* f, int n, int rows, int start_j, ACFInterpolationMethod mth)
 {
   double a = acf_evaluate(f, n, rows, 0.0, mth);
@@ -271,6 +274,7 @@ double acf_sine_fit(double* f, int n, int rows, int start_j, ACFInterpolationMet
   free(wa);
   return omega;
 }
+#endif
 
 double acf_sine_power_spectrum(double* f, int n, int rows, double omega, ACFInterpolationMethod mth)
 {
