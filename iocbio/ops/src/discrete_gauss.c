@@ -50,8 +50,8 @@ int dg_DGR2HCConfig_init(DGR2HCConfig *config, int rank, int dims[3], int howman
     }
   config->howmany = howmany;
   config->sz = sz;
-  config->rdata = (double*)malloc((sz*howmany)*sizeof(double));
-  config->hcdata = (double*)malloc((sz*howmany)*sizeof(double));
+  config->rdata = (double*)fftw_malloc((sz*howmany)*sizeof(double));
+  config->hcdata = (double*)fftw_malloc((sz*howmany)*sizeof(double));
   config->r2hc_plan = fftw_plan_many_r2r(rank, // rank 
 					 config->dims, // n
 					 howmany, // howmany
