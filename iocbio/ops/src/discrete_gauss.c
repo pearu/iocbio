@@ -84,9 +84,9 @@ int dg_DGR2HCConfig_clean(DGR2HCConfig *config)
   fftw_destroy_plan(config->r2hc_plan);
   fftw_destroy_plan(config->hc2r_plan);
   if (config->rdata != NULL)
-    free(config->rdata);
+    fftw_free(config->rdata);
   if (config->hcdata != NULL)
-    free(config->hcdata);
+    fftw_free(config->hcdata);
   if (config->kernel_real != NULL)
     free(config->kernel_real);
   if (config->kernel_imag != NULL)
