@@ -22,7 +22,7 @@ def convolve_discrete_gauss(seq, t):
 
     The half-height-width of the discrete Gaussian kernel ``T(n,t)``
     is approximately ``2.36*sqrt(t)``. So, to smooth out details
-    over W pixels, use ``t = (W/2.36)**2``.
+    over W points, use ``t = (W/2.36)**2``.
 
     References
     ----------

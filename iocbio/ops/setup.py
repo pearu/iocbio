@@ -4,6 +4,7 @@ from os.path import join
 
 def configuration(parent_package='',top_path=None):
     from numpy.distutils.misc_util import Configuration
+    from numpy.distutils.system_info import get_info, NotFoundError
     config = Configuration('ops',parent_package,top_path)
     config.add_extension('apply_window_ext', join('src','apply_window_ext.c'))
     config.add_library('fminpack',
@@ -18,4 +19,12 @@ def configuration(parent_package='',top_path=None):
                          sources = [join('src','acf_ext.c'),
                                     join('src','acf.c')],
                          libraries = ['fminpack'])
+
+    
+    fftw3_info = get_info('fftw3')
+
+    config.add_extension('discrete_gauss_ext', 
+                         sources = [join('src','discrete_gauss_ext.c'),
+                                    join('src','discrete_gauss.c')],
+                         extra_info = fftw3_info)
     return config
