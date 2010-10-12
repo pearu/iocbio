@@ -79,6 +79,8 @@ int dg_DGR2HCConfig_init(DGR2HCConfig *config, int rank, int dims[3], int howman
 
 int dg_DGR2HCConfig_clean(DGR2HCConfig *config)
 {
+  if (config->sz==0)
+    return 0;
   fftw_destroy_plan(config->r2hc_plan);
   fftw_destroy_plan(config->hc2r_plan);
   if (config->rdata != NULL)
@@ -93,7 +95,7 @@ int dg_DGR2HCConfig_clean(DGR2HCConfig *config)
   config->hcdata = NULL;
   config->kernel_real = NULL;
   config->kernel_imag = NULL;
-  config->sz = config->rank = 0;
+  config->sz = config->rank = config->howmany = 0;
   return 0;
 }
 
