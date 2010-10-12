@@ -236,11 +236,12 @@ double acf_maximum_point(double* f, int n, int rows, int start_j, ACFInterpolati
 	      continue;
 	    return (double)j + fy;
 	  }
+	return MAX(1,start_j);
 	break;
     default: ;
       /* not implemented */
     }
-  return -1.0;
+  return 1;
 }
 
 #ifndef DISABLE_SINFIT
