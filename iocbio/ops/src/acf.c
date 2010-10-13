@@ -231,6 +231,8 @@ double acf_maximum_point(double* f, int n, int rows, int start_j, ACFInterpolati
 	    s = b*b-3.0*a*c;
 	    if (s < 0.0)
 	      continue;
+	    if (a==0.0)
+	      continue;
 	    fy = -(b+sqrt(s))/(3.0*a);
 	    if (fy<-NEGEPS || (1.0-fy)<EPS)
 	      continue;
