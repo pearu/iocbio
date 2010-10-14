@@ -202,7 +202,7 @@ double acf_evaluate(double* f, int n, int rows, double y, ACFInterpolationMethod
 
 double acf_evaluate_int(double* f, int n, int rows, int y, ACFInterpolationMethod mth)
 {
-  int sz, u, i;
+  int sz, i;
   double *data = NULL;
   for (i=0; i<rows; ++i)
     acf_calculate_data(f + i*n, n, (y<0?-y:y), mth, &data, &sz, i);
@@ -234,7 +234,8 @@ double acf_maximum_point(double* f, int n, int rows, int start_j, ACFInterpolati
 	    if (a==0.0)
 	      continue;
 	    fy = -(b+sqrt(s))/(3.0*a);
-	    if (fy<-NEGEPS || (1.0-fy)<EPS)
+	    if ( !(-NEGEPS<fy && fy<1.0) || isnan(fy) )
+	      //if (fy<-NEGEPS || (1.0-fy)<EPS || isnan(fy))
 	      continue;
 	    return (double)j + fy;
 	  }
