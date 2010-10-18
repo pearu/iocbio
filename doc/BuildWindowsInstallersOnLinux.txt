@@ -1,0 +1,66 @@
+
+sudo apt-get install wine
+mkdir wine && cd wine
+wget http://www.python.org/ftp/python/2.7/python-2.7.msi
+msiexec /i python-2.7.msi
+wget http://sourceforge.net/projects/mingw/files/Automated%20MinGW%20Installer/mingw-get-inst/mingw-get-inst-20100909/mingw-get-inst-20100909.exe
+wine 
+# Select C++ Compiler, Fortran Compiler, MSYS Basic System, MinGW Developer Toolkit
+regedit
+# Lookup "PATH" environment variable and append ";C:\Python27;C:\Python27\Scripts;C:\MinGW\bin;C:\MinGW\msys\1.0\bin;C:\gtk\bin;C:\Program Files\GnuWin32\bin;C:\Program Files\Git\bin" to it.
+# The path to "PATH" is "HKEY_LOCAL_MACHINE/System/CurrentControlSet/Control/Session Manager/Environment/PATH".
+wget http://sourceforge.net/projects/wxpython/files/wxPython/2.8.11.0/wxPython2.8-win32-unicode-2.8.11.0-py27.exe
+wineconsole bash
+mingw-get install msys-wget
+wget http://msysgit.googlecode.com/files/Git-1.7.3.1-preview20101002.exe
+wine Git-1.7.3.1-preview20101002.exe
+git clone git://github.com/numpy/numpy.git numpy
+cd numpy
+python setup.py build --compiler=mingw32 bdist_wininst
+cd dist && ./numpy-2.0.0.dev.win32-py2.7.exe
+wget http://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11.win32-py2.7.exe
+./setuptools-0.6c11.win32-py2.7.exe
+easy_install-2.7 nose
+
+wget http://www.siegward-jaekel.de/mc.zip
+# copy mc.exe and mc.ini to C:\MinGW\bin
+
+cd src
+wget http://www.netlib.org/lapack/lapack.tgz
+tar xzf lapack.tgz
+cd lapack-3.2.2/
+wget http://iocbio.googlecode.com/files/make.inc.MINGW
+cp make.inc.MINGW-g77 make.inc
+cd SRC
+make -j 4
+mv lapack_MINGW.a libflapack.a
+
+wget http://www.netlib.org/blas/blas.tgz
+tar xzf blas.tgz
+cd BLAS
+gfortran -fno-second-underscore -O2 -c *.f
+ar r libfblas.a *.o
+ranlib libfblas.a
+
+svn co http://svn.scipy.org/svn/scipy/trunk scipy
+cd scipy
+export BLAS=~/src/BLAS/libfblas.a
+export LAPACK=~/src/lapack-3.2.2/libflapack.a
+python setup.py build --compiler=mingw32 bdist_wininst
+
+
+http://download.microsoft.com/download/vc60pro/update/1/w9xnt4/en-us/vc6redistsetup_enu.exe
+./vc6redistsetup_enu.exe
+http://sourceforge.net/projects/win32svn/files/1.5.5/Setup-Subversion-1.5.5.msi
+msiexec /i Setup-Subversion-1.5.5.msi
+
+cd c:
+mkdir gtk
+cd gtk
+wget http://ftp.acc.umu.se/pub/gnome/binaries/win32/gtk+/2.16/gtk+-bundle_2.16.6-20100912_win32.zip
+mingw-get install msys-unzip
+unzip gtk+-bundle_2.16.6-20100912_win32.zip
+
+wget http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.16/pygtk-2.16.0+glade.win32-py2.6.exe
+wget http://ftp.gnome.org/pub/GNOME/binaries/win32/pygobject/2.20/pygobject-2.20.0.win32-py2.6.exe
+
