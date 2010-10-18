@@ -24,3 +24,4 @@ __autodoc__ = ['image_stack', 'pathinfo', 'io',
 
 from .image_stack import ImageStack
 from .io import RowFile, load_image_stack, save_image_stack
+import pathinfo

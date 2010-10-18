@@ -4,12 +4,12 @@ Module content
 --------------
 """
 
-__autodoc__ = ['RowFile', 'load_image_stack', 'save_image_stack']
+__autodoc__ = ['RowFile', 'load_image_stack', 'save_image_stack', 'get_pathinfo']
 
 # Author: Pearu Peterson
 # Created: 2009
 
-__all__ = ['load_image_stack', 'save_image_stack', 'RowFile']
+__all__ = ['load_image_stack', 'save_image_stack', 'RowFile', 'get_pathinfo']
 
 import re
 import os
@@ -138,6 +138,42 @@ def get_pathinfo_file(path):
             return fn
     return path + '_PATHINFO.txt'
 
+def get_pathinfo (path):
+    """ Return Pathinfo instance of path.
+
+    Returns
+    -------
+    pathinfo : `iocbio.io.pathinfo.PathInfo`
+    """
+    if not os.path.exists(path):
+        new_path = os.path.dirname(path)
+        if not os.path.exists(new_path):
+            raise ValueError('Path to image stack does not exist: %r' % (path))
+        path = new_path
+
+    path = fix_path(path)
+
+    if os.path.isfile(path):
+        dirpath = os.path.dirname(path)    
+    else:
+        dirpath = path
+
+    pathinfo_txt = get_pathinfo_file(path)
+    scaninfo_txt = os.path.join(dirpath, 'SCANINFO.txt')
+    configuration_txt = os.path.join(dirpath, 'configuration.txt')
+
+    if os.path.isfile(pathinfo_txt):
+        pathinfo = Scaninfo(pathinfo_txt)
+    elif os.path.isfile(scaninfo_txt):
+        pathinfo = Scaninfo(scaninfo_txt)
+    elif os.path.isfile(configuration_txt):
+        pathinfo = Configuration(configuration_txt)
+    elif israwfile(path):
+        pathinfo = Rawinfo(path)
+    else:
+        pathinfo = None
+    return pathinfo
+
 def load_image_stack(path, options=None):
     """ 
     Load image stacks from path
@@ -171,32 +207,7 @@ def load_image_stack(path, options=None):
     file_prefix = '*'
     if not os.path.exists(path):
         file_prefix = os.path.basename(path) + '*'
-        new_path = os.path.dirname(path)
-        if not os.path.exists(new_path):
-            raise ValueError('Path to image stack does not exist: %r' % (path))
-        path = new_path
-
-    path = fix_path (path)
-
-    if os.path.isfile(path):
-        dirpath = os.path.dirname(path)    
-    else:
-        dirpath = path
-
-    pathinfo_txt = get_pathinfo_file(path)
-    scaninfo_txt = os.path.join(dirpath, 'SCANINFO.txt')
-    configuration_txt = os.path.join(dirpath, 'configuration.txt')
-
-    if os.path.isfile(pathinfo_txt):
-        pathinfo = Scaninfo(pathinfo_txt)
-    elif os.path.isfile(scaninfo_txt):
-        pathinfo = Scaninfo(scaninfo_txt)
-    elif os.path.isfile(configuration_txt):
-        pathinfo = Configuration(configuration_txt)
-    elif israwfile(path):
-        pathinfo = Rawinfo(path)
-    else:
-        pathinfo = None
+    pathinfo = get_pathinfo(path)
 
     if os.path.isfile(path):
         base, ext = os.path.splitext (path)

@@ -32,9 +32,11 @@ from StringIO import StringIO
 from . import tifffile
 import tempfile
 
+
 objectives = {'UPLSAPO_60xW_NA_1__x20':dict(refractive_index=1.33, NA = 1.2), # airy
               'UPlanFLN_10x_NA_0__x30':dict(refractive_index=1.0, NA=0.3),    # airy
               'CFI_Plan_Apochromat_VC_60xW_NA_1__x20':dict(refractive_index=1.33, NA = 1.2), # suga
+              'CFI_Super_Plan_Fluor_ELWD_40xC_NA_0__x60':dict(refractive_index=1.0, NA = 0.6), # suga
               'CFI_Super_Plan_Fluor_ELWD_20xC_NA_0__x45':dict(refractive_index=1.0, NA=0.45),# suga
               'C-Apochromat 63x/1.20 W Korr UV-VIS-IR M27':dict(refractive_index=1.33, NA = 1.2), # zeiss
               'Plan-Apochromat 63x/1.40 Oil DIC M27':dict(refractive_index=1.5158, NA = 1.4), # zeiss
@@ -122,9 +124,13 @@ def get_tag_from_configuration(path, tagname, _cache={}):
     """
     info = _cache.get(path)
     if info is not None:
+        if tagname is None:
+            return info
         return info.get(tagname)
+    if not os.path.isfile(path):
+        return
     info = {}
-    f = open (path,'r')
+    f = open(path,'r')
     is_string = False
     text = ''
     for line in f.readlines():
@@ -148,6 +154,8 @@ def get_tag_from_configuration(path, tagname, _cache={}):
                 info[tag] = text
     f.close ()
     _cache[path] = info
+    if tagname is None:
+        return info
     return info.get(tagname)
 
 def get_tag_from_lsm_file(path, tagname, _cache={}):
@@ -217,7 +225,7 @@ class PathInfo(object):
             if v is None:
                 continue
             l.append ('%s=%r' % (attr, v))
-        return 'Pathinfo(%r)[%s]' % (self.path, ', '.join (l))
+        return '%s(%r)[%s]' % (self.__class__.__name__, self.path, ', '.join (l))
 
     def get_shape (self):
         """
@@ -559,6 +567,9 @@ class PathInfo(object):
           A list of dictonaries with `name`, `index`, `pinhole` keys.
         """
         return
+
+    def omexml(self):
+        raise NotImplementedError('%s.omexml' % (self.__class__.__name__))
 
 class Scaninfo(PathInfo):
 
@@ -937,6 +948,11 @@ class Configuration(PathInfo):
         if self.sample_format is None:
             self.set_sample_format('uint')
         return self.sample_format
+
+    def omexml(self):
+        from . import ome_configuration
+        ome_configuration.make_ome_xml(self.path)
+
 
 class Tiffinfo(PathInfo):
 

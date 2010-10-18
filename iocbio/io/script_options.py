@@ -1,11 +1,26 @@
 
 __all__ = ['set_show_options', 'get_io_options_group',
            'get_microscope_options_group', 'set_convert_options',
-           'set_rowfile_plot_options']
+           'set_rowfile_plot_options', 'set_ome_options']
 
 import os
 from optparse import OptionGroup, NO_DEFAULT
 from iocbio.script_options import set_formatter
+
+def set_ome_options (parser):
+    import numpy
+    set_formatter(parser)
+    parser.set_usage('%prog [options] [ [-i] INPUT_PATH  [ [-o] OUTPUT_PATH ]]')
+    parser.set_description('Convert INPUT_PATH to OME-TIFF file.')
+
+    parser.add_option ('--input-path','-i',
+                       type = 'file', metavar='INPUT_PATH',
+                       help = 'Specify input PATH of 3D images.'
+                       )
+    parser.add_option ('--output-path','-o',
+                       type = 'file', metavar='OUTPUT_PATH',
+                       help = 'Specify output PATH of OME-TIFF file.'
+                       )
 
 def set_show_options(parser):
     set_formatter(parser)
