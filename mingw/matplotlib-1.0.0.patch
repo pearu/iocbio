@@ -1,0 +1,105 @@
+*** setupext.py.orig	2010-10-20 13:42:54.666471771 +0300
+--- setupext.py	2010-10-20 13:46:49.496567156 +0300
+*************** import re
+*** 48,54 ****
+  import subprocess
+  
+  basedir = {
+!     'win32'  : ['win32_static',],
+      'linux2-alpha' : ['/usr/local', '/usr'],
+      'linux2-hppa' : ['/usr/local', '/usr'],
+      'linux2-mips' : ['/usr/local', '/usr'],
+--- 48,54 ----
+  import subprocess
+  
+  basedir = {
+!     'win32'  : [r'c:\gtk', r'c:\Program Files\GnuWin32'],
+      'linux2-alpha' : ['/usr/local', '/usr'],
+      'linux2-hppa' : ['/usr/local', '/usr'],
+      'linux2-mips' : ['/usr/local', '/usr'],
+*************** basedir = {
+*** 80,85 ****
+--- 80,94 ----
+  import sys, os, stat
+  if sys.platform != 'win32':
+      import commands
++     commands_getstatusoutput = commands.getstatusoutput
++ else:
++     def commands_getstatusoutput (cmd):
++         import subprocess
++         p = subprocess.Popen([cmd], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
++         p.stdin.close()
++         p.wait()
++         return p.returncode, p.stdout.read()
++ 
+  from textwrap import fill
+  from distutils.core import Extension
+  import glob
+*************** if sys.platform == 'win32' and win32_com
+*** 241,254 ****
+  else:
+      std_libs = ['stdc++', 'm']
+  
+  def has_pkgconfig():
+      if has_pkgconfig.cache is not None:
+          return has_pkgconfig.cache
+!     if sys.platform == 'win32':
+          has_pkgconfig.cache = False
+      else:
+          #print 'environ',  os.environ['PKG_CONFIG_PATH']
+!         status, output = commands.getstatusoutput("pkg-config --help")
+          has_pkgconfig.cache = (status == 0)
+      return has_pkgconfig.cache
+  has_pkgconfig.cache = None
+--- 250,266 ----
+  else:
+      std_libs = ['stdc++', 'm']
+  
++ if 'bdist_wininst' in sys.argv:
++     std_libs.append ('msvcrt')
++ 
+  def has_pkgconfig():
+      if has_pkgconfig.cache is not None:
+          return has_pkgconfig.cache
+!     if 0 and sys.platform == 'win32':
+          has_pkgconfig.cache = False
+      else:
+          #print 'environ',  os.environ['PKG_CONFIG_PATH']
+!         status, output = commands_getstatusoutput("pkg-config --help")
+          has_pkgconfig.cache = (status == 0)
+      return has_pkgconfig.cache
+  has_pkgconfig.cache = None
+*************** def get_pkgconfig(module,
+*** 270,276 ****
+                '-U': 'undef_macros'}
+  
+      cmd = "%s %s %s" % (pkg_config_exec, flags, packages)
+!     status, output = commands.getstatusoutput(cmd)
+      if status == 0:
+          for token in output.split():
+              attr = _flags.get(token[:2], None)
+--- 282,288 ----
+                '-U': 'undef_macros'}
+  
+      cmd = "%s %s %s" % (pkg_config_exec, flags, packages)
+!     status, output = commands_getstatusoutput(cmd)
+      if status == 0:
+          for token in output.split():
+              attr = _flags.get(token[:2], None)
+*************** def get_pkgconfig_version(package):
+*** 298,304 ****
+      if not has_pkgconfig():
+          return default
+  
+!     status, output = commands.getstatusoutput(
+          "pkg-config %s --modversion" % (package))
+      if status == 0:
+          return output
+--- 310,316 ----
+      if not has_pkgconfig():
+          return default
+  
+!     status, output = commands_getstatusoutput(
+          "pkg-config %s --modversion" % (package))
+      if status == 0:
+          return output
