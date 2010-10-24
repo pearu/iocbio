@@ -1,4 +1,16 @@
+### Enthought based installers.
+sudo apt-get install wine
+mkdir wine && cd wine
+wget http://sourceforge.net/projects/mingw/files/Automated%20MinGW%20Installer/mingw-get-inst/mingw-get-inst-20100909/mingw-get-inst-20100909.exe
+wine mingw-get-inst-20100909.exe
+# Select C++ Compiler, Fortran Compiler, MSYS Basic System, MinGW Developer Toolkit
+# Lookup "PATH" environment variable and append ";C:\Python27;C:\Python27\Scripts;C:\MinGW\bin;C:\MinGW\msys\1.0\bin;C:\gtk\bin;C:\Program Files\GnuWin32\bin;C:\Program Files\Git\bin" to it.
+# The path to "PATH" is "HKEY_LOCAL_MACHINE/System/CurrentControlSet/Control/Session Manager/Environment/PATH".
 
+wget http://sysbio.ioc.ee/download/software/binaries/101019/deps/epd-6.2-2-win-x86.msi
+msiexec /i epd-6.2-2-win-x86.msi
+
+###########################
 sudo apt-get install wine
 mkdir wine && cd wine
 wget http://www.python.org/ftp/python/2.7/python-2.7.msi

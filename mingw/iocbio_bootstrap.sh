@@ -38,12 +38,25 @@
 # Created: October 2010
 #
 
+export NUMPY_VERSION=1.3.0 # 1.5.1rc1, 1.4.1, 1.3.0, py2.5: 1.2.1, 1.1.1, 1.0.4
+export SCIPY_VERSION=0.7.2 # 0.8.0, 0.7.2
+export LAPACK_VERSION=3.2.2
+export MATPLOTLIB_VERSION=1.0.0
+export PYTHON_VERSION=2.6.6 # 2.6.6, 2.5.5, 2.4.6, 2.3.7
+export IOCBIO_VERSION=1.2.0.dev139
+
+NPVER=${NUMPY_VERSION::3}
+PYVER=${PYTHON_VERSION:0:3}
+PYVR=${PYTHON_VERSION:0:1}${PYTHON_VERSION:2:1}
+
+echo "NPVER=$NPVER, PYVER=$PYVER, PYVR=$PYVR"
+
 ROOT=tmp/iocbio_bootstrap_cache
 GTK_ROOT=/c/gtk
-REQUIREDPATH=/c/MinGW/bin:/c/MinGW/msys/1.0/bin:/c/Python26:/c/Python26/Scripts:$GTK_ROOT/bin:/c/Program\ Files/Subversion/bin
-WINREQUIREDPATH="c:\MinGW\bin;c:\MinGW\msys\1.0\bin;c:\Python26;c:\Python26\Scripts;c:\gtk\bin;c:\Program Files\Subversion\bin"
+REQUIREDPATH=/c/MinGW/bin:/c/MinGW/msys/1.0/bin:/c/Python$PYVR:/c/Python$PYVR/Scripts:$GTK_ROOT/bin:/c/Program\ Files/Subversion/bin:/c/Program\ Files/GnuWin32/bin
+WINREQUIREDPATH="c:\MinGW\bin;c:\MinGW\msys\1.0\bin;c:\Python$PYVR;c:\Python$PYVR\Scripts;c:\gtk\bin;c:\Program Files\Subversion\bin;c:\Program Files\GnuWin32\bin"
 export PATH=/c/windows/command:$PATH:$REQUIREDPATH
-export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/c/Python26/Lib/pkgconfig:/c/gtk/lib/pkgconfig
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/c/Python$PYVR/Lib/pkgconfig:/c/gtk/lib/pkgconfig
 
 which mkdir || mingw-get install msys-core msys-coreutils msys-wget msys-unzip gfortran  g++ binutils msys-patch msys-tar msys-make
 echo "Checking the availability of commands.."
@@ -73,10 +86,10 @@ MSVCR90_DLL=/c/windows/system32/msvcr90.dll
 VC6REDIST_INSTALLER=http://download.microsoft.com/download/vc60pro/update/1/w9xnt4/en-us/vc6redistsetup_enu.exe
 MSVCP60_DLL=/c/windows/system32/msvcp60.dll
 
-PYTHON_INSTALLER=http://www.python.org/ftp/python/2.6.6/python-2.6.6.msi
+PYTHON_INSTALLER=http://www.python.org/ftp/python/$PYTHON_VERSION/python-$PYTHON_VERSION.msi
 
 BLAS_TARBALL=http://www.netlib.org/blas/blas.tgz
-LAPACK_VERSION=3.2.2
+
 LAPACK_TARBALL=http://www.netlib.org/lapack/lapack-$LAPACK_VERSION.tgz
 
 export BLAS=`pwd`/BLAS/libfblas.a
@@ -84,31 +97,38 @@ export LAPACK=`pwd`/lapack-$LAPACK_VERSION/libflapack.a
 
 FFTW_ZIP=ftp://ftp.fftw.org/pub/fftw/fftw-3.2.2.pl1-dll32.zip
 
-NUMPY_INSTALLER=http://sourceforge.net/projects/numpy/files/NumPy/1.5.1rc1/numpy-1.5.1rc1-win32-superpack-python2.6.exe
-
-SCIPY_VERSION=0.8.0
-SCIPY_TARBALL=http://sourceforge.net/projects/scipy/files/scipy/$SCIPY_VERSION/scipy-$SCIPY_VERSION.tar.gz
-SCIPY_INSTALLER=scipy-$SCIPY_VERSION/dist/scipy-$SCIPY_VERSION.win32-py2.6.exe
+NUMPY_INSTALLER=http://sourceforge.net/projects/numpy/files/NumPy/$NUMPY_VERSION/numpy-$NUMPY_VERSION-win32-superpack-python$PYVER.exe
 
 GTK_ZIP=http://ftp.acc.umu.se/pub/gnome/binaries/win32/gtk+/2.22/gtk+-bundle_2.22.0-20101016_win32.zip
 
-PYGTK_INSTALLER=http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.16/pygtk-2.16.0+glade.win32-py2.6.exe
+PYGTK_INSTALLER=http://ftp.gnome.org/pub/GNOME/binaries/win32/pygtk/2.16/pygtk-2.16.0+glade.win32-py$PYVER.exe
 
-PYGOBJECT_INSTALLER=http://ftp.gnome.org/pub/GNOME/binaries/win32/pygobject/2.20/pygobject-2.20.0.win32-py2.6.exe
+PYGOBJECT_INSTALLER=http://ftp.gnome.org/pub/GNOME/binaries/win32/pygobject/2.20/pygobject-2.20.0.win32-py$PYVER.exe
 
-PYCAIRO_INSTALLER=http://ftp.gnome.org/pub/GNOME/binaries/win32/pycairo/1.8/pycairo-1.8.6.win32-py2.6.exe
+PYCAIRO_INSTALLER=http://ftp.gnome.org/pub/GNOME/binaries/win32/pycairo/1.8/pycairo-1.8.6.win32-py$PYVER.exe
 
 SUBVERSION_INSTALLER=http://downloads.sourceforge.net/project/win32svn/1.6.13/Setup-Subversion-1.6.13.msi
 
-WXPYTHON_INSTALLER=http://sourceforge.net/projects/wxpython/files/wxPython/2.9.1.1/wxPython2.9-win32-2.9.1.1-py26.exe
+WXPYTHON_INSTALLER=http://sourceforge.net/projects/wxpython/files/wxPython/2.9.1.1/wxPython2.9-win32-2.9.1.1-py$PYVR.exe
 
-MATPLOTLIB_VERSION=1.0.0
-MATPLOTLIB_TARBALL=http://sourceforge.net/projects/matplotlib/files/matplotlib/matplotlib-1.0/matplotlib-1.0.0.tar.gz
-MATPLOTLIB_INSTALLER=matplotlib-$MATPLOTLIB_VERSION/dist/matplotlib-$MATPLOTLIB_VERSION.win32-py2.6.exe
+SETUPTOOLS_INSTALLER=http://pypi.python.org/packages/$PYVER/s/setuptools/setuptools-0.6c11.win32-py$PYVER.exe
+
 MATPLOTLIB_PATCH=http://iocbio.googlecode.com/files/matplotlib-$MATPLOTLIB_VERSION.patch
+MATPLOTLIB_TARBALL=http://sourceforge.net/projects/matplotlib/files/matplotlib/matplotlib-1.0/matplotlib-$MATPLOTLIB_VERSION.tar.gz
+MATPLOTLIB_INSTALLER=matplotlib-$MATPLOTLIB_VERSION/dist/matplotlib-$MATPLOTLIB_VERSION.win32-py$PYVER.exe
+NEW_MATPLOTLIB_INSTALLER=matplotlib-$MATPLOTLIB_VERSION/dist/matplotlib-$MATPLOTLIB_VERSION.win32-py$PYVER-numpy$NPVER.exe
 
-SETUPTOOLS_INSTALLER=http://pypi.python.org/packages/2.6/s/setuptools/setuptools-0.6c11.win32-py2.6.exe
+SCIPY_TARBALL=http://sourceforge.net/projects/scipy/files/scipy/$SCIPY_VERSION/scipy-$SCIPY_VERSION.tar.gz
+SCIPY_INSTALLER=scipy-$SCIPY_VERSION/dist/scipy-$SCIPY_VERSION.win32-py$PYVER.exe
+NEW_SCIPY_INSTALLER=scipy-$SCIPY_VERSION/dist/scipy-$SCIPY_VERSION.win32-py$PYVER-numpy$NPVER.exe
 
+IOCBIO_TARBALL=http://iocbio.googlecode.com/files/iocbio-$IOCBIO_VERSION.tar.gz
+IOCBIO_INSTALLER=iocbio-$IOCBIO_VERSION/dist/iocbio-$IOCBIO_VERSION.win32-py$PYVER.exe
+NEW_IOCBIO_INSTALLER=iocbio-$IOCBIO_VERSION/dist/iocbio-$IOCBIO_VERSION.win32-py$PYVER-numpy$NPVER.exe
+
+TIFF_INSTALLER=http://pylibtiff.googlecode.com/files/tiff-3.8.2-1.exe
+PYLIBTIFF_SVN_PATH=http://pylibtiff.googlecode.com/svn/trunk/
+LIBTIFF_DLL=/c/Program\ Files/GnuWin32/bin/libtiff3.dll
 # create paths
 test -d $GTK_ROOT || (mkdir -p $GTK_ROOT)
 
@@ -123,10 +143,12 @@ test -f `basename $PYGOBJECT_INSTALLER` || (wget $PYGOBJECT_INSTALLER) || exit 1
 test -f `basename $PYCAIRO_INSTALLER` || (wget $PYCAIRO_INSTALLER) || exit 1
 test -f `basename $SETUPTOOLS_INSTALLER` || (wget $SETUPTOOLS_INSTALLER) || exit 1
 test -f `basename $SUBVERSION_INSTALLER` || wget $SUBVERSION_INSTALLER || exit 1
+test -f `basename $TIFF_INSTALLER` || wget $TIFF_INSTALLER || exit 1
 
 test -f `basename $BLAS_TARBALL` || wget $BLAS_TARBALL || exit 1
 test -f `basename $LAPACK_TARBALL` || wget $LAPACK_TARBALL || exit 1
 test -f `basename $SCIPY_TARBALL` || wget $SCIPY_TARBALL || exit 1
+test -f `basename $IOCBIO_TARBALL` || wget $IOCBIO_TARBALL || exit 1
 test -f `basename $MATPLOTLIB_TARBALL` || wget $MATPLOTLIB_TARBALL || exit 1
 test -f $GTK_ROOT/`basename $GTK_ZIP` || (cd $GTK_ROOT && wget $GTK_ZIP) || exit 1
 
@@ -134,6 +156,7 @@ test -f $GTK_ROOT/`basename $GTK_ZIP` || (cd $GTK_ROOT && wget $GTK_ZIP) || exit
 test -d BLAS || tar xzf `basename $BLAS_TARBALL`  || exit 1
 test -d lapack-$LAPACK_VERSION || tar xzf `basename $LAPACK_TARBALL` || exit 1
 test -d scipy-$SCIPY_VERSION || tar xzf `basename $SCIPY_TARBALL` || exit 1
+test -d iocbio-$IOCBIO_VERSION || tar xzf `basename $IOCBIO_TARBALL` || exit 1
 
 test -d matplotlib-$MATPLOTLIB_VERSION || tar xzf `basename $MATPLOTLIB_TARBALL` || exit 1
 test -f matplotlib-$MATPLOTLIB_VERSION/`basename $MATPLOTLIB_PATCH` || (cd matplotlib-$MATPLOTLIB_VERSION && wget $MATPLOTLIB_PATCH && patch -p0 < `basename $MATPLOTLIB_PATCH`) || exit 1
@@ -141,7 +164,7 @@ test -f matplotlib-$MATPLOTLIB_VERSION/`basename $MATPLOTLIB_PATCH` || (cd matpl
 test -d $GTK_ROOT/bin && echo $GTK_ROOT || (cd $GTK_ROOT && unzip `basename $GTK_ZIP`)  || exit 1
 
 # build libraries
-test -f $BLAS && echo $BLAS || (echo "Building $BLAS" && cd BLAS && gfortran -fno-second-underscore -O2 -c *.f && ar r libfblas.a *.o && ranlib libfblas.a)  || exit 1
+test -f $BLAS && echo $BLAS || (echo "Building $BLAS" && cd BLAS && gfortran -fno-second-underscore -O2 -c *.f && ar r libfblas.a *.o && ranlib libfblas.a && exit 0)  || exit 1
 
 test -f lapack-$LAPACK_VERSION/make.inc.MINGW || (cd lapack-$LAPACK_VERSION && wget  http://iocbio.googlecode.com/files/make.inc.MINGW && cp make.inc.MINGW make.inc) || exit 1
 test -f $LAPACK && echo $LAPACK || (echo "Building $LAPACK" && cd lapack-$LAPACK_VERSION/SRC && make && mv ../lapack_MINGW.a ../libflapack.a)  || exit 1
@@ -154,11 +177,20 @@ test -f "$MSVCP60_DLL" || (echo "$MSVCP60_DLL does not exist" && exit 1) || exit
 which svn || start ./`basename $SUBVERSION_INSTALLER` || exit 1
 
 while (sleep 5 && (which svn || exit 0 && exit 1)); do echo -e "Waiting another 5 secs for svn to become available.\nPlease, finish Subversion Setup..."; done
-svn --version || (echo "Something wrong with svn installation" && exit 1) || exit 1
+svn --version || (echo "Something wrong with svn installation") || exit 1
 
 which python || (start `basename $PYTHON_INSTALLER`) || exit 1
 
 while (sleep 5 && (python -c "import sys; print sys.version" || exit 0 && exit 1)); do echo -e "Waiting another 5 secs for Python to become available.\nPlease, finish Python Setup..."; done
+
+test -f "$LIBTIFF_DLL" && echo "$LIBTIFF_DLL" || ./`basename $TIFF_INSTALLER` || exit 1
+
+test -d pylibtiff || svn checkout $PYLIBTIFF_SVN_PATH pylibtiff
+PYLIBTIFF_VERSION=`cd pylibtiff/libtiff && python -c 'import version'`
+PYLIBTIFF_VERSION=${PYLIBTIFF_VERSION%M}
+echo "PYLIBTIFF_VERSION=$PYLIBTIFF_VERSION"
+PYLIBTIFF_INSTALLER=pylibtiff/dist/pylibtiff-$PYLIBTIFF_VERSION.win32-py$PYVER.exe
+NEW_PYLIBTIFF_INSTALLER=pylibtiff/dist/pylibtiff-$PYLIBTIFF_VERSION.win32-py$PYVER-numpy$NPVER.exe
 
 python -c 'import wx' || ./`basename $WXPYTHON_INSTALLER` || exit 1
 python -c 'import wx; print "wx:",wx.__version__' || exit 1
@@ -172,18 +204,30 @@ which easy_install || ./`basename $SETUPTOOLS_INSTALLER` || exit 1
 python -c 'import nose' || easy_install nose || exit 1
 python -c 'import nose; print nose' || exit 1
 
-python -c 'import numpy' || ./`basename $NUMPY_INSTALLER`  || exit 1
+python -c 'import numpy, os; v=os.environ["NUMPY_VERSION"]; assert numpy.__version__==v,repr((numpy.__version__,v))' || (rm -rf /c/Python$PYVT/Lib/site-packages/numpy; ./`basename $NUMPY_INSTALLER`)  || exit 1
 python -c 'import numpy; print "numpy:",numpy.__version__' || exit 1
 
 # build installers
-test -f $SCIPY_INSTALLER || (cd scipy-$SCIPY_VERSION && python setup.py build --compiler=mingw32 bdist_wininst)  || exit 1
-test -f $MATPLOTLIB_INSTALLER || (cd matplotlib-$MATPLOTLIB_VERSION && python setup.py build --compiler=mingw32 bdist_wininst)  || exit 1
+BUILD_OPTS="--compiler=mingw32 --build-base=build-numpy-$NPVER"
+
+test -f $NEW_SCIPY_INSTALLER || (cd scipy-$SCIPY_VERSION && python setup.py build $BUILD_OPTS bdist_wininst)  || exit 1
+test -f $NEW_SCIPY_INSTALLER || mv $SCIPY_INSTALLER $NEW_SCIPY_INSTALLER || exit 1
+test -f $NEW_MATPLOTLIB_INSTALLER || (cd matplotlib-$MATPLOTLIB_VERSION && python setup.py build $BUILD_OPTS bdist_wininst)  || exit 1
+test -f $NEW_MATPLOTLIB_INSTALLER || mv $MATPLOTLIB_INSTALLER $NEW_MATPLOTLIB_INSTALLER || exit 1
+test -f $NEW_IOCBIO_INSTALLER || (cd iocbio-$IOCBIO_VERSION && python setup.py build $BUILD_OPTS bdist_wininst)  || exit 1
+test -f $NEW_IOCBIO_INSTALLER || mv $IOCBIO_INSTALLER $NEW_IOCBIO_INSTALLER || exit 1
+test -f $NEW_PYLIBTIFF_INSTALLER || (cd pylibtiff && python setup.py build $BUILD_OPTS bdist_wininst)  || exit 1
+test -f $NEW_PYLIBTIFF_INSTALLER || mv $PYLIBTIFF_INSTALLER $NEW_PYLIBTIFF_INSTALLER || exit 1
 
 # execute installers
-python -c 'import scipy' || ./$SCIPY_INSTALLER  || exit 1
+python -c 'import scipy' || ./$NEW_SCIPY_INSTALLER  || exit 1
 python -c 'import scipy; print "scipy:",scipy.__version__' || exit 1
-python -c 'import matplotlib' || ./$MATPLOTLIB_INSTALLER || exit 1
+python -c 'import matplotlib' || ./$NEW_MATPLOTLIB_INSTALLER || exit 1
 python -c 'import matplotlib; print "matplotlib:", matplotlib.__version__' || exit 1
+python -c 'import iocbio' || ./$NEW_IOCBIO_INSTALLER  || exit 1
+python -c 'import iocbio.version as m; print "iocbio:",m.version' || exit 1
+python -c 'import libtiff' || ./$NEW_PYLIBTIFF_INSTALLER  || exit 1
+python -c 'import libtiff.version as m; print "libtiff:",m.version' || exit 1
 
 echo
 echo "CONGRATULATIONS!!"
