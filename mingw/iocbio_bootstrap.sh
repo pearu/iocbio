@@ -38,8 +38,8 @@
 # Created: October 2010
 #
 
-export NUMPY_VERSION=1.3.0 # 1.5.1rc1, 1.4.1, 1.3.0, py2.5: 1.2.1, 1.1.1, 1.0.4
-export SCIPY_VERSION=0.7.2 # 0.8.0, 0.7.2
+export NUMPY_VERSION=1.5.1rc1 # 1.5.1rc1, 1.4.1, 1.3.0, py2.5: 1.2.1, 1.1.1, 1.0.4
+export SCIPY_VERSION=0.8.0 # 0.8.0, 0.7.2
 export LAPACK_VERSION=3.2.2
 export MATPLOTLIB_VERSION=1.0.0
 export PYTHON_VERSION=2.6.6 # 2.6.6, 2.5.5, 2.4.6, 2.3.7
@@ -129,6 +129,9 @@ NEW_IOCBIO_INSTALLER=iocbio-$IOCBIO_VERSION/dist/iocbio-$IOCBIO_VERSION.win32-py
 TIFF_INSTALLER=http://pylibtiff.googlecode.com/files/tiff-3.8.2-1.exe
 PYLIBTIFF_SVN_PATH=http://pylibtiff.googlecode.com/svn/trunk/
 LIBTIFF_DLL=/c/Program\ Files/GnuWin32/bin/libtiff3.dll
+
+SYMPYCORE_SVN_PATH=http://sympycore.googlecode.com/svn/trunk/
+
 # create paths
 test -d $GTK_ROOT || (mkdir -p $GTK_ROOT)
 
@@ -192,6 +195,14 @@ echo "PYLIBTIFF_VERSION=$PYLIBTIFF_VERSION"
 PYLIBTIFF_INSTALLER=pylibtiff/dist/pylibtiff-$PYLIBTIFF_VERSION.win32-py$PYVER.exe
 NEW_PYLIBTIFF_INSTALLER=pylibtiff/dist/pylibtiff-$PYLIBTIFF_VERSION.win32-py$PYVER-numpy$NPVER.exe
 
+test -d sympycore || svn checkout $SYMPYCORE_SVN_PATH sympycore
+SYMPYCORE_VERSION=0.2-svn
+SYMPYCORE_SVNVERSION=`cd sympycore && svnversion`
+SYMPYCORE_SVNVERSION=${SYMPYCORE_SVNVERSION%M}
+echo "SYMPYCORE_VERSION=$SYMPYCORE_VERSION, SYMPYCORE_SVNVERSION=$SYMPYCORE_SVNVERSION"
+SYMPYCORE_INSTALLER=SYMPYCORE/dist/SYMPYCORE-$SYMPYCORE_VERSION.win32-py$PYVER.exe
+NEW_SYMPYCORE_INSTALLER=sympycore/dist/sympycore-$SYMPYCORE_VERSION$SYMPYCORE_SVNVERSION.win32-py$PYVER.exe
+
 python -c 'import wx' || ./`basename $WXPYTHON_INSTALLER` || exit 1
 python -c 'import wx; print "wx:",wx.__version__' || exit 1
 
@@ -219,6 +230,9 @@ test -f $NEW_IOCBIO_INSTALLER || mv $IOCBIO_INSTALLER $NEW_IOCBIO_INSTALLER || e
 test -f $NEW_PYLIBTIFF_INSTALLER || (cd pylibtiff && python setup.py build $BUILD_OPTS bdist_wininst)  || exit 1
 test -f $NEW_PYLIBTIFF_INSTALLER || mv $PYLIBTIFF_INSTALLER $NEW_PYLIBTIFF_INSTALLER || exit 1
 
+test -f $NEW_SYMPYCORE_INSTALLER || (cd sympycore && python setup.py build $BUILD_OPTS bdist_wininst)  || exit 1
+test -f $NEW_SYMPYCORE_INSTALLER || mv $SYMPYCORE_INSTALLER $NEW_SYMPYCORE_INSTALLER || exit 1
+
 # execute installers
 python -c 'import scipy' || ./$NEW_SCIPY_INSTALLER  || exit 1
 python -c 'import scipy; print "scipy:",scipy.__version__' || exit 1
@@ -226,8 +240,12 @@ python -c 'import matplotlib' || ./$NEW_MATPLOTLIB_INSTALLER || exit 1
 python -c 'import matplotlib; print "matplotlib:", matplotlib.__version__' || exit 1
 python -c 'import iocbio' || ./$NEW_IOCBIO_INSTALLER  || exit 1
 python -c 'import iocbio.version as m; print "iocbio:",m.version' || exit 1
+
+python -c 'import sympycore' || ./$NEW_SYMPYCORE_INSTALLER  || exit 1
+python -c 'import sympycore as m; print "sympycore:",m.__version__' || exit 1
+
 python -c 'import libtiff' || ./$NEW_PYLIBTIFF_INSTALLER  || exit 1
-python -c 'import libtiff.version as m; print "libtiff:",m.version' || exit 1
+python -c 'import libtiff.version as m; print "libtiff:",m.version' || echo "Ignoring failure"
 
 echo
 echo "CONGRATULATIONS!!"
