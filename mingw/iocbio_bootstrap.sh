@@ -43,7 +43,7 @@ export SCIPY_VERSION=0.8.0 # 0.8.0, 0.7.2
 export LAPACK_VERSION=3.2.2
 export MATPLOTLIB_VERSION=1.0.0
 export PYTHON_VERSION=2.6.6 # 2.6.6, 2.5.5, 2.4.6, 2.3.7
-export IOCBIO_VERSION=1.2.0.dev139
+export IOCBIO_VERSION=svn # svn, 1.2.0.dev139
 
 NPVER=${NUMPY_VERSION::3}
 PYVER=${PYTHON_VERSION:0:3}
@@ -53,10 +53,13 @@ echo "NPVER=$NPVER, PYVER=$PYVER, PYVR=$PYVR"
 
 ROOT=tmp/iocbio_bootstrap_cache
 GTK_ROOT=/c/gtk
-REQUIREDPATH=/c/MinGW/bin:/c/MinGW/msys/1.0/bin:/c/Python$PYVR:/c/Python$PYVR/Scripts:$GTK_ROOT/bin:/c/Program\ Files/Subversion/bin:/c/Program\ Files/GnuWin32/bin
-WINREQUIREDPATH="c:\MinGW\bin;c:\MinGW\msys\1.0\bin;c:\Python$PYVR;c:\Python$PYVR\Scripts;c:\gtk\bin;c:\Program Files\Subversion\bin;c:\Program Files\GnuWin32\bin"
+export FFTW3="c:\fftw3"
+REQUIREDPATH=/c/MinGW/bin:/c/MinGW/msys/1.0/bin:/c/Python$PYVR:/c/Python$PYVR/Scripts:$GTK_ROOT/bin:/c/Program\ Files/Subversion/bin:/c/Program\ Files/GnuWin32/bin:/c/fftw3
+WINREQUIREDPATH="c:\MinGW\bin;c:\MinGW\msys\1.0\bin;c:\Python$PYVR;c:\Python$PYVR\Scripts;c:\gtk\bin;c:\Program Files\Subversion\bin;c:\Program Files\GnuWin32\bin:c:\fftw3"
 export PATH=/c/windows/command:$PATH:$REQUIREDPATH
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/c/Python$PYVR/Lib/pkgconfig:/c/gtk/lib/pkgconfig
+
+if ( which mkdir && exit 1 || exit 0 ) ; then
 
 which mkdir || mingw-get install msys-core msys-coreutils msys-wget msys-unzip gfortran  g++ binutils msys-patch msys-tar msys-make
 echo "Checking the availability of commands.."
@@ -71,6 +74,9 @@ which ar || mingw-get install binutils
 which patch || mingw-get install msys-patch
 which tar || mingw-get install msys-tar
 echo "done"
+
+fi
+
 echo "PATH=$PATH"
 echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
 
@@ -94,6 +100,7 @@ LAPACK_TARBALL=http://www.netlib.org/lapack/lapack-$LAPACK_VERSION.tgz
 
 export BLAS=`pwd`/BLAS/libfblas.a
 export LAPACK=`pwd`/lapack-$LAPACK_VERSION/libflapack.a
+
 
 FFTW_ZIP=ftp://ftp.fftw.org/pub/fftw/fftw-3.2.2.pl1-dll32.zip
 
@@ -122,9 +129,14 @@ SCIPY_TARBALL=http://sourceforge.net/projects/scipy/files/scipy/$SCIPY_VERSION/s
 SCIPY_INSTALLER=scipy-$SCIPY_VERSION/dist/scipy-$SCIPY_VERSION.win32-py$PYVER.exe
 NEW_SCIPY_INSTALLER=scipy-$SCIPY_VERSION/dist/scipy-$SCIPY_VERSION.win32-py$PYVER-numpy$NPVER.exe
 
+IOCBIO_SVN_PATH=http://iocbio.googlecode.com/svn/trunk/
 IOCBIO_TARBALL=http://iocbio.googlecode.com/files/iocbio-$IOCBIO_VERSION.tar.gz
-IOCBIO_INSTALLER=iocbio-$IOCBIO_VERSION/dist/iocbio-$IOCBIO_VERSION.win32-py$PYVER.exe
-NEW_IOCBIO_INSTALLER=iocbio-$IOCBIO_VERSION/dist/iocbio-$IOCBIO_VERSION.win32-py$PYVER-numpy$NPVER.exe
+
+if [ "$IOCBIO_VERSION" == "svn" ] ; then
+  export IOCBIO_SRC_PATH=iocbio
+else
+  export IOCBIO_SRC_PATH=iocbio-$IOCBIO_VERSION
+fi
 
 TIFF_INSTALLER=http://pylibtiff.googlecode.com/files/tiff-3.8.2-1.exe
 PYLIBTIFF_SVN_PATH=http://pylibtiff.googlecode.com/svn/trunk/
@@ -151,15 +163,25 @@ test -f `basename $TIFF_INSTALLER` || wget $TIFF_INSTALLER || exit 1
 test -f `basename $BLAS_TARBALL` || wget $BLAS_TARBALL || exit 1
 test -f `basename $LAPACK_TARBALL` || wget $LAPACK_TARBALL || exit 1
 test -f `basename $SCIPY_TARBALL` || wget $SCIPY_TARBALL || exit 1
+
+if [ "$IOCBIO_VERSION" != "svn" ] ; then
 test -f `basename $IOCBIO_TARBALL` || wget $IOCBIO_TARBALL || exit 1
+fi
 test -f `basename $MATPLOTLIB_TARBALL` || wget $MATPLOTLIB_TARBALL || exit 1
 test -f $GTK_ROOT/`basename $GTK_ZIP` || (cd $GTK_ROOT && wget $GTK_ZIP) || exit 1
+
+test -d $FFTW3 || mkdir $FFTW3 || exit 1
+test -f $FFTW3/`basename $FFTW_ZIP` || (cd $FFTW3 && wget $FFTW_ZIP) || exit 1
+test -f $FFTW3/fftw3.h || (cd $FFTW3 && unzip `basename $FFTW_ZIP`) || exit 1
+test -f $FFTW3/libfftw3.lib || (cd $FFTW3 && cp libfftw3-3.dll libfftw3.dll && touch libfftw3.lib) || exit 1
 
 # unpack files
 test -d BLAS || tar xzf `basename $BLAS_TARBALL`  || exit 1
 test -d lapack-$LAPACK_VERSION || tar xzf `basename $LAPACK_TARBALL` || exit 1
 test -d scipy-$SCIPY_VERSION || tar xzf `basename $SCIPY_TARBALL` || exit 1
-test -d iocbio-$IOCBIO_VERSION || tar xzf `basename $IOCBIO_TARBALL` || exit 1
+if [ "$IOCBIO_VERSION" != "svn" ] ; then
+  test -d $IOCBIO_SRC_PATH || tar xzf `basename $IOCBIO_TARBALL` || exit 1
+fi
 
 test -d matplotlib-$MATPLOTLIB_VERSION || tar xzf `basename $MATPLOTLIB_TARBALL` || exit 1
 test -f matplotlib-$MATPLOTLIB_VERSION/`basename $MATPLOTLIB_PATCH` || (cd matplotlib-$MATPLOTLIB_VERSION && wget $MATPLOTLIB_PATCH && patch -p0 < `basename $MATPLOTLIB_PATCH`) || exit 1
@@ -171,6 +193,7 @@ test -f $BLAS && echo $BLAS || (echo "Building $BLAS" && cd BLAS && gfortran -fn
 
 test -f lapack-$LAPACK_VERSION/make.inc.MINGW || (cd lapack-$LAPACK_VERSION && wget  http://iocbio.googlecode.com/files/make.inc.MINGW && cp make.inc.MINGW make.inc) || exit 1
 test -f $LAPACK && echo $LAPACK || (echo "Building $LAPACK" && cd lapack-$LAPACK_VERSION/SRC && make && mv ../lapack_MINGW.a ../libflapack.a)  || exit 1
+
 
 # check for MSVC DLL files:
 test -f "$MSVCP60_DLL" && echo "$MSVCP60_DLL" || (echo "IMPORTANT: Specify c:\ when asked for the location of extracted files." && ./`basename $VC6REDIST_INSTALLER` && (test -f /c/vcredist.exe &&  (/c/vcredist.exe || (echo "Ignoring crash" ) || exit 1)) && ./`basename $VCREDIST_INSTALLER`) || exit 1
@@ -188,6 +211,20 @@ while (sleep 5 && (python -c "import sys; print sys.version" || exit 0 && exit 1
 
 test -f "$LIBTIFF_DLL" && echo "$LIBTIFF_DLL" || ./`basename $TIFF_INSTALLER` || exit 1
 
+if [ "$IOCBIO_VERSION" == "svn" ] ; then
+  test -d $IOCBIO_SRC_PATH || svn checkout $IOCBIO_SVN_PATH iocbio
+  IOCBIO_VERSION=`cd $IOCBIO_SRC_PATH && python -c 'import setup; print "%(MAJOR)s.%(MINOR)s.%(MICRO)s" % (setup.__dict__)'`
+  IOCBIO_SVNVERSION=`cd $IOCBIO_SRC_PATH && svnversion`
+  IOCBIO_SVNVERSION=${IOCBIO_SVNVERSION%M}
+  IOCBIO_SVNVERSION=${IOCBIO_SVNVERSION%:}
+  echo "IOCBIO_VERSION=$IOCBIO_VERSION, IOCBIO_SVNVERSION=$IOCBIO_SVNVERSION"
+  IOCBIO_INSTALLER=iocbio/dist/iocbio-$IOCBIO_VERSION.dev$IOCBIO_SVNVERSION.win32-py$PYVER.exe
+  NEW_IOCBIO_INSTALLER=iocbio/dist/iocbio-$IOCBIO_VERSION.dev$IOCBIO_SVNVERSION.win32-py$PYVER-numpy$NPVER.exe
+else
+  IOCBIO_INSTALLER=$IOCBIO_SRC_PATH/dist/iocbio-$IOCBIO_VERSION.win32-py$PYVER.exe
+  NEW_IOCBIO_INSTALLER=$IOCBIO_SRC_PATH/dist/iocbio-$IOCBIO_VERSION.win32-py$PYVER-numpy$NPVER.exe
+fi
+
 test -d pylibtiff || svn checkout $PYLIBTIFF_SVN_PATH pylibtiff
 PYLIBTIFF_VERSION=`cd pylibtiff/libtiff && python -c 'import version'`
 PYLIBTIFF_VERSION=${PYLIBTIFF_VERSION%M}
@@ -200,7 +237,7 @@ SYMPYCORE_VERSION=0.2-svn
 SYMPYCORE_SVNVERSION=`cd sympycore && svnversion`
 SYMPYCORE_SVNVERSION=${SYMPYCORE_SVNVERSION%M}
 echo "SYMPYCORE_VERSION=$SYMPYCORE_VERSION, SYMPYCORE_SVNVERSION=$SYMPYCORE_SVNVERSION"
-SYMPYCORE_INSTALLER=SYMPYCORE/dist/SYMPYCORE-$SYMPYCORE_VERSION.win32-py$PYVER.exe
+SYMPYCORE_INSTALLER=SYMPYCORE/dist/sympycore-$SYMPYCORE_VERSION.win32-py$PYVER.exe
 NEW_SYMPYCORE_INSTALLER=sympycore/dist/sympycore-$SYMPYCORE_VERSION$SYMPYCORE_SVNVERSION.win32-py$PYVER.exe
 
 python -c 'import wx' || ./`basename $WXPYTHON_INSTALLER` || exit 1
@@ -225,7 +262,7 @@ test -f $NEW_SCIPY_INSTALLER || (cd scipy-$SCIPY_VERSION && python setup.py buil
 test -f $NEW_SCIPY_INSTALLER || mv $SCIPY_INSTALLER $NEW_SCIPY_INSTALLER || exit 1
 test -f $NEW_MATPLOTLIB_INSTALLER || (cd matplotlib-$MATPLOTLIB_VERSION && python setup.py build $BUILD_OPTS bdist_wininst)  || exit 1
 test -f $NEW_MATPLOTLIB_INSTALLER || mv $MATPLOTLIB_INSTALLER $NEW_MATPLOTLIB_INSTALLER || exit 1
-test -f $NEW_IOCBIO_INSTALLER || (cd iocbio-$IOCBIO_VERSION && python setup.py build $BUILD_OPTS bdist_wininst)  || exit 1
+test -f $NEW_IOCBIO_INSTALLER || (cd $IOCBIO_SRC_PATH && python setup.py build $BUILD_OPTS bdist_wininst)  || exit 1
 test -f $NEW_IOCBIO_INSTALLER || mv $IOCBIO_INSTALLER $NEW_IOCBIO_INSTALLER || exit 1
 test -f $NEW_PYLIBTIFF_INSTALLER || (cd pylibtiff && python setup.py build $BUILD_OPTS bdist_wininst)  || exit 1
 test -f $NEW_PYLIBTIFF_INSTALLER || mv $PYLIBTIFF_INSTALLER $NEW_PYLIBTIFF_INSTALLER || exit 1
