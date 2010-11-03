@@ -70,25 +70,30 @@ def get_indexed_files(path, file_prefix):
     The file names must have specified prefix and end with
     number parts.
     """
-    files = []
+    files = None
     for ext in raw_extensions + tif_extensions:
         files = glob(os.path.join(path,file_prefix+'[0-9]*'+ext))
         if files: break
-    l = []
-    prefix = None
-    for f in files:
-        i = len(f)-5
-        while i and f[i].isdigit(): i -= 1
-        l.append((int(f[i+1:-4]), f))
-        if prefix is None:
-            prefix = f[:i+1]
-        elif f[:i+1] != prefix:
-            raise ValueError('All files must have the same prefix %r but got %r' % (prefix, f[:i+1]))
-    if not l:
-        print len (files)
+    if not files:
         raise ValueError('No image files with prefix %r found in %r' % (file_prefix, path))
+    prefix = suffix = files[0]
+    for f in files:
+        while not f.endswith (suffix) and suffix:
+            suffix = suffix[1:]
+        while not f.startswith(prefix) and prefix:
+            prefix = prefix[:-1]
+    #print `prefix,suffix`
+    l = []
+    for f in files:
+        numpart = f[len(prefix):-len (suffix)]
+        try:
+            n = int (numpart)
+        except ValueError, msg:
+            print ('Failed to establish index from %r for file name %r (prefix=%r, suffix=%r): %s' % (numpart, f, prefix, suffix, msg))
+            continue
+        l.append((n,f))
     l.sort()
-    return [x[1] for x in l]
+    return [f for (n,f) in l]
 
 def fix_path (path):
     """
