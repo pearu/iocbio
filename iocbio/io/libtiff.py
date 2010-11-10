@@ -52,9 +52,14 @@ except ImportError:
     tiff_h = None
 
 if tiff_h is None:
+    if not os.path.isabs(lib):
+        for d in ['/usr/lib', '/usr/local']:
+            if os.path.isfile(os.path.join(d, lib)):
+                lib = os.path.join (d,lib)
+                break
     include_dir = os.path.join(os.path.dirname (os.path.dirname (lib)), 'include')
     include_tiff_h = os.path.join(include_dir,'tiff.h')
-    assert os.path.isfile(include_tiff_h), `include_tiff_h, lib`
+    assert os.path.isfile(include_tiff_h), `include_tiff_h, lib, libtiff, libtiff_version`
     # Read TIFFTAG_* constants for the header file:
     f = open (include_tiff_h, 'r')
     l = []
