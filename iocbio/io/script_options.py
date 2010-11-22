@@ -17,10 +17,10 @@ def set_ome_options (parser):
                        type = 'file', metavar='INPUT_PATH',
                        help = 'Specify input PATH of 3D images.'
                        )
-    parser.add_option ('--output-path','-o',
-                       type = 'file', metavar='OUTPUT_PATH',
-                       help = 'Specify output PATH of OME-TIFF file.'
-                       )
+    #parser.add_option ('--output-path','-o',
+    #                   type = 'file', metavar='OUTPUT_PATH',
+    #                   help = 'Specify output PATH of OME-TIFF file.'
+    #                   )
 
 def set_show_options(parser):
     set_formatter(parser)

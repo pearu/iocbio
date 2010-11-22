@@ -133,6 +133,7 @@ def get_tag_from_configuration(path, tagname, _cache={}):
     f = open(path,'r')
     is_string = False
     text = ''
+    value_type = str
     for line in f.readlines():
         if is_string:
             if line.rstrip().endswith('"'):
@@ -151,7 +152,16 @@ def get_tag_from_configuration(path, tagname, _cache={}):
                 is_string = True
                 text = text[1:]
             else:
-                info[tag] = text
+                if tag=='Float':
+                    value_type = float
+                elif tag=='Int':
+                    value_type = int
+                elif tag=='Bool':
+                    value_type = bool
+                elif tag=='String':
+                    value_type = str
+                else:
+                    info[tag] = value_type(text)
     f.close ()
     _cache[path] = info
     if tagname is None:
@@ -949,10 +959,9 @@ class Configuration(PathInfo):
             self.set_sample_format('uint')
         return self.sample_format
 
-    def omexml(self):
-        from . import ome_configuration
-        ome_configuration.make_ome_xml(self.path)
-
+    def omexml(self, options=None):
+        from .ome_configuration import OMEConfiguration
+        OMEConfiguration (self.path).process()
 
 class Tiffinfo(PathInfo):
 

@@ -232,6 +232,7 @@ def load_image_stack(path, options=None):
                 tif = TIFFfile(path, sample_format = sample_format)
                 images = tif.asarray()
             pathinfo.set_shape(*images.shape)
+            print '-> image array with shape=%s and dtype=%s' % (images.shape, images.dtype)
             return images, pathinfo
         elif israwfile(path):
             if pathinfo is None:
@@ -251,6 +252,7 @@ def load_image_stack(path, options=None):
             images = numpy.fromfile(path, image_type)
             images.shape = shape
             pathinfo.set_shape(*shape)
+            print '-> image array with shape=%s and dtype=%s' % (images.shape, images.dtype)
             return images, pathinfo
     elif os.path.isdir(path):
         images = None
@@ -335,6 +337,7 @@ def load_image_stack(path, options=None):
             images[i] = image
         bar(i)
         print
+        print '-> image array with shape=%s and dtype=%s' % (images.shape, images.dtype)
         return images, pathinfo
     elif not os.path.exists (path):
         raise IOError ('Image path does not exist: %r' % (path))

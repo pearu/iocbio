@@ -80,7 +80,9 @@ def runner (parser, options, args):
     else:
         cmap = getattr(cm, options.cmap, 'gray')
 
-    view_3d = options.get(view_3d = '')
+    view_3d = options.get(view_3d = 'none')
+    if view_3d and view_3d.lower()=='none':
+        view_3d = None
     if view_3d:
         l = []
         for i,d in enumerate(view_3d.split (',')):
