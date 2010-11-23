@@ -361,8 +361,26 @@ class OMEConfiguration(OMEBase):
                 dz = 0
             plane_l = []
             ti = -1
-            for t, index in sorted(d_index):
 
+            exptime = '0'
+            if detector=='Confocal':
+                exptime = float(self.config['CONFOCAL_PixelAcqusitionTime']) * 1e-6
+            elif detector=='Andor':
+                exptime = self.config['CAMERA_ANDOR_ExposureTime']
+            elif detector=='Imperx':
+                for line in  self.config['CAMERA_IMPERX_HardwareInformation'].split('\n'):
+                    if line.startswith ('Exposure time:'):
+                        v,u = line[14:].lstrip().split()
+                        v = v.strip (); u = u.strip ()
+                        if u=='usec': exptime = float(v)*1e-6
+                        elif u=='msec': exptime = float(v)*1e-3
+                        elif u=='sec': exptime = float(v)
+                        else:
+                            raise NotImplementedError (`v,u,line`)
+            else:
+                raise NotImplementedError(`detector`)
+
+            for t, index in sorted(d_index):
                 if t not in time_set:
                     time_set.add(t)
                     ti += 1
@@ -370,7 +388,7 @@ class OMEConfiguration(OMEBase):
                 else:
                     zi += 1
                 z = mnz + dz * zi
-                d = dict(DeltaT=str(t), TheT=str(ti), TheZ = str(zi), PositionZ=str(z), TheC='0')
+                d = dict(DeltaT=str(t), TheT=str(ti), TheZ = str(zi), PositionZ=str(z), TheC='0', ExposureTime=str(exptime))
                 plane_l.append(d)
 
                 tif = TIFFfile(d_index[t, index])
@@ -574,8 +592,8 @@ class OMEConfiguration(OMEBase):
         e = func(ID='Instrument:Suga')
         e.append(ome.Microscope(Manufacturer='Nikon', 
                                 Model='Eclipse Ti-U', 
-                                SerialNumber='', 
-                                LotNumber='',
+                                #SerialNumber='', 
+                                #LotNumber='',
                                 Type = 'Inverted'))
 
         for n, d in nikon_light_sources.items():
@@ -598,7 +616,7 @@ class OMEConfiguration(OMEBase):
 
         for n, d in nikon_objectives.items():
             d1 = {}
-            for k1,k2 in dict(man='Manufacturer', model='Model', correction='Correction', immesion='Immersion', NA='LensNA',
+            for k1,k2 in dict(man='Manufacturer', model='Model', correction='Correction', immersion='Immersion', NA='LensNA',
                               mag = 'NominalMagnification', wd='WorkingDistance').items ():
                 if k1 in d: d1[k2] = d[k1]
             e.append(ome.Objective(ID='Objective:%s' % n, **d1))
@@ -626,8 +644,8 @@ class OMEConfiguration(OMEBase):
         e = func(ID='Instrument:Airy')
         e.append (ome.Microscope(Manufacturer='Olympus', 
                                  Model='IX71', 
-                                 SerialNumber='', 
-                                 LotNumber='',
+                                 #SerialNumber='', 
+                                 #LotNumber='',
                                  Type = 'Inverted'))
 
         for n, d in confocal_light_sources.items():
@@ -650,7 +668,7 @@ class OMEConfiguration(OMEBase):
 
         for n, d in confocal_objectives.items():
             d1 = {}
-            for k1,k2 in dict(man='Manufacturer', model='Model', correction='Correction', immesion='Immersion', NA='LensNA',
+            for k1,k2 in dict(man='Manufacturer', model='Model', correction='Correction', immersion='Immersion', NA='LensNA',
                               mag = 'NominalMagnification', wd='WorkingDistance').items ():
                 if k1 in d: d1[k2] = d[k1]
             e.append(ome.Objective(ID='Objective:%s' % n, **d1))
@@ -670,6 +688,8 @@ class OMEConfiguration(OMEBase):
                     fn = get_aotf_filter_name (fn, self.config)
                     if fn is not None:
                         e.append(create_ome_filter(fn, cube, str(tr), self.config))
+                else:
+                    e.append(create_ome_filter(fn, cube, str(tr), self.config))
 
         for cube in sorted (confocal_filters):
             cube_data = confocal_filters[cube]
@@ -708,12 +728,15 @@ class OMEConfiguration(OMEBase):
 
         for key in sorted(self.config):
             value = self.config[key]
+            
             if isinstance (value, str):
                 value = value.strip ()
                 if not value: continue
                 ID='Annotation:string-%s' % (key)
                 e.append(sa.CommentAnnotation(sa.Value(value), ID=ID, Namespace='configuration.txt'))
-                
+            elif 1:
+                ID='Annotation:%s' % (key)
+                e.append(sa.CommentAnnotation(sa.Value('%s=%s' % (key, value)), ID=ID, Namespace='configuration.txt'))
             elif isinstance (value, bool):
                 ID='Annotation:bool-%s' % (key)
                 e.append(sa.BooleanAnnotation(sa.Value(str(value).lower()), ID=ID, Namespace='configuration.txt'))

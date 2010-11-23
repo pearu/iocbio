@@ -157,7 +157,7 @@ def get_tag_from_configuration(path, tagname, _cache={}):
                 elif tag=='Int':
                     value_type = int
                 elif tag=='Bool':
-                    value_type = bool
+                    value_type = lambda obj: bool(int(obj))
                 elif tag=='String':
                     value_type = str
                 else:
