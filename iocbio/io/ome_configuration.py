@@ -554,8 +554,8 @@ class OMEConfiguration(OMEBase):
                                pixels, 
                                ID='Image:%s' % (detector))
 
-            image.append(sa.AnnotationRef (ID='Annotation:filepath-configuration.txt'))
-            image.append(sa.AnnotationRef (ID='Annotation:configuration.txt'))
+            if 0:
+                image.append(sa.AnnotationRef (ID='Annotation:configuration.txt'))
             yield image
         return
 
@@ -705,14 +705,18 @@ class OMEConfiguration(OMEBase):
         e = func()
 
         if 0:
-            content = base64.encodestring(open(self.config_path).read ())
+            filesize = os.stat (self.config_path).st_size
+            filecontent = open(self.config_path).read ()
+            assert filesize==len(filecontent), `filesize, len(filecontent)`
+            base64content = base64.encodestring(filecontent)
             f = sa.FileAnnotation (
                 bf.BinaryFile(
-                    bf.BinData (content, Compression='none', BigEndian='false', Length=str(len (content))),
-                    FileName=self.config_path, Size=str(os.stat (self.config_path).st_size)),
+                    bf.BinData (base64content, Compression='none', BigEndian='false', Length=str(len (base64content))),
+                    FileName=os.path.basename(self.config_path), Size=str (filesize), MIMEType='text/plain'),
                 ID='Annotation:configuration.txt')
-
             e.append (f)
+        yield e
+        return
 
         if 0:
             c = sa.CommentAnnotation(sa.Description('info.txt'),ID='Annotation:info.txt')
@@ -722,18 +726,25 @@ class OMEConfiguration(OMEBase):
         c = sa.CommentAnnotation(ID='Annotation:filepath-configuration.txt')
         c.append(sa.Value(self.config_path))
         e.append(c)
+
+        #c = sa.CommentAnnotation(ID='Annotation:test')
+        #c.append(sa.Value('This is test comment'))
+        #e.append(c)
         
         l = sa.ListAnnotation(sa.Description('configuration.txt'), #sa.Value ('Content of %s' % (self.config_path)), 
-                                 ID='Annotation:configuration.txt', Namespace='configuration.txt')
+                                 ID='Annotation:configuration.txt')# Namespace='configuration.txt')
+
+        l1 = []
 
         for key in sorted(self.config):
             value = self.config[key]
-            
+            l1.append ('%s=%r' % (key, value))
+            continue
             if isinstance (value, str):
                 value = value.strip ()
                 if not value: continue
                 ID='Annotation:string-%s' % (key)
-                e.append(sa.CommentAnnotation(sa.Value(value), ID=ID, Namespace='configuration.txt'))
+                e.append(sa.CommentAnnotation(sa.Value(value), ID=ID))#, Namespace='configuration.txt'))
             elif 1:
                 ID='Annotation:%s' % (key)
                 e.append(sa.CommentAnnotation(sa.Value('%s=%s' % (key, value)), ID=ID, Namespace='configuration.txt'))
@@ -751,7 +762,11 @@ class OMEConfiguration(OMEBase):
 
             l.append(sa.AnnotationRef(ID=ID))
 
-        e.append(l)
+        c = sa.CommentAnnotation(ID='Annotation:configuration.txt')
+        c.append(sa.Value('\n'.join(l1)))
+        e.append(c)
+
+        #e.append(l)
 
 
         yield e
