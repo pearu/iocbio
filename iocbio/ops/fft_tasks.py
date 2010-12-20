@@ -47,7 +47,7 @@ __all__ = ['FFTTasks']
 import os
 import numpy
 
-from ..utils import mul_seq, VERBOSE
+from ..utils import mul_seq, VERBOSE, Options
 
 class FFTTasks(object):
     """ Optimized cache for Fourier transforms using `FFTW <http://www.fftw.org/>`_ with operations.
@@ -195,6 +195,8 @@ class FFTTasks(object):
         --------
         iocbio.ops.fft_tasks
         """
+        if options is None:
+            options = Options()
         flags = [options.get(fftw_plan_flags='estimate')]
         if float_type is None:
             float_type = options.get(float_type='single')
@@ -234,6 +236,11 @@ class FFTTasks(object):
         self.save_wisdoms()
 
         self.convolve_kernel_fourier = None
+
+    def clear(self):
+        del self._fft_plan
+        del self._ifft_plan
+        del self._cache
 
     def fft(self, data):
         """Compute FFT of data.

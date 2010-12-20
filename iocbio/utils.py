@@ -3,7 +3,8 @@ Various utilities.
 """
 
 __autodoc__ = ['expand_to_shape', 'contract_to_shape', 'ProgressBar', 'Options', 'encode',
-               'tostr', 'get_path_dir', 'float2dtype', 'time_to_str', 'time_it']
+               'tostr', 'get_path_dir', 'float2dtype', 'time_to_str', 'time_it',
+               'time2str', 'bytes2str']
 
 import os
 import sys
@@ -330,6 +331,8 @@ def time_to_str(s):
         return '0'
     return ''.join(r)
 
+time2str = time_to_str
+
 def expand_to_shape(data, shape, dtype=None, background=None):
     """
     Expand data to given shape by zero-padding.
@@ -581,6 +584,11 @@ def splitquote(line, stopchar=None, lower=False, quotechars = '"\''):
     return items, stopchar
 
 def bytes2str(bytes):
+    if bytes < 0:
+        s = bytes2str(-bytes)
+        if '+' in s:
+            return '-(%s) bytes' % (s.split()[0])
+        return '-%s' % s
     l = []
     Pbytes = bytes//1024**5
     if Pbytes:

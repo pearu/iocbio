@@ -31,7 +31,7 @@ def convolve_discrete_gauss(seq, t):
     """
     n = len(seq)
     fseq = numpy.fft.fft (seq)
-    theta = 2*numpy.pi*numpy.arange(0, n, 1, dtype=float)/n
+    theta = 2*numpy.pi*numpy.fft.fftfreq(n)
     fker = numpy.exp((numpy.cos(theta)-1)*t)
     fres = fseq * fker
     res = numpy.fft.ifft (fres)

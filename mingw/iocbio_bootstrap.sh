@@ -37,9 +37,10 @@
 # Author: Pearu Peterson
 # Created: October 2010
 #
+# TODO: pyfftw3 installer, test iocbio.deconvolve using fftw3
 
-export NUMPY_VERSION=1.5.1rc1 # 1.5.1rc1, 1.4.1, 1.3.0, py2.5: 1.2.1, 1.1.1, 1.0.4
-export SCIPY_VERSION=0.8.0 # 0.8.0, 0.7.2
+export NUMPY_VERSION=1.3.0 # 1.5.1rc1, 1.4.1, 1.3.0, py2.5: 1.2.1, 1.1.1, 1.0.4
+export SCIPY_VERSION=0.7.2 # 0.8.0, 0.7.2
 export LAPACK_VERSION=3.2.2
 export MATPLOTLIB_VERSION=1.0.0
 export PYTHON_VERSION=2.6.6 # 2.6.6, 2.5.5, 2.4.6, 2.3.7

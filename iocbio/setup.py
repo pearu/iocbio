@@ -17,6 +17,7 @@ def configuration(parent_package='',top_path=None):
     config.add_subpackage('microscope')
     config.add_subpackage('scanner')
     config.add_subpackage('strathkelvin')
+    config.add_subpackage('chaco')
     #config.add_subpackage('analysis')
     # eof add.
 

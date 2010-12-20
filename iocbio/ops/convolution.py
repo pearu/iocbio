@@ -64,8 +64,13 @@ def convolve(kernel, data, kernel_background = None, options = None):
     task = fft_tasks.FFTTasks(data.shape, float_type, options=options)
     if kernel.shape != data.shape:
         # assuming that kernel has smaller size than data
-        kernel = utils.expand_to_shape(kernel, data.shape, data.dtype, background=kernel_background)
+        kernel = utils.expand_to_shape(kernel, data.shape, float_type, background=kernel_background)
+
     kernel = fftpack.fftshift(kernel)
+
     kernel = kernel / kernel.sum()
+
     task.set_convolve_kernel(kernel)
-    return task.convolve(data)
+    result = task.convolve(data)
+
+    return result
