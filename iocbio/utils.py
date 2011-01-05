@@ -4,7 +4,7 @@ Various utilities.
 
 __autodoc__ = ['expand_to_shape', 'contract_to_shape', 'ProgressBar', 'Options', 'encode',
                'tostr', 'get_path_dir', 'float2dtype', 'time_to_str', 'time_it',
-               'time2str', 'bytes2str']
+               'time2str', 'bytes2str', 'sround']
 
 import os
 import sys
@@ -619,3 +619,47 @@ def show_memory(msg):
         m = numpy_utils.memusage()
         sys.stdout.write('%s: %s\n' % (msg, bytes2str(m)))
         sys.stdout.flush()
+
+def _get_sround_decimals(value):
+    exp = numpy.floor(numpy.log10(value))
+    norm = value/10.0**exp
+    norm2 = (norm-int(norm))
+    if abs(1-numpy.around(norm, 0)/norm)>0.1:
+        decimals = 1
+    else:
+        decimals = 0
+    return -exp + decimals
+
+def sround(*values):
+    """Round values to one or two decimal digits defined by the last value.
+
+    Parameters
+    ----------
+    values : tuple
+    
+    Returns
+    -------
+    rounded_values : tuple
+
+    Notes
+    -----
+    sround (mean, std) would round both mean and std using the std as
+    standard deviation value.
+    """
+    last_decimals = _get_sround_decimals (values[-1])
+    other_decimals = -numpy.floor(numpy.log10(values[-1]))
+    l = []
+    for value in values[:-1]:
+        if value<0:
+            l.append(-numpy.around (-value, other_decimals))
+        else:
+            l.append(numpy.around (value, other_decimals))
+    value = values[-1]
+    if value<0:
+        l.append(-numpy.around (-value, last_decimals))
+    else:
+        l.append(numpy.around (value, last_decimals))
+
+    if len (l)==1:
+        return l[0]
+    return l
