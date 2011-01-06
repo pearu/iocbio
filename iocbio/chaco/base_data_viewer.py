@@ -120,6 +120,7 @@ class BaseDataViewer (HasStrictTraits):
     data_source = Instance(BaseDataSource)
     has_data = DelegatesTo('data_source')
     voxel_sizes = DelegatesTo('data_source')
+    tables = DelegatesTo('data_source')
 
     plot = Instance (Component)
 

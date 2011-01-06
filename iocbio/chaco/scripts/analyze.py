@@ -11,8 +11,8 @@ import sys
 
 from iocbio.chaco.main import analyze
 
-if len(sys.argv)==2:
+if len(sys.argv)>1:
     file_name = sys.argv[1]
 else:
-    file_name = None
+    file_name = ''
 analyze(file_name=file_name)

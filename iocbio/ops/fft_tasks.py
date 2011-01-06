@@ -76,7 +76,11 @@ class FFTTasks(object):
             if os.path.isfile(wisdom_file_name):
                 if VERBOSE:
                     print 'Loading wisdom from file %r' % (wisdom_file_name)
-                fftw.import_wisdom_from_file(wisdom_file_name)
+                try:
+                    fftw.import_wisdom_from_file(wisdom_file_name)
+                except IOError, msg:
+                    print 'load_wisdoms: %s' % (msg)
+                    continue
                 _cache.append(wisdom_file_name)
                 FFTTasks._wisdoms[wisdom_file_name] = fftw.export_wisdom_to_string()
     @staticmethod
