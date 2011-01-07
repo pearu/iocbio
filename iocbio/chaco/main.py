@@ -47,6 +47,7 @@ class ViewHandler (Handler):
             print '%s.object_has_data_changed: notimplemented kind=%r' % (self.__class__.__name__, info.object.data_source.kind)
 
     object_kind_changed = object_has_data_changed
+    object_selected_channel_changed = object_has_data_changed
 
 class ControlPanel (HasStrictTraits):
     
@@ -54,6 +55,7 @@ class ControlPanel (HasStrictTraits):
     data_viewer = Instance(BaseDataViewer)
     has_data = DelegatesTo('data_source')
     kind = DelegatesTo('data_source')
+    selected_channel = DelegatesTo('data_source')
     memusage = DelegatesTo('data_viewer')
     status = DelegatesTo('data_viewer')
     statusbar = Str
