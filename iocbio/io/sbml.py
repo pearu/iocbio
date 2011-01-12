@@ -98,6 +98,7 @@ def get_stoichiometry(file_name,
                 for specie in item:
                     species_all.append(specie.attrib['id'])
                     species_info[specie.attrib['id']]['compartment'] = specie.attrib['compartment']
+                    species_info[specie.attrib['id']]['name'] = specie.attrib['name']
             elif item.tag.endswith('listOfReactions'):
                 for reaction in item:
                     reaction_id = reaction.attrib['id']
