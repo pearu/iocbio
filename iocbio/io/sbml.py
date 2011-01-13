@@ -106,7 +106,7 @@ def get_stoichiometry(file_name,
                     reactions.append(reaction_id)
                     reaction_index = len(reactions)-1
                     reaction_info[reaction_id]['name'] = reaction.attrib['name']
-                    reaction_info[reaction_id]['reversible'] = eval(reaction.attrib['reversible'].title())
+                    reaction_info[reaction_id]['reversible'] = eval(reaction.attrib.get('reversible', 'False').title())
                     for part in reaction:
                         if part.tag.endswith ('listOfReactants'):
                             for reactant in part:
