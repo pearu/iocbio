@@ -15,7 +15,7 @@ import numpy
 import optparse
 import numpy.testing.utils as numpy_utils
 
-file_extensions = ['.tif', '.lsm', 'tiff', '.raw']
+file_extensions = ['.tif', '.lsm', 'tiff', '.raw', '.data']
 
 
 VERBOSE = False
@@ -621,7 +621,7 @@ def show_memory(msg):
         sys.stdout.flush()
 
 def _get_sround_decimals(value):
-    exp = numpy.floor(numpy.log10(value))
+    exp = int(numpy.floor(numpy.log10(value)))
     norm = value/10.0**exp
     norm2 = (norm-int(norm))
     if abs(1-numpy.around(norm, 0)/norm)>0.1:
@@ -647,7 +647,7 @@ def sround(*values):
     standard deviation value.
     """
     last_decimals = _get_sround_decimals (values[-1])
-    other_decimals = -numpy.floor(numpy.log10(values[-1]))
+    other_decimals = int(-numpy.floor(numpy.log10(values[-1])))
     l = []
     for value in values[:-1]:
         if value<0:
