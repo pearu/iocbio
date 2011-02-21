@@ -84,6 +84,9 @@ def get_io_options_group(parser, group=None):
     group.add_option('--max-nof-stacks-none', dest='max_nof_stacks', action='store_const',
                      const = 'none',
                      help = 'Unspecify the --max-nof-stacks option.')
+    
+    group.add_option('--use-value-resolution', action='store_true', default=False,
+                     help = 'Use value resolution when saving images to .data file.')
 
     parser.add_option_group(get_tiff_options_group(parser, group))  
     return group

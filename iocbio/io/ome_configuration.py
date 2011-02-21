@@ -91,6 +91,17 @@ nikon_filters = dict(
     NikonIllumination = dict (ex = ('FF01-585/40-25', 0.9)),
     )
 
+"""
+Part no F73-492:
+HC Dual Line Notch Beamsplitter 500/646
+
+Reflection 488 and 633-638 nm >90% Transmission 420 - 471, 505 - 613
+and 653 - 750 nm >90% Dimension 25,2 x 35,6 x 1,1 mm
+
+http://www.ahf.de/art-HC_Dual_Line_Notch_Beamsplitter_500_646;F73-492.html
+http://www.ahf.de/spectren/F73-492.txt
+"""
+
 confocal_filters = dict(
     ThorlabsWheelPosition1 = dict (em = ('FF01-550/88-25', 0.92)),
     ThorlabsWheelPosition2 = dict (em = ('FF01-725/150-25', 0.9)),
@@ -108,8 +119,8 @@ nikon_light_sources = dict (
     )
 
 confocal_light_sources = dict (
-    Laser633 = dict(man='Melles Griot', model='05-LHP-151', type='Other', wl='633', power='15'),
-    Laser473 = dict(man='Shanghai Dream Lasers Technology Co. Ltd', model='SDL-473-LN-O1OT', type='Other', wl='473', power='10'),
+    Laser633 = dict(man='Melles Griot', model='05-LHP-151', type='Other', wl='633', power='5'),
+    Laser473 = dict(man='Shanghai Dream Lasers Technology Co. Ltd', model='SDL-473-LN-O1OT', type='Other', wl='473', power='35'),
     ArcTr = dict (man='Olympus', model='TL4', type='Hg', power='30000')
     )
 

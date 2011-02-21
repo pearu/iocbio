@@ -473,11 +473,19 @@ def save_image_stack(image_stack, path, indices=None,
         if indices is None:
             indices = numpy.ndindex(*images.shape)
         center = numpy.array(images.shape)//2
+        maxvalue = images.max()
+        use_value_resolution = options.get(use_value_resolution = False)
+        if use_value_resolution:
+            value_resolution = image_stack.pathinfo.get_value_resolution() or 0
+            print 'Using Value Resolution:', value_resolution
+        else:
+            value_resolution = 0
         for index in indices:
             value = images[index]
-            position = (index - center) * voxel_sizes
-            t = (position[2], position[1], position[0], value,)
-            f.write (fmt % t)
+            if value > value_resolution:
+                position = (index - center) * voxel_sizes
+                t = (position[2], position[1], position[0], value,)
+                f.write (fmt % t)
         f.close()
     else:
         raise NotImplementedError(`path, ext`)
