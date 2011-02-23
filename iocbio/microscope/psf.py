@@ -399,7 +399,7 @@ def spots_to_psf(image_stack, psf_dir, options = None):
     #    images -= use_offset
     #    images[lowvalue_indices] = 0
 
-    blurred_images = numpy.zeros((mz,my,mx), highertype(images.dtype))
+    blurred_images = numpy.zeros((mz,my,mx), float)
     for i in range (nz):
         for j in range (ny):
             for k in range(nx):

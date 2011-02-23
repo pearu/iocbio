@@ -134,6 +134,7 @@ def find_clusters(data, background_level=None, voxel_sizes = None):
 
     background_mean = 0
     if background_level is not None:
+        print '    Using background_level=%r' % (background_level)
         pass
     else:
         background_data = data[((0,-1),)] # bottom and top
@@ -211,7 +212,7 @@ def find_clusters(data, background_level=None, voxel_sizes = None):
 
     sorted_data = sorted([(len(s), s) for s in disj], reverse=True)
     
-    print '    Found %s cluster candidates,' % (len(sorted_data)),
+    print '    Found %s cluster candidates,' % (len(sorted_data))
 
     filtered_data = []
     param = []
@@ -219,15 +220,19 @@ def find_clusters(data, background_level=None, voxel_sizes = None):
     for i, (sz, s) in enumerate(sorted_data):
         if background_level>0:
             mean_sz = (mean_sz * (i-1) + sz)/float(i) if i else sz
-            if mean_sz / sz > 100 or sz <= 7:
+            if mean_sz / sz > 100 or sz <= 4:
+                print '    Discarding cluster candidate #%s (background_level, mean_sz, sz=%s,%s,%s)' % (i, background_level, mean_sz, sz)
                 break
         s = list(s)
         values = data[tuple(zip(*s))] - background_mean
-        if abs((values.min() - values.max())/values.mean()) > 0.1:
+        mn, mx, me = values.min (), values.max (), values.mean ()
+        if abs((mn - mx)/me) > 0.1:
             coordinates = numpy.array(s)
             filtered_data.append((coordinates, values))
+        else:
+            print '    Discarding cluster candidate #%s (mn,mx,me=%s,%s,%s)' % (i, mn, mx, me)
 
-    print 'out of which %s are large and hump-like enough.' % (len (filtered_data))
+    print '    Nof cluster candidates that are large and hump-like enough: %s' % (len (filtered_data))
     if 0:
         print '  Eccentricity of clusters:', map(lambda p:'%.1f/%.1f'%p ,param_ab)
         l = find_outliers(param_ab, zoffset=3, data_contains_seq=True)
@@ -238,8 +243,8 @@ def find_clusters(data, background_level=None, voxel_sizes = None):
             print '  Final cluster count after removing outliers: %s' % (len (filtered_data))
         else:
             print '  No outliers detected'
-    if len(filtered_data)==1:
-        print '    Warning: only one cluster found. Use --cluster-background-level=... with larger value than %s' % (background_level)
+    if len(filtered_data)<1:
+        print '    Warning: less than two clusters found. Use --cluster-background-level=... with larger value than %s' % (background_level)
 
     return filtered_data
 
