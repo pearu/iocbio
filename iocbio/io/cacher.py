@@ -50,10 +50,10 @@ class Cacher:
         else:
             return False
 
-    def get(self, *skip_list, **params):
+    def get(self, **params):
         index = None
         for ind, (cacheindex, cacheparams) in enumerate (self.cache):
-            if self.compate(cacheparams, params, skip_list):
+            if self.compare(cacheparams, params, params.get('skip',[])):
                 index = cacheindex
         if index is None:
             result = self.compute(**params)
