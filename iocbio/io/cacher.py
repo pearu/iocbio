@@ -38,7 +38,7 @@ class Cacher:
 
     def get(self, **params):
         index = None
-        for cacheindex, cacheparams in self.cache:
+        for ind, (cacheindex, cacheparams) in enumerate (self.cache):
             if cacheparams==params:
                 index = cacheindex
         if index is None:
@@ -56,10 +56,19 @@ class Cacher:
             self.save_cache(self.cache)
         else:
             filename = os.path.join(self.cachedir, str (index))
-            print 'Loading result from', filename
-            f = open (filename, 'rb')
-            result = pickle.load(f)
-            f.close ()
+            if os.path.isfile (filename):
+                print 'Loading result from', filename
+                f = open (filename, 'rb')
+                result = pickle.load(f)
+                f.close ()
+            else:
+                result = self.compute(**params)
+                self.cache[ind] = (index, params)
+                print 'Saving result to', filename
+                f = open (filename, 'wb')
+                pickle.dump(result, f)
+                f.close()
+                self.save_cache(self.cache)
         return result
 
     def compute(self, **params):

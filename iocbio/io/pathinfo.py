@@ -738,7 +738,8 @@ class Configuration(PathInfo):
     _widefield_protocol_modes = ['FluorescenceTransmission', 'Fluorescence_Transmission',
                                  'Fluorescence',
                                  'MyocyteMechanics', 'Myocyte_Mechanics',
-                                 'MyocyteMechanicsFluorescence'
+                                 'MyocyteMechanicsFluorescence',
+                                 'Transmission'
                                  ]
     _confocal_protocol_modes = ['Confocal_Image', 'ConfocalImage']
 
