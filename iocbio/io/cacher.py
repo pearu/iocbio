@@ -52,8 +52,9 @@ class Cacher:
 
     def get(self, **params):
         index = None
+        skip_list =  params.get('skip',[])
         for ind, (cacheindex, cacheparams) in enumerate (self.cache):
-            if self.compare(cacheparams, params, params.get('skip',[])):
+            if self.compare(cacheparams, params, skip_list):
                 index = cacheindex
         if index is None:
             result = self.compute(**params)
