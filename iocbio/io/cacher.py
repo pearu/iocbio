@@ -36,10 +36,24 @@ class Cacher:
         pickle.dump(cache, f)
         f.close()
 
-    def get(self, **params):
+    def compare(self, params1, params2, skip_list):
+        keys1 = params1.keys ()
+        keys2 = params2.keys ()
+        for s in skip_list:
+            if s in keys1: keys1.remove (s)
+            if s in keys2: keys2.remove (s)
+        if keys1==keys2:
+            for k in keys1:
+                if params1[k] != params2[k]:
+                    return False
+            return True
+        else:
+            return False
+
+    def get(self, *skip_list, **params):
         index = None
         for ind, (cacheindex, cacheparams) in enumerate (self.cache):
-            if cacheparams==params:
+            if self.compate(cacheparams, params, skip_list):
                 index = cacheindex
         if index is None:
             result = self.compute(**params)
@@ -61,6 +75,15 @@ class Cacher:
                 f = open (filename, 'rb')
                 result = pickle.load(f)
                 f.close ()
+                if skip_list:
+                    params['old_result'] = result
+                    result = self.compute(**params)
+                    self.cache[ind] = (index, params)
+                    print 'Saving result to', filename
+                    f = open (filename, 'wb')
+                    pickle.dump(result, f)
+                    f.close()
+                    self.save_cache(self.cache)
             else:
                 result = self.compute(**params)
                 self.cache[ind] = (index, params)
