@@ -15,6 +15,8 @@ class Cacher:
         for ext in ['', '.pkl', '.pickle']:
             if os.path.isfile (cachefile + ext):
                 cachefile = cachefile + ext
+        if not os.path.isfile(cachefile) and os.path.splitext(cachefile)[1] not in ['.pkl', '.pickle']:
+            cachefile = cachefile + '.pkl'
         cachedir = os.path.splitext (cachefile)[0]+'_cache'
         if not os.path.exists(cachedir):
             os.makedirs (cachedir)
@@ -37,9 +39,9 @@ class Cacher:
         f.close()
 
     def compare(self, params1, params2, skip_list):
-        keys1 = params1.keys ()
-        keys2 = params2.keys ()
-        for s in skip_list:
+        keys1 = sorted(params1.keys ())
+        keys2 = sorted(params2.keys ())
+        for s in skip_list + ['old_result']:
             if s in keys1: keys1.remove (s)
             if s in keys2: keys2.remove (s)
         if keys1==keys2:
@@ -79,6 +81,7 @@ class Cacher:
                 if skip_list:
                     params['old_result'] = result
                     result = self.compute(**params)
+                    el params['old_result']
                     self.cache[ind] = (index, params)
                     print 'Saving result to', filename
                     f = open (filename, 'wb')
