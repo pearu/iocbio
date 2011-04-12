@@ -1,4 +1,23 @@
 """ Provides Cacher that implements computational model with caching results.
+
+Example::
+
+  class System(Cacher):
+      def compute (self, a=1, t=0):
+          '''Integrate dx/dt=a till t with x(0)=1.
+          '''
+          if self.previous_results is not None:
+              last_t = self.previous_parameters['t']
+              last_value = self.previous_results
+          else:
+              last_t = 0
+              last_value = 1
+          return last_value + a*(t-last_t)
+
+  >>> system = System('cacher_test', dynamic_parameters=['t'])
+  >>> print system.get(a=2,t=3)
+  7
+  >>> system.show_cache()
 """
 # Author: Pearu Peterson
 # Created: April 2011
@@ -8,27 +27,11 @@ import cPickle as pickle
 
 class Cacher:
     """ Provides a computational model with caching results.
-
-    Example usage
-    -------------
-    >>> class System(Cacher):
-            def compute (self, a=1, t=0):
-                if self.previous_results is not None:
-                    last_t = self.previous_parameters['t']
-                    last_value = self.previous_results
-                else:
-                    last_t = 0
-                    last_value = 1
-                return last_value + a*(t-last_t)
-
-    >>> system = System('cacher_test', dynamic_parameters=['t'])
-    >>> print system.get(a=2,t=3)
-    7
-    >>> system.show_cache()
     """
 
     def __init__(self, cachedir, dynamic_parameters = [], verbose=False):
-        """
+        """ Create Cacher instance.
+
         Parameters
         ----------
         cachedir : str
@@ -116,7 +119,7 @@ class Cacher:
                 return index
 
     def get(self, **parameters):
-        """ Return results with parameters.
+        """Return results with parameters.
 
         When results do not exist, then user defined `compute` method is
         called that returned values will be cached and returned.
@@ -145,10 +148,11 @@ class Cacher:
                 print 'Re-computing results'
                 results = self.compute(**parameters)
                 self.__save_results(index, parameters, results)
+        self.parameters = parameters
         return results
 
     def compute(self, **parameters):
-        """ Compute model with parameters and return the results to be cached.
+        """Compute model with parameters and return the results to be cached.
 
         This method should be redefined by the user.
 
@@ -164,7 +168,7 @@ class Cacher:
         raise NotImplementedError ('compute (%s)' % (parameters))
 
     def show_cache(self):
-        """ Print the content of cache to stdout.
+        """Print the content of cache to stdout.
         """
         print('Available results in %r:' % (self.__cachedir))
         for index, parameters in self.__cache.iteritems():
