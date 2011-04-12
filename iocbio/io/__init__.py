@@ -10,6 +10,7 @@ read, write, and hold microscope data:
   image_stack
   pathinfo
   io
+  cacher
 
 The front-end class for I/O tasks is
 `iocbio.io.image_stack.ImageStack`, see `iocbio.io.image_stack` for
@@ -20,8 +21,10 @@ Package content
 """
 
 __autodoc__ = ['image_stack', 'pathinfo', 'io', 
-               'RowFile', 'ImageStack', 'load_image_stack','save_image_stack']
+               'RowFile', 'ImageStack', 'load_image_stack','save_image_stack',
+               'Cacher']
 
 from .image_stack import ImageStack
 from .io import RowFile, load_image_stack, save_image_stack
+from .cacher import Cacher
 import pathinfo
