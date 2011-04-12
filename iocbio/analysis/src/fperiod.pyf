@@ -1,0 +1,44 @@
+! -*- f90 -*-
+python module fperiod
+  interface
+
+     function fperiod_compute_period(f, n, m, structure_size) result (y)
+       intent(c) fperiod_compute_period
+       double precision, dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       double precision, intent(c,in), optional :: structure_size = 0
+       double precision :: y
+     end function fperiod_compute_period
+
+     function fperiod_acf(y, f, n, m) result (v)
+       intent(c) fperiod_acf
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       double precision :: v
+     end function fperiod
+
+     subroutine fperiod_subtract_average(f, n, m, structure_size, r)
+       intent(c) fperiod_subtract_average
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer, intent(c,in), optional :: structure_size = 0
+       double precision intent(c,out), dimension (m,n) :: r
+     end function fperiod
+
+     subroutine fperiod_subtract_average_2d(f, n, m, smoothness, r)
+       intent(c) fperiod_subtract_average_2d
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer, intent(c,in), optional :: smoothness = 0
+       double precision intent(c,out), dimension (m,n) :: r
+     end function fperiod
+
+  end interface
+end program
