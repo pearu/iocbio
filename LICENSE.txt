@@ -35,9 +35,10 @@ of packages in scientific articles by citing the corresponding papers:
 
 IOCBio Microscope:
 
-    * Laasmaa M, Vendelin M, Peterson P (YEAR). Application of
+    * Laasmaa M, Vendelin M, Peterson P (2011). Application of
       regularized Richardson-Lucy algorithm for deconvolution of
-      confocal microscopy images. JOURNAL INFORMATION
+      confocal microscopy images. J. Microscopy. In press.
+      http://onlinelibrary.wiley.com/doi/10.1111/j.1365-2818.2011.03486.x/abstract
 
 IOCBio StrathKelvin:
 
