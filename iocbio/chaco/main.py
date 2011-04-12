@@ -4,7 +4,7 @@ print 'Using ETS_TOOLKIT=%s' % (ETSConfig.toolkit)
 #ETSConfig.toolkit='wx' # wx, qt4, null
 
 from enthought.traits.api import HasStrictTraits, Instance, DelegatesTo, List, Str, on_trait_change
-from enthought.traits.ui.api import Handler, View, Item, Group, Action, ListEditor, Tabbed
+from enthought.traits.ui.api import Handler, View, Item, Group, Action, ListEditor, Tabbed, StatusItem
 
 from iocbio.chaco.base_data_source import BaseDataSource
 from iocbio.chaco.base_data_viewer import BaseDataViewer
@@ -19,6 +19,7 @@ from iocbio.chaco.ops_viewer_task import OpsViewerTask
 from iocbio.chaco.scale_space_task import ScaleSpaceTask
 from iocbio.chaco.points_task import PointsTask
 from iocbio.chaco.table_plot_task import TablePlotTask
+from iocbio.chaco.line_selector_task import LineSelectorTask
 from iocbio.utils import bytes2str
 
 class ViewHandler (Handler):
@@ -40,6 +41,7 @@ class ViewHandler (Handler):
                 viewer = ImageTimeseriesViewer(data_source = info.object.data_source)
                 info.object.data_viewer = viewer
                 viewer.add_task(TablePlotTask)
+                viewer.add_task(BoxSelectorTask)
                 #viewer.add_task(SliceSelectorTask)
                 #viewer.add_task(BoxSelectorTask)
                 #viewer.add_task(FFTViewerTask)
@@ -64,7 +66,11 @@ class ControlPanel (HasStrictTraits):
     def update_statusbar(self):
         if hasattr (self, 'memusage'):
             memusage = bytes2str (self.memusage)
-            self.statusbar = 'MEMUSAGE=%s STATUS: %s' % (memusage, self.status)
+            status = self.status
+            if status:
+                self.statusbar = 'MEMUSAGE=%s | STATUS: %s' % (memusage, status)
+            else:
+                self.statusbar = 'MEMUSAGE=%s' % (memusage)
 
     traits_view = View (Tabbed(Item("data_source", style='custom', show_label=False, resizable=True),
                                Item('data_viewer', style='custom', resizable=True, show_label = False),
@@ -72,10 +78,9 @@ class ControlPanel (HasStrictTraits):
                         buttons = ['OK'],
                         resizable = True,
                         handler = ViewHandler(),
-                        height = 600,
-                        width = 800,
+                        height = 800,
+                        width = 1000,
                         statusbar = 'statusbar',
-
                         )
 
 def analyze (file_name = ''):

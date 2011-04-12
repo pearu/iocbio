@@ -31,7 +31,7 @@ class TablePlotTask(BaseViewerTask):
     plot = Instance (Component)
 
     traits_view = View (#VGroup(
-        Item ('selected_table', style = 'simple', label='Table'),
+        Item ('selected_table', style = 'simple', label='Table',  visible_when='len(tables) != 0'),
         Item('plot', editor=ComponentEditor(), 
              show_label = False,
              resizable = True, label = 'View', visible_when='tables'),
@@ -103,8 +103,6 @@ class TablePlotTask(BaseViewerTask):
             group.append((index_label, label, index_key, key))
             pd.set_data(key, values)
 
-
-
         pd.set_data (index_key, index_values)
 
         if 'force' in self.table and 'stage right current' in self.table:
@@ -114,7 +112,7 @@ class TablePlotTask(BaseViewerTask):
 
 
         n = len (groups)
-        if n in [1,2,3,5,7]:
+        if n in [0,1,2,3,5,7]:
             shape = (n, 1)
         elif n in [4,6,8,10]:
             shape = (n//2,2)

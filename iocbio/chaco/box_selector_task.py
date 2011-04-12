@@ -77,33 +77,45 @@ class BoxSelectorTask(BaseViewerTask):
 
     def _corner_xll_changed(self):
         if self.have_cursors:
-            self.cursor_xyll.current_position = (self.corner_xll, self.corner_yll)
-            self.cursor_xzll.current_position = (self.corner_xll, self.corner_zll)
+            if self.cursor_xyll is not None:
+                self.cursor_xyll.current_position = (self.corner_xll, self.corner_yll)
+            if self.cursor_xzll is not None:
+                self.cursor_xzll.current_position = (self.corner_xll, self.corner_zll)
 
     def _corner_yll_changed(self):
         if self.have_cursors:
-            self.cursor_xyll.current_position = (self.corner_xll, self.corner_yll)
-            self.cursor_zyll.current_position = (self.corner_zll, self.corner_yll)
+            if self.cursor_xyll is not None:
+                self.cursor_xyll.current_position = (self.corner_xll, self.corner_yll)
+            if self.cursor_zyll is not None:
+                self.cursor_zyll.current_position = (self.corner_zll, self.corner_yll)
 
     def _corner_zll_changed(self):
         if self.have_cursors:
-            self.cursor_xzll.current_position = (self.corner_xll, self.corner_zll)
-            self.cursor_zyll.current_position = (self.corner_zll, self.corner_yll)
+            if self.cursor_xzll is not None:
+                self.cursor_xzll.current_position = (self.corner_xll, self.corner_zll)
+            if self.cursor_zyll is not None:
+                self.cursor_zyll.current_position = (self.corner_zll, self.corner_yll)
 
     def _corner_xur_changed(self):
         if self.have_cursors:
-            self.cursor_xyur.current_position = (self.corner_xur, self.corner_yur)
-            self.cursor_xzur.current_position = (self.corner_xur, self.corner_zur)
+            if self.cursor_xyur is not None:
+                self.cursor_xyur.current_position = (self.corner_xur, self.corner_yur)
+            if self.cursor_xzur is not None:
+                self.cursor_xzur.current_position = (self.corner_xur, self.corner_zur)
 
     def _corner_yur_changed(self):
         if self.have_cursors:
-            self.cursor_xyur.current_position = (self.corner_xur, self.corner_yur)
-            self.cursor_zyur.current_position = (self.corner_zur, self.corner_yur)
+            if self.cursor_xyur is not None:
+                self.cursor_xyur.current_position = (self.corner_xur, self.corner_yur)
+            if self.cursor_zyur is not None:
+                self.cursor_zyur.current_position = (self.corner_zur, self.corner_yur)
 
     def _corner_zur_changed(self):
         if self.have_cursors:
-            self.cursor_xzur.current_position = (self.corner_xur, self.corner_zur)
-            self.cursor_zyur.current_position = (self.corner_zur, self.corner_yur)
+            if self.cursor_xzur is not None:
+                self.cursor_xzur.current_position = (self.corner_xur, self.corner_zur)
+            if self.cursor_zyur is not None:
+                self.cursor_zyur.current_position = (self.corner_zur, self.corner_yur)
 
     @on_trait_change('cursor_xyll.current_position')
     def _on_cursor_xyll_change(self): 

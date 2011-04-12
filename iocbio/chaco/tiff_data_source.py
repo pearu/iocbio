@@ -102,10 +102,13 @@ class TiffDataSource(BaseDataSource):
                 titles = None
                 table_data = defaultdict(lambda:[])
                 for line in open(csv_path).readlines():
+                    line = line.strip()
+                    if not line:
+                        continue
                     if titles is None:
-                        titles = [title[1:-1] for title in line.strip(). split('\t')]
+                        titles = [title[1:-1] for title in line. split('\t')]
                     else:
-                        data = line.strip(). split ('\t')
+                        data = line.split ('\t')
                         for title, value in zip (titles, data):
                             table_data[title].append (float(value))
                 tables[name] = table_data

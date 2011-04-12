@@ -3,7 +3,7 @@ __all__ = ['OpsViewerTask']
 import time
 import numpy
 
-from enthought.traits.api import Button, Any, Bool, Tuple, Enum, Float, Int
+from enthought.traits.api import Button, Any, Bool, Tuple, Enum, Float, Int, Instance
 from enthought.traits.ui.api import View, VGroup, Item, HGroup, HSplit, Group, TupleEditor
 
 from iocbio.ops.fft_tasks import FFTTasks
@@ -16,7 +16,27 @@ from .timeit import TimeIt
 
 _fft_worker_cache = [None, None]
 
+from threading import Thread
 
+class RunnerThread(Thread):
+
+    def __init__ (self, func, args, finish_func):
+        Thread.__init__(self)
+        self.func = func
+        self.args = args
+        self.want_to_abort = False
+        self.finish_func = finish_func
+
+    def run(self):
+        print 'started run'
+        try:
+            result = self.func (*self.args)
+        except Exception, msg:
+            print 'run exception: %s' % (msg)
+            self.finish_func(msg)
+        else:
+            self.finish_func(result)
+        print 'stopped run'
 
 class OpsViewerTask(BaseViewerTask):
 
@@ -24,7 +44,7 @@ class OpsViewerTask(BaseViewerTask):
     boundary = Enum(sorted(boundary_map))
     threshold = Float(0)
     max_nof_points = Int(100)
-
+    runner_thread = Instance(RunnerThread)
 
     compute_fft_button = Button('Compute FFT')
     compute_ifft_button = Button('Compute IFFT')
@@ -40,6 +60,7 @@ class OpsViewerTask(BaseViewerTask):
     discrete_gauss_scales = Tuple (0.0,0.0,0.0)
     discrete_gauss_widths = Tuple (0.0,0.0,0.0)
     discrete_gauss_sizes = Tuple (0.0,0.0,0.0)
+    stop_button = Button('Stop')
 
     traits_view = View (
         VGroup(
@@ -52,6 +73,7 @@ class OpsViewerTask(BaseViewerTask):
             HSplit(Item('find_local_maxima_button', show_label = False),
                    Item('find_local_minima_button', show_label = False),
                    Item('clear_points_button', show_label = False),
+                   Item('stop_button', show_label = False),
                    visible_when='is_real'
                    ),'_',
             HSplit(Item('take_real_button', show_label = False), 
@@ -129,7 +151,7 @@ class OpsViewerTask(BaseViewerTask):
             data = data[:] # tiffarray
         threshold = self.threshold
         boundary = self.boundary_map[self.boundary]
-        timeit = TimeIt (self.viewer, 'computing local maxima')
+        timeit = TimeIt(self.viewer, 'computing local maxima')
         def cb(done, result, timeit=timeit):
             timeit.update('%.2f%% done, %s points sofar' % (done*100.0, len (result)))
             if len (result)>1000000:
@@ -144,8 +166,7 @@ class OpsViewerTask(BaseViewerTask):
         self.viewer.set_point_data(l[:self.max_nof_points])
         self.viewer.reset()
 
-    def _find_local_minima_button_fired(self):
-        start = time.time ()
+    def compute_local_minima(self):
         data = self.viewer.data
         if not isinstance (data, numpy.ndarray):
             data = data[:] # tiffarray
@@ -165,6 +186,10 @@ class OpsViewerTask(BaseViewerTask):
         l.sort(reverse=False)
         self.viewer.set_point_data(l[:self.max_nof_points])
         self.viewer.reset()
+
+    def _find_local_minima_button_fired(self):
+        self.compute_local_minima ()
+        #Thread(target=self.compute_local_minima).start()
 
     def _compute_fft_button_fired(self):
 

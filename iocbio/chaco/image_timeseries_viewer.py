@@ -17,6 +17,8 @@ from .base_data_viewer import BaseDataViewer
 
 class ImageTimeseriesViewer(BaseDataViewer):
     
+    plots = Dict
+
     plotdata = Instance(ArrayPlotData)
     image = Any
     
@@ -84,6 +86,8 @@ class ImageTimeseriesViewer(BaseDataViewer):
                                         image_inspector=imgtool)
         image.overlays.append(overlay)
         self.image = image
+
+        self.plots =  dict(xy = image)
         return plot
 
  
