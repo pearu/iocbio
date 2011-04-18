@@ -1,5 +1,7 @@
 """ Provides PathInfo classes.
 
+.. currentmodule:: iocbio.io.pathinfo
+
 PathInfo instances hold microscope topological and environmental
 information that is related to ``PATH``. Pathinfo instances are
 usually created by the `iocbio.io.io.load_image_stack` function that
@@ -16,13 +18,10 @@ The following mappings are used to hold microscope information:
 
 .. autodata:: objectives
 .. autodata:: filters
-
-Module content
---------------
 """
 
-__autodoc__ = ['PathInfo']
-__all__ = ['Scaninfo', 'Configuration', 'Tiffinfo', 'Rawinfo']
+#__autodoc__ = ['PathInfo']
+__all__ = ['Scaninfo', 'Configuration', 'Tiffinfo', 'Rawinfo', 'PathInfo']
 
 import os
 import sys
@@ -197,6 +196,10 @@ def get_tag_from_lsm_file(path, tagname, _cache={}):
 
 class PathInfo(object):
     """ Base class for storing microscope information.
+
+    See also
+    ---------
+    Scaninfo, Configuration, Tiffinfo, Rawinfo
     """
 
     def __init__(self, path):
@@ -585,6 +588,10 @@ class Scaninfo(PathInfo):
 
     """
     PathInfo subclass with microscope information stored in a SCANINFO.txt files.
+
+    See also
+    --------
+    PathInfo
     """
 
     def get_options(self):
@@ -733,6 +740,10 @@ class Configuration(PathInfo):
 
     """
     PathInfo subclass with microscope information stored in a configuration.txt file.
+
+    See also
+    --------
+    PathInfo
     """
 
     _widefield_protocol_modes = ['FluorescenceTransmission', 'Fluorescence_Transmission',
@@ -968,6 +979,10 @@ class Tiffinfo(PathInfo):
 
     """
     PathInfo subclass with microscope information stored in .tif or .lsm file.
+
+    See also
+    --------
+    PathInfo
     """
 
     def __init__(self, path):
@@ -1089,6 +1104,10 @@ class Rawinfo(PathInfo):
 
     """
     PathInfo subclass to represent raw data (.f32, .u8 etc) files with shape information stored in a .hdr file.
+
+    See also
+    --------
+    PathInfo
     """
 
     def _get_header_file(self):

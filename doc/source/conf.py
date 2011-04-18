@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'IOCBio'
-copyright = u'2009-2010, Pearu Peterson'
+copyright = u'2009-2011, Pearu Peterson'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -213,9 +213,10 @@ intersphinx_mapping = {'http://docs.python.org/dev': None}
 extlinks = {'numpy': ('http://docs.scipy.org/doc/numpy/reference/generated/numpy.%s.html',
                       'numpy.'),
             'pythonlib': ('http://docs.python.org/library/%s.html',
-                          '')}
+                          ''),
+            }
 
-
+#autoclass_content = 'both'
 
 import glob
 autosummary_generate = glob.glob ('index.rst')# + glob.glob ('generated/*.rst')
@@ -223,59 +224,289 @@ autosummary_generate = glob.glob ('index.rst')# + glob.glob ('generated/*.rst')
 os.makedirs('generated')
 
 import types
+def isclassmethod(obj):
+    return isinstance (obj, types.MethodType) and obj.im_self is not None
+def ismethod(obj):
+    return isinstance (obj, types.MethodType) and obj.im_self is None
+def ispackage (module):
+    return os.path.splitext (os.path.basename (module.__file__))[0]=='__init__'
 
 docs_with_examples = []
 
-def scan_for_autodoc(obj, prefix, cache=set([])):
-    if not hasattr(obj, '__name__'):
-        # objects with no name have no members
-        return
-    if isinstance(obj, types.ModuleType) and not obj.__name__.startswith(prefix):
-        # skip external modules/packages
-        print 'skipping',obj.__name__
-        return
-    if isinstance(obj, types.ModuleType):
-        n = obj.__name__
-    else:
-        n = prefix + '.' + obj.__name__
-        if hasattr (obj,'__module') and not obj.__module__.startswith('iocbio'):
-            # skip external classes
-            return
-    if n not in cache:
-        for title in ['Examples', 'Example']:
-            if title+'\n' in (getattr(obj, '__doc__') or ''):
-                docs_with_examples.append('`%s <%s.html#%s>`_' % (n,n, title.lower()))
-        yield n
-        cache.add(n)
-    prefix = n
-    autodoc_names = getattr(obj, '__autodoc__',None)
-    if autodoc_names is None:
-        if isinstance(obj, (types.TypeType, types.ClassType)):
-            autodoc_names = [name for name in dir(obj) if (not name.startswith ('_') or name in ['__init__'])]
-        elif isinstance(obj, types.ModuleType):
-            autodoc_names = getattr(obj, '__all__', [])
-    if autodoc_names is None:
-        return
-    for name in autodoc_names:
-        if not hasattr(obj, name):
-            if isinstance(obj, types.ModuleType):
-                exec 'import %s.%s' % (obj.__name__, name)
-        member = getattr(obj, name)
-        for n in scan_for_autodoc(member, prefix):
-            if n not in cache:
-                yield n
-                cache.add(n)
+from collections import defaultdict
+import types
+import os
+import inspect
 
+class DocGenerator:
+
+    def __init__ (self, 
+                  package,
+                  version=None,
+                  source=None):
+        self.package_obj = package
+        self.package = package.__name__
+        self.version = version
+        if source:
+            self.has_source = True
+            extlinks[self.package] = (source, self.package+'/')
+        else:
+            self.has_source = False
+
+    def scan_for_autodoc(self, obj, prefix, cache=set([])):
+        if not hasattr(obj, '__name__'):
+            # objects with no name have no members
+            return
+        if isinstance(obj, types.ModuleType) and not obj.__name__.startswith(prefix):
+            # skip external modules/packages
+            print 'skipping',obj.__name__
+            return
+        if isinstance(obj, types.ModuleType):
+            n = obj.__name__
+        else:
+            n = prefix + '.' + obj.__name__
+            if hasattr (obj,'__module__'):
+                if not obj.__module__ or not obj.__module__.startswith(self.package):
+                    # skip external classes
+                    print 'Skipping external', obj, type (obj)
+                    return
+                if isinstance(obj, (types.ClassType, types.TypeType)):
+                    n = obj.__module__ + '.' + obj.__name__
+        if n not in cache:
+            for title in ['Examples', 'Example']:
+                if title+'\n' in (getattr(obj, '__doc__') or ''):
+                    docs_with_examples.append('`%s <%s.html#%s>`_' % (n,n, title.lower()))
+            yield n, obj
+            cache.add(n)
+        prefix = n
+        autodoc_names = getattr(obj, '__autodoc__',None)
+        if autodoc_names is None:
+            if isinstance(obj, (types.TypeType, types.ClassType)):
+                autodoc_names = [name for name in dir(obj) if (not name.startswith ('_') or name in ['__init__'])]
+            elif isinstance(obj, types.ModuleType):
+                autodoc_names = getattr(obj, '__all__', [])
+        if autodoc_names is None:
+            return
+        for name in autodoc_names:
+            if not hasattr(obj, name):
+                if isinstance(obj, types.ModuleType):
+                    exec 'import %s.%s' % (obj.__name__, name)
+            member = getattr(obj, name)
+            for n,o in self.scan_for_autodoc(member, prefix):
+                if n not in cache:
+                    yield n,o
+                    cache.add(n)
+
+    def getlineno(self, obj):
+        if isinstance(obj, types.FunctionType):
+            return '#%s' % (obj.func_code.co_firstlineno)
+        if isinstance (obj, types.MethodType):
+            return '#%s' % (obj.im_func.func_code.co_firstlineno)
+        if isinstance (obj, (types.ClassType, types.TypeType)):
+            try:
+                n = inspect.getsourcelines(obj)
+                return '#%s' % (n[-1])
+            except (IOError, TypeError):
+                pass
+        return ''
+
+    def getsource(self, obj):
+        if isinstance (obj, types.MethodType):
+            source = obj.im_func.func_code.co_filename.partition (self.package)[-1]
+            if source:
+                if source.startswith('/'): source = source[1:]
+                return source+self.getlineno(obj)
+        elif isinstance (obj, types.ModuleType):
+            if ispackage(obj):
+                return '/'.join(obj.__name__.split ('.')[1:])
+            else:
+                return '/'.join(obj.__name__.split ('.')[1:]) + '.py'        
+        elif isinstance (obj, (types.ClassType, types.TypeType)):
+            return '/'.join(obj.__module__.split ('.')[1:]) + '.py' + self.getlineno(obj)
+        elif isinstance (obj, types.FunctionType):
+            source = obj.func_code.co_filename.partition (self.package)[-1]
+            if source:
+                if source.startswith('/'): source = source[1:]
+                return source+self.getlineno(obj)
+        return ''
+
+    def run(self):
+
+        package_template = '''
+%(title)s
+%(title_underscore)s
+
+.. _%(name)s:
+.. automodule:: %(name)s
+
+Package content
+===============
+
+.. toctree::
+   :maxdepth: 3
+
+   %(content)s
+
+%(source)s
+'''
+
+        module_template = '''
+%(title)s
+%(title_underscore)s
+
+.. _%(name)s:
+.. automodule:: %(name)s
+
+Module content
+==============
+
+.. toctree::
+   :maxdepth: 1
+
+   %(content)s
+
+%(source)s
+'''
+
+        auto_template = '''
+%(name)s
+%(title_underscore)s
+
+.. currentmodule:: %(module)s
+
+.. .. _%(name)s:
+.. auto%(type)s:: %(name)s
+   %(options)s
+
+%(toctree)s
+
+%(source)s
+'''
+
+        module_content = defaultdict(list)
+        class_content = defaultdict(list)
+        scan_data = []
+        for n,obj in sorted(self.scan_for_autodoc(self.package_obj, self.package)):
+            scan_data.append ((n,obj))
+            p = n.rpartition ('.')[0]
+            if isinstance (obj, types.ModuleType):
+                module_content[p].append(n)
+            elif isinstance (obj, (types.ClassType, types.TypeType)):
+                module_content[p].append(n)
+            elif isinstance (obj, types.UnboundMethodType):
+                class_content[p].append(n)
+            elif isinstance (obj, types.FunctionType):
+                module_content[p].append(n)        
+
+        for n,obj in scan_data:
+            p = n.rpartition ('.')[0]
+            pp = p.rpartition ('.')[0]
+            fn = 'reference/%s.rst' % (n)
+
+            if self.has_source:
+                source = self.getsource (obj)
+                if source:
+                    source = 'Source\n======\n\nSee :%s:`%s`.' % (self.package,source or '/')
+            else:
+                source = ''
+
+            if isinstance (obj, types.ModuleType):
+                f = open(fn, 'w')
+                if ispackage(obj):
+                    template = package_template
+                else:
+                    template = module_template
+                title = n
+                if title==self.package and self.version:
+                    title = '%s - %s' % (title, self.version)
+                f.write (template % dict (name=n, 
+                                          title = title,
+                                          title_underscore='*'*len(title),
+                                          source = source,
+                                          content='\n   '.join (module_content[n])))
+                f.close()
+                autosummary_generate.append(fn)
+            elif isinstance (obj, (types.ClassType, types.TypeType)):
+                if p==obj.__module__:
+                    l = getattr(obj, '__autodoc__', None)
+                    if l is None:
+                        options = ''
+                    else:
+                        options = ':members: %s' % (', '.join(l))
+                    toctree = '.. toctree::\n   :hidden:\n\n   %s.__init__' % (n)
+                    f = open(fn, 'w')
+                    f.write (auto_template % dict(name=n, title_underscore='*'*len(n), type='class',
+                                                  module=p, source=source, options=options, toctree=toctree,
+                                                  toctree_options = ':hidden:', content='\n   '.join (class_content[n])))
+                    f.close()
+                    autosummary_generate.append(fn)
+            elif isinstance (obj, types.UnboundMethodType):
+                if pp==obj.im_class.__module__:
+                    f = open(fn, 'w')
+                    f.write (auto_template % dict(name=n, title_underscore='*'*len(n), type='method',
+                                                  module=pp, source=source, options='', toctree='',
+                                                  toctree_options = ':hidden:', content=''))
+                    f.close()
+                    autosummary_generate.append(fn)        
+                elif isclassmethod(obj):
+                    f = open(fn, 'w')
+                    f.write (auto_template % dict(name=n, title_underscore='*'*len(n), type='method',
+                                                  module=pp, source=source, options='', toctree='',
+                                                  toctree_options = ':hidden:', content=''))
+                    f.close()
+                    autosummary_generate.append(fn)        
+                else:
+                    print 'Ignoring:',`n,p,pp, obj, type (obj)`
+            elif isinstance (obj, types.FunctionType):
+                f = open(fn, 'w')
+                f.write (auto_template % dict(name=n, title_underscore='*'*len(n), type='function',
+                                              options = '', toctree='',
+                                              module=p, source=source))
+                f.close()
+                autosummary_generate.append(fn)
+            else:
+                print 'Skipping:',`n, obj, type (obj)`
+
+
+import iocbio
+import iocbio.version
+DocGenerator(iocbio,
+             version = iocbio.version.version,
+             source = 'http://code.google.com/p/iocbio/source/browse/trunk/iocbio/%s').run()
+
+import libtiff
+import libtiff.version
+DocGenerator(libtiff,
+             version = libtiff.version.version,
+             source = 'http://code.google.com/p/pylibtiff/source/browse/trunk/libtiff/%s').run()
+
+
+import nidaqmx
+import nidaqmx.version
+DocGenerator(nidaqmx,
+             version = nidaqmx.version.version,
+             source = 'http://code.google.com/p/pylibnidaqmx/source/browse/trunk/nidaqmx/%s').run()
+
+r'''
 import iocbio
 f = open('generated/stubs.rst', 'w')
 print>>f,'.. autosummary::'
 print>>f,'  :toctree: .'
 print>>f
 
+
 for n in scan_for_autodoc(iocbio, 'iocbio'):
+    #print n
     sys.stdout.flush ()
     print>>f, '  ' + n
 f.close ()
+
+#autosummary_generate.append('generated/stubs.rst')
+'''
+#sys.exit ()
+
+r"""
+
 f = open('generated/examples.rst', 'w')
 f.write('Documentations with examples\n')
 f.write('----------------------------\n\n')
@@ -284,7 +515,8 @@ f.close ()
 
 #sys.exit ()
 
-autosummary_generate.append('generated/stubs.rst')
+
+
 
 from iocbio.optparse_gui import OptionParser
 from iocbio.script_options import set_formatter
@@ -334,8 +566,11 @@ See also
 name_len = 0
 descr_len = 0
 for script_name in sorted(scripts_info):
+    break
+    fn = 'generated/%s.rst' % (script_name.replace('.','-'))
     info = scripts_info[script_name]
-    f = open('generated/%s.rst' % (script_name.replace('.','-')), 'w')
+    print 'conf: Creating',fn
+    f = open(fn, 'w')
     f.write('.. _%s:\n\n' % (script_name.replace('.','-')))
     f.write('%s\n%s\n%s\n' % ('-'*len (script_name), script_name, '-'*len (script_name)))
     f.write ('%s\n' % (info['help']))
@@ -363,3 +598,4 @@ f.write('+%s+%s+\n' % ('-'*name_len, '-'*descr_len))
 f.close()
 
 #sys.exit(0)
+"""

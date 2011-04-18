@@ -50,8 +50,6 @@ for finding dominant frequency of a signal.
 .. image:: ../_static/acf_dominant_frequency.png
   :width: 60%
 
-Module content
---------------
 """
 # Author: Pearu Peterson
 # Created: September 2010

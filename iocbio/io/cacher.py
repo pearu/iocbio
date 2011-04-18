@@ -1,7 +1,11 @@
-""" Provides Cacher that implements computational model with caching results.
+"""Provides Cacher that implements computational model with caching results.
 
-Example::
+Example
+-------
 
+::
+
+  >>> \
   class System(Cacher):
       def compute (self, a=1, t=0):
           '''Integrate dx/dt=a till t with x(0)=1.
@@ -12,21 +16,29 @@ Example::
           else:
               last_t = 0
               last_value = 1
+          # self.parameters can be used to override saved parameters
           return last_value + a*(t-last_t)
 
   >>> system = System('cacher_test', dynamic_parameters=['t'])
   >>> print system.get(a=2,t=3)
   7
   >>> system.show_cache()
+
 """
 # Author: Pearu Peterson
 # Created: April 2011
+
+__all__ = ['Cacher']
 
 import os
 import cPickle as pickle
 
 class Cacher:
-    """ Provides a computational model with caching results.
+    """Provides a computational model with caching results.
+
+    See also
+    --------
+    __init__
     """
 
     def __init__(self, cachedir, dynamic_parameters = [], verbose=False):
@@ -131,7 +143,10 @@ class Cacher:
 
         Returns
         -------
+        result : object
+          Any object that compute method returns.
         """
+        self.parameters = parameters
         index = self.__find_results_index (parameters)
         self.previous_results = None
         self.previous_parameters = None
@@ -148,7 +163,6 @@ class Cacher:
                 print 'Re-computing results'
                 results = self.compute(**parameters)
                 self.__save_results(index, parameters, results)
-        self.parameters = parameters
         return results
 
     def compute(self, **parameters):
@@ -164,6 +178,11 @@ class Cacher:
         ----------
         parameters : dict
           Specify model parameters.
+
+        Returns
+        -------
+        results : object
+          Any object.
         """
         raise NotImplementedError ('compute (%s)' % (parameters))
 

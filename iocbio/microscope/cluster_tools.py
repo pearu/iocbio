@@ -3,8 +3,6 @@
 The used 3D algorithm is a generalization of the 2D algorithm:
   http://stackoverflow.com/questions/411837/finding-clusters-of-mass-in-a-matrix-bitmap/413828
 
-Module content
---------------
 """
 # Author: Pearu Peterson
 # Created: May 2009

@@ -25,8 +25,6 @@ test data that is degraded with Poisson noise::
 .. image:: ../_static/deconvolve_poisson_1d.png
   :width: 60%
 
-Module content
---------------
 """
 
 from __future__ import division

@@ -26,8 +26,6 @@ itself::
 .. image:: ../_static/apply_window_1d.png
   :width: 60%
 
-Module content
---------------
 """
 
 __all__ = ['apply_window']

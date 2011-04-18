@@ -429,7 +429,7 @@ class Options(optparse.Values):
 
     See also
     --------
-    __init__
+    __init__, :pythonlib:`optparse`
     """
 
     def __init__(self, *args, **kws):

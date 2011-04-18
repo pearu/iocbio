@@ -6,6 +6,8 @@ units (Seconds, Minutes, and Hours).
 Examples
 --------
 
+::
+
   >>> from iocbio.timeunit import *
   >>> Seconds(10)
   Seconds(10.0)
@@ -29,8 +31,6 @@ units. For example::
   >>> Time(Hours(1), unit='min')
   Minutes(60.0)
 
-Module content
---------------
 """
 
 # Author: Pearu Peterson

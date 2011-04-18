@@ -47,8 +47,7 @@ Smoothen the result of deconvolution with sphere
   Deconvolution tends to amplify random signals while PSF is
   presumably a smooth function. Use :func:`iocbio.ops.regress`.
 
-Module content
---------------
+
 """
 
 __all__ = ['spots_to_psf']

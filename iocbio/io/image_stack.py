@@ -1,5 +1,7 @@
 """ Provides ImageStack class.
 
+.. currentmodule:: iocbio.io.image_stack
+
 Representing image stacks as ``PATH``-s
 =======================================
 
@@ -74,9 +76,6 @@ use::
   images = numpy.zeros((2,3,4))
   stack = ImageStack(images, voxel_sizes=...)
   stack.save('stack.tif')
-
-Module content
---------------
 """
 # Author: Pearu Peterson
 # Created: 2009
@@ -131,7 +130,7 @@ class ImageStack(object):
     
     def __init__(self, images, pathinfo = None, options=None, **kws):
         """
-        Construct `ImageStack` from an array.
+        Construct ImageStack from an array.
 
         Parameters
         ----------
@@ -278,7 +277,7 @@ class ImageStack(object):
     def get_nof_stacks(self):
         """
         Return the number of image stacks contained in the
-        :attr:`images` array.
+        `images` array.
         """
         nof_stacks = self.pathinfo.get_nof_stacks()
         if nof_stacks is None:

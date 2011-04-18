@@ -17,8 +17,6 @@ The following example illustrates how to convolve data with a kernel::
 .. image:: ../_static/convolve_1d.png
   :width: 60%
 
-Module content
---------------
 """
 
 from __future__ import division

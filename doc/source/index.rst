@@ -19,16 +19,22 @@ Please report any issues to `IOCBio Issue Tracker`__.
 
 __ http://code.google.com/p/iocbio/issues/list
 
-.. include:: generated/scripts.rst
+Reference
+=========
 
-:mod:`iocbio` content
-=====================
+.. toctree::
+   :maxdepth: 3
 
-.. currentmodule:: iocbio
+   reference/iocbio
+   reference/libtiff
+   reference/nidaqmx
 
-.. automodule:: iocbio.__init__
-  :members:
+.. .. include:: generated/scripts.rst
+
 
 See also
 --------
 `List of documentations with examples <generated/examples.html>`_
+
+
+

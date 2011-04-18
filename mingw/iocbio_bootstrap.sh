@@ -39,11 +39,12 @@
 #
 # TODO: pyfftw3 installer, test iocbio.deconvolve using fftw3
 
-export NUMPY_VERSION=1.3.0 # 1.5.1rc1, 1.4.1, 1.3.0, py2.5: 1.2.1, 1.1.1, 1.0.4
-export SCIPY_VERSION=0.7.2 # 0.8.0, 0.7.2
+export NUMPY_VERSION=1.5.1 # 1.5.1, 1.4.1, 1.3.0, py2.5: 1.2.1, 1.1.1, 1.0.4
+export SCIPY_VERSION=0.9.0 # 0.9.0, 0.8.0, 0.7.2
 export LAPACK_VERSION=3.2.2
-export MATPLOTLIB_VERSION=1.0.0
-export PYTHON_VERSION=2.6.6 # 2.6.6, 2.5.5, 2.4.6, 2.3.7
+export MATPLOTLIB_VERSION=1.0.0 # 1.0.1, 1.0.0
+export MATPLOTLIB_DIR_VERSION=1.0 # 1.0.1, 1.0
+export PYTHON_VERSION=2.6.6 # [3.2], 3.1.3, 3.0.1, [2.7.1], 2.6.6, 2.5.5, 2.4.6, 2.3.7
 export IOCBIO_VERSION=svn # svn, 1.2.0.dev139
 
 NPVER=${NUMPY_VERSION::3}
@@ -122,7 +123,7 @@ WXPYTHON_INSTALLER=http://sourceforge.net/projects/wxpython/files/wxPython/2.9.1
 SETUPTOOLS_INSTALLER=http://pypi.python.org/packages/$PYVER/s/setuptools/setuptools-0.6c11.win32-py$PYVER.exe
 
 MATPLOTLIB_PATCH=http://iocbio.googlecode.com/files/matplotlib-$MATPLOTLIB_VERSION.patch
-MATPLOTLIB_TARBALL=http://sourceforge.net/projects/matplotlib/files/matplotlib/matplotlib-1.0/matplotlib-$MATPLOTLIB_VERSION.tar.gz
+MATPLOTLIB_TARBALL=http://sourceforge.net/projects/matplotlib/files/matplotlib/matplotlib-$MATPLOTLIB_DIR_VERSION/matplotlib-$MATPLOTLIB_VERSION.tar.gz
 MATPLOTLIB_INSTALLER=matplotlib-$MATPLOTLIB_VERSION/dist/matplotlib-$MATPLOTLIB_VERSION.win32-py$PYVER.exe
 NEW_MATPLOTLIB_INSTALLER=matplotlib-$MATPLOTLIB_VERSION/dist/matplotlib-$MATPLOTLIB_VERSION.win32-py$PYVER-numpy$NPVER.exe
 

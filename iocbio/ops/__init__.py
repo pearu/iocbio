@@ -15,8 +15,6 @@ manipulating microscope images.
   autocorrelation
   filters
 
-Package content
----------------
 """
 
 __autodoc__ = ['regression', 'convolution', 'window', 'regress', 'convolve','apply_window',

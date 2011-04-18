@@ -75,9 +75,6 @@ array is relatively large or the kernel is relatively wide (scales are
 very small). Otherwise direct regression (``enable_fft=False``) might
 still be faster.
 
-
-Module content
---------------
 """
 # Author: Pearu Peterson
 # Created: September 2009

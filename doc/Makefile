@@ -4,14 +4,14 @@
 HTML_TARGET = ../apidocs
 
 # You can set these variables from the command line.
-SPHINXOPTS    =
+SPHINXOPTS    = -n  -P
 SPHINXBUILD   = sphinx-build
 PAPER         =
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
-ALLSPHINXOPTS   = -d _build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
+ALLSPHINXOPTS   = -d _build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source 
 
 .PHONY: help clean html dirhtml pickle json htmlhelp qthelp latex changes linkcheck doctest
 
@@ -29,7 +29,7 @@ help:
 	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-rm -rf _build source/generated $(HTML_TARGET)/*
+	-rm -rf _build source/generated source/reference/* $(HTML_TARGET)/*
 
 
 html:

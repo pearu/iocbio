@@ -1,7 +1,4 @@
 """ Provides functions to load and save image stacks.
-
-Module content
---------------
 """
 
 __autodoc__ = ['RowFile', 'load_image_stack', 'save_image_stack', 'get_pathinfo']

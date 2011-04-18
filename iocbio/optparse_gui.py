@@ -10,8 +10,6 @@ This code is based on `optparse_gui module
 optparse_gui did not respond to a request to join the optparse_gui
 group. By now this module has become more complete with more features.
 
-Module content
---------------
 '''
 #Author: Pearu Peterson
 #Created: September 2009

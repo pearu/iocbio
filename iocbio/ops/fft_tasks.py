@@ -36,8 +36,6 @@ The following example illustrates finding optimal FFT sizes with different input
   1025 -> 1050 gives speed up 1.523x
   2049 -> 2100 gives speed up 4.244x
 
-Module content
---------------
 """
 
 from __future__ import division

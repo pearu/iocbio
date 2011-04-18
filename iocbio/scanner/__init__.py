@@ -8,8 +8,6 @@ The :mod:`iocbio.scanner` provides the following modules:
 
   curve
 
-Package content
----------------
 """
 
 __autodoc__ = ['curve']
