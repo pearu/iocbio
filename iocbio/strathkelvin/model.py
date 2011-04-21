@@ -6,6 +6,21 @@ import glob
 
 from ..timeunit import Time, Seconds, Minutes, Hours
 
+def get_rate_unit (tunit, cunit):
+    # multiply unit1 by ml volume
+    unit1 = {'ug/ml':'ug', 'mg/l':'ug', 'ul/ml':'ul', 'ml/l':'ul', 'umol/l':'nmol', 'torr':'torr*ml', 'kPa':'kPa*ml', '%satn':'%satn*ml'}.get(cunit)
+    if unit1 and tunit:
+        return '%s/%s' % (unit1, tunit)
+    print 'get_rate_unit(%r, %r) returns None' % (tunit, cunit)
+    return None
+
+def get_rate_factor(volume_ml, timeunit):
+    tfactor = dict(s=1, min=1/60, h=1/60/60)[timeunit]
+    if volume_ml is None:
+        #print 'get_rate_factor: assuming volume_ml=1'
+        return 1/tfactor
+    return volume_ml/tfactor
+
 class Channel:
     """ Holds channel data.
 
@@ -195,7 +210,7 @@ class Channel:
 
     def get_time (self):
         unit = self.get_time_unit()
-        return [Time (t, unit=unit) for t in self.time_data]
+        return [Time(t, unit=unit) for t in self.time_data]
         #return self.time_data
 
     def get_data (self):
@@ -205,9 +220,7 @@ class Channel:
         if s is not None:
             self.data_slope.update(s)
         unit = self.get_time_unit()
-        tfactor = dict(s=1, min=1/60, h=1/60/60)[unit]
-
-        factor = self.get_volume_ml() / tfactor
+        factor = get_rate_factor(self.get_volume_ml(), unit)
         slope = self.data_slope.get_slope()
         if factor==1:
             return slope
@@ -447,6 +460,7 @@ class Model:
         config_params = self.protocols['_Configuration']
 
         for param_line in params:
+            #print `param_line`
             p = Parameter(param_line[6:].lstrip ())
             if not self.has_parameter(p.name):
                 config_params.append(param_line)
@@ -587,10 +601,7 @@ class Model:
         if axis==2:
             unit0 = self.get_axis_unit (0, protocol=protocol)
             unit1 = self.get_axis_unit (1, protocol=protocol)
-            # multiply unit1 by ml volume
-            unit1 = {'ug/ml':'ug', 'mg/l':'ug', 'ul/ml':'ul', 'ml/l':'ul', 'umol/l':'nmol', 'torr':'torr*ml', 'kPa':'kPa*ml', '%satn':'%satn*ml'}.get(unit1)
-            if unit1 and unit0:
-                unit = '%s/%s' % (unit1, unit0)
+            unit = get_rate_unit (unit0, unit1)
         else:
             label = self._get_axis_config_label(axis)
             unit = self.get_parameter_value ('%s_units' % label)
@@ -720,6 +731,7 @@ class Parameter:
           where ``<type>`` can be ``int``, ``float``, ``string``, ``text``,
           ``file``, ``directory``.
         """
+        orig_param = param
         if '#' in param:
             param, comment = param.rsplit('#', 1)
             comment = comment.strip()
@@ -734,15 +746,18 @@ class Parameter:
         self.default = default
 
         param = param.strip()
-        if ' ' in param:
-            param, name = param.rsplit(' ', 1)
-            param = param.strip()
+        param.rindex
+
+        splitindex = max (param.rfind (']'), param.rfind(' ')) + 1
+        if splitindex > 0:
+            name = param[splitindex:].strip ()
+            param = param[:splitindex].strip()
         else:
             name = param
             param = ''
 
         self.name = name.strip()
-        assert ' ' not in name, `self.name, param`
+        assert ' ' not in name, `self.name, param, orig_param`
 
         if param.endswith(']'):
             i = param.index('[')

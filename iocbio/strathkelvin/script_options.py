@@ -12,9 +12,12 @@ def set_strathkelvin929_options (parser):
 def set_strathkelvin929_rate_options(parser):
     set_formatter(parser)
     parser.set_usage('%prog [options] <channel-files>')
-    parser.set_description('Re-calculates oxygen respiration rates.')
+    parser.set_description('Re-calculates oxygen respiration rates. Rewrites the channel files unless --tryrun is used.')
 
-    parser.add_option ('--nof-regression-points', '-n',
+    parser.add_option('--nof-regression-points', '-n',
                        type = 'int', default=10,
-                       help = 'Specify the number of regression points')
-
+                       help = 'Specify the number of regression points. When 0 then use the number from channel files.')
+    parser.add_option('--tryrun',  action = 'store_true',
+                      help = 'Re-calculate rates without saving.')
+    parser.add_option('--no-tryrun',  action = 'store_false', dest='tryrun',
+                      help = 'See --tryrun.')
