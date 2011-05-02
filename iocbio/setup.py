@@ -23,7 +23,7 @@ def configuration(parent_package='',top_path=None):
 
     config.make_svn_version_py()
 
-    wininst = 'bdist_wininst' in sys.argv
+    wininst = 'bdist_wininst' in sys.argv or sys.platform=='win32'
     try:
         import multiprocessing
     except ImportError:
