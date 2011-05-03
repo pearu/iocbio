@@ -4,7 +4,7 @@
 import os
 import glob
 import shutil
-from utils import run_python, run_command, get_program_files_directory, get_windows_directory, get_system_directory, winreg_append_to_path
+from utils import run_python, run_command, get_program_files_directory, get_windows_directory, get_system_directory, winreg_append_to_path, unwin
 from gui import ResourcePage
 
 #class BzrPage(ResourcePage):
@@ -64,25 +64,29 @@ class Libfftw3Page(ResourcePage):
         return r
 
     def install_source (self, source_path):
-        prefix = '/c/mingw/' #self.get ('mingw prefix')
-        confflags="--prefix=%s --host=i586-mingw32msvc --with-gcc-arch=prescott --enable-portable-binary --with-our-malloc16 --with-windows-f77-mangling --enable-shared --disable-static --enable-threads --with-combined-threads" % (prefix)
+        prefix = self.get ('mingw prefix')
+        confflags="--prefix=%s --host=i586-mingw32msvc --with-gcc-arch=prescott --enable-portable-binary --with-our-malloc16 --with-windows-f77-mangling --enable-shared --disable-static --enable-threads --with-combined-threads" % (unwin(prefix))
         wd = os.path.join (source_path, 'double')
-        shutil.rmtree(wd, ignore_errors = True)
-        if not os.path.isdir(wd):
-            os.makedirs (wd)
-        conf = os.path.join (source_path, 'configure')
+        if 0:
+            shutil.rmtree(wd, ignore_errors = True)
+            if not os.path.isdir(wd):
+                os.makedirs (wd)
+        conf = unwin(os.path.join (source_path, 'configure'))
         bash = self.get('mingw bash')
+        make = self.get('mingw make')
         if ' ' in conf: 
             raise RuntimeError("The path of fftw3 configure script cannot contain spaces: %r" % (conf))
 
-        r = run_command('%s %s %s --enable-sse2' % (bash, conf, confflags), cwd=wd, env=self.environ,
-                        verbose=True)
+        if 1:
+            r = run_command('%s %s %s --enable-sse2' % (bash, conf, confflags), cwd=wd, env=self.environ,
+                            verbose=True)
+            if r[0]:
+                return False
+        print `conf,make, wd`
+        r = run_command(make, cwd=wd, env=self.environ, verbose=True)
         if r[0]:
             return False
-        r = run_command('make', cwd=wd, env=self.environ, verbose=True)
-        if r[0]:
-            return False
-        r = run_command('make install', cwd=wd, env=self.environ, verbose=True)
+        r = run_command(make+' install', cwd=wd, env=self.environ, verbose=True)
         return not r[0]
 
 class LibtiffPage(ResourcePage):
@@ -287,6 +291,8 @@ class MingwPage (ResourcePage):
                         return not r[0]
             if os.path.basename (f)=='bash.exe':
                 self.bash = f
+            if os.path.basename (f)=='make.exe':
+                self.make = f
         r = run_command('%s -c "mkdir -p /tmp"' % (self.bash), env=self.environ)
         if r[0]:
             return False

@@ -26,7 +26,9 @@ else
     WXPYTHON_INSTALLER=http://sourceforge.net/projects/wxpython/files/wxPython/$WXPYTHON_VERSION/wxPython$WXVER-win32-$WXPYTHON_VERSION-py$PYVR.exe
 fi
 
-
+START_EXE=/c/windows/command/start.exe
+START_EXE="c:\\windows\\command\\start.exe"
+test -f $START_EXE && echo "$START_EXE exists"
 export PATH=$PATH:/c/Python$PYVR
 PYTHON_EXE=/c/Python$PYVR/python.exe
 
@@ -40,6 +42,10 @@ function download {
 
 function run_command
 {
+    echo $PATH
+    cmd /c "echo path=%path%"
+    echo
+    cmd /c "dir"
     echo "Running command: $*"
     cmd /c "$*"
 }
@@ -53,7 +59,7 @@ function check_python {
 	echo "\"$PYTHON_EXE\" exists"
     else
 	download $PYTHON_INSTALLER || exit 1
-	start_installer `basename $PYTHON_INSTALLER`
+	start_installer `basename $PYTHON_INSTALLER` || exit 1
     fi
     $PYTHON_EXE -c "import sys; print 'Python',sys.version"
 }

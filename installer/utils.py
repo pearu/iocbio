@@ -10,6 +10,14 @@ import urlparse
 import zipfile
 import tarfile
 
+def unwin(path):
+    paths = path.split(os.sep)
+    if paths[0].endswith(':'):
+        paths[0] = '/'+paths[0][:-1]
+    r = '/'.join(paths)
+    print 'unwin(%r)->%r->%r' % (path, (os.sep,paths),r)
+    return r
+
 def get_appdata_directory():
     try:
         from win32com.shell import shell, shellcon

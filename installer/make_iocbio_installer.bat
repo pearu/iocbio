@@ -14,7 +14,7 @@ if exist "%MINGW_INSTALLER%" GOTO MINGWINSTALL
 @echo  
 @echo   http://sourceforge.net/projects/mingw/files/Automated%20MinGW%20Installer/mingw-get-inst/mingw-get-inst-20110316/mingw-get-inst-20110316.exe
 @echo  
-#echo and rerun this batch file "%0"
+@echo and rerun this batch file "%0"
 GOTO END
 :MINGWINSTALL
 @echo "%MINGW_INSTALLER%" exists
