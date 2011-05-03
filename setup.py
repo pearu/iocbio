@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 
 NAME = 'iocbio'
 AUTHOR = 'Pearu Peterson'
@@ -12,13 +13,17 @@ DESCRIPTION = 'IOCBio Software'
 LONG_DESCRIPTION = '''\
 See http://code.google.com/p/iocbio/ for more information.
 '''
+
 CLASSIFIERS = ''
 PLATFORMS = ['Linux', 'Windows']
 MAJOR               = 1
 MINOR               = 2
 MICRO               = 0
-ISRELEASED          = not True
+ISRELEASED          = 'RELEASE' in sys.argv
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+if ISRELEASED:
+    sys.argv.remove('RELEASE')
+
 
 if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
