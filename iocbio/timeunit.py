@@ -1,7 +1,7 @@
 """Time units.
 
-Provides number like classes to manipulate time quantity with various
-units (Seconds, Minutes, and Hours).
+Provides time classes with arithmetic support to manipulate time
+quantity with various units (Seconds, Minutes, and Hours).
 
 Examples
 --------

@@ -18,6 +18,6 @@ def set_strathkelvin929_rate_options(parser):
                        type = 'int', default=10,
                        help = 'Specify the number of regression points. When 0 then use the number from channel files.')
     parser.add_option('--tryrun',  action = 'store_true',
-                      help = 'Re-calculate rates without saving.')
+                      help = 'Re-calculate rates but do not save rates to file.')
     parser.add_option('--no-tryrun',  action = 'store_false', dest='tryrun',
                       help = 'See --tryrun.')

@@ -107,6 +107,7 @@ def runner(parser, options, args):
                     words[2] = str(s1)
                     new_lines.append ('%18s %18s %18s %s\n' % tuple(words))
                     count += 1
+        create_double_rate_file = False
         if count:
             orig_norm = (normsum/count)**0.5
             new_norm = (newnormsum/count)**0.5
@@ -114,6 +115,8 @@ def runner(parser, options, args):
                 print 'WARNING: %r rates have %.1fx different norms (protocol=%s)' % (filename,
                                                                                       new_norm/orig_norm,
                                                                                       protocol)
+                if abs(new_norm/orig_norm-2)<1e-3 and options.nof_regression_points==0:
+                    create_double_rate_file = True
                 #print '  orig_norm=%r' % (orig_norm)
                 #print '  new_norm=%r' % (new_norm)
                 #print '  volume_ml=%r' % (volume_ml)
@@ -127,6 +130,16 @@ def runner(parser, options, args):
             f = open (filename, 'w')
             f.write(''.join (new_lines))
             f.close ()
+            if os.path.isfile(filename+'_RATE_CORRECTION'):
+                os.remove(filename+'_RATE_CORRECTION')
+        else:
+            if create_double_rate_file:
+                try:
+                    f = open(filename+'_RATE_CORRECTION', 'w')
+                    f.write('%s' % (new_norm/orig_norm))
+                    f.close()
+                except Exception, msg:
+                    print 'Ignoring %s' % (msg)
 
     if wrong_rates_count:
         print 'WARNING: %s channel files out of %s have wrong rates' % (wrong_rates_count, len (args))
