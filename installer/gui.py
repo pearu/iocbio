@@ -433,7 +433,9 @@ class ResourcePage (WizardPage):
             download_path = self.download_path.get (v, self.download_path.get(None, ''))
             if download_path:
                 ext = self.download_extensions.get(v, self.download_extensions.get(None,''))
-                installer = download_path % dict(version=v, ext=ext)
+                deps = dict(version=v, ext=ext)
+                deps['version-'] = v.replace ('.','-')
+                installer = download_path % deps
                 if installer.endswith ('.tar.gz'):
                     if os.path.isfile(os.path.basename(installer)):
                         labels.append('Install %s %s from source' % (self.title, v))

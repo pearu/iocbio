@@ -7,9 +7,11 @@ import shutil
 from utils import run_python, run_command, get_program_files_directory, get_windows_directory, get_system_directory, winreg_append_to_path, unwin
 from gui import ResourcePage
 
-#class BzrPage(ResourcePage):
-#    download_versions = ['2.3.1']
-#    download_path = {None: 'http://launchpad.net/bzr/%(version:3)s/%(version)s/+download/bzr-2.3.1-1-setup.exe'}
+
+class PthreadsPage(ResourcePage):
+    download_versions = ['2.8.0']
+    download_path = {None: 'ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-%(version-)s-release.exe'}
+
 
 class Libfftw3Page(ResourcePage):
 
@@ -66,7 +68,7 @@ class Libfftw3Page(ResourcePage):
     def install_source (self, source_path):
         prefix = self.get ('mingw prefix')
         confflags="--prefix=%s --host=i586-mingw32msvc --with-gcc-arch=prescott --enable-portable-binary --with-our-malloc16 --with-windows-f77-mangling --enable-shared --disable-static --enable-threads --with-combined-threads" % (unwin(prefix))
-        wd = os.path.join (source_path, 'double')
+        wd = os.path.join (source_path, 'double-mingw32')
         if 0:
             shutil.rmtree(wd, ignore_errors = True)
             if not os.path.isdir(wd):
@@ -82,8 +84,7 @@ class Libfftw3Page(ResourcePage):
                             verbose=True)
             if r[0]:
                 return False
-        print `conf,make, wd`
-        r = run_command(make, cwd=wd, env=self.environ, verbose=True)
+        r = run_command(make+' -j4', cwd=wd, env=self.environ, verbose=True)
         if r[0]:
             return False
         r = run_command(make+' install', cwd=wd, env=self.environ, verbose=True)
@@ -240,7 +241,9 @@ class MingwPage (ResourcePage):
                   r'bin\g++.exe': 'g++', r'bin\ar.exe':'binutils',
                   r'msys\1.0\bin\bash.exe':'msys-bash msys-core msys-coreutils',
                   r'msys\1.0\bin\make.exe':'msys-make',
-                  r'msys\1.0\bin\patch.exe': 'msys-patch'}
+                  r'msys\1.0\bin\diff.exe':'msys-diffutils',
+                  r'msys\1.0\bin\patch.exe': 'msys-patch',
+                  r'bin\libpthread-2.dll':'pthreads-w32'}
 
     prefix = r'C:\MinGW'
 
