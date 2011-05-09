@@ -468,7 +468,10 @@ class OMEConfiguration(OMEBase):
 
                 for i in range (1,5):
                     d1 = 'AOTFLine%s' % i
-                    fn = confocal_filters[d1]['ex'][0]
+                    ft = confocal_filters.get(d1)
+                    if ft is None:
+                        continue
+                    fn = ft['ex'][0]
                     fn = get_aotf_filter_name (fn, self.config)
                     if 'OFF' in fn:
                         continue
@@ -476,8 +479,10 @@ class OMEConfiguration(OMEBase):
                 fn = confocal_filters['OpticalTableSplitter']['di'][0]
                 lpath_l.append(ome.DichroicRef(ID='Dichroic:OpticalTableSplitter:%s' % (fn)))
                 d1 = 'ThorlabsWheelPosition%s' % (self.config['thorlabs_filter_wheel_position'][3])
-                fn = confocal_filters[d1]['em'][0]
-                lpath_l.append(ome.EmissionFilterRef (ID='Filter:%s:%s' % (d1,fn)))
+                ft = confocal_filters.get(d1):
+                if ft is not None:
+                    fn = ft['em'][0]
+                    lpath_l.append(ome.EmissionFilterRef (ID='Filter:%s:%s' % (d1,fn)))
             elif detector in ['Andor', 'Imperx']:
                 objective = ome.ObjectiveSettings(ID='Objective:%s' % (self.config['optics_objective']))
                 instrument_id = 'Instrument:Suga'
