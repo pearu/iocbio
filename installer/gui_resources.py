@@ -68,8 +68,9 @@ class Libfftw3Page(ResourcePage):
     def install_source (self, source_path):
         prefix = self.get ('mingw prefix')
         confflags="--prefix=%s --host=i586-mingw32msvc --with-gcc-arch=prescott --enable-portable-binary --with-our-malloc16 --with-windows-f77-mangling --enable-shared --disable-static --enable-threads --with-combined-threads" % (unwin(prefix))
+        confflags="--prefix=%s --host=i586-mingw32msvc --with-gcc-arch=native --enable-portable-binary --with-our-malloc16 --with-windows-f77-mangling --enable-shared --disable-static" % (unwin(prefix))
         wd = os.path.join (source_path, 'double-mingw32')
-        if 0:
+        if 1:
             shutil.rmtree(wd, ignore_errors = True)
             if not os.path.isdir(wd):
                 os.makedirs (wd)

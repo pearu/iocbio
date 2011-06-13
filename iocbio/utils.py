@@ -4,7 +4,7 @@ Various utilities.
 
 __autodoc__ = ['expand_to_shape', 'contract_to_shape', 'ProgressBar', 'Options', 'encode',
                'tostr', 'get_path_dir', 'float2dtype', 'time_to_str', 'time_it',
-               'time2str', 'bytes2str', 'sround']
+               'time2str', 'bytes2str', 'sround', 'mfloat']
 
 import os
 import sys
@@ -663,3 +663,25 @@ def sround(*values):
     if len (l)==1:
         return l[0]
     return l
+
+class mfloat (float):
+    """ A "measured" float that is a mean of an input sequence.
+    In addition, the standard deviation is computed and shown
+    in the pretty print output.
+    """
+
+    def __new__ (cls, value):
+        if isinstance(value, (numpy.ndarray, list)):
+            std = numpy.std (value, ddof=1)
+            value = numpy.mean (value)
+        else:
+            std = 0.0
+        obj  = float.__new__(mfloat, value)
+        obj.std = std
+        return obj
+
+    def __str__ (self):
+        svalue = float.__str__ (self)
+        if self.std:
+            return '%s(+-%s)' % tuple(sround(self, self.std))
+        return svalue
