@@ -479,7 +479,7 @@ class OMEConfiguration(OMEBase):
                 fn = confocal_filters['OpticalTableSplitter']['di'][0]
                 lpath_l.append(ome.DichroicRef(ID='Dichroic:OpticalTableSplitter:%s' % (fn)))
                 d1 = 'ThorlabsWheelPosition%s' % (self.config['thorlabs_filter_wheel_position'][3])
-                ft = confocal_filters.get(d1):
+                ft = confocal_filters.get(d1)
                 if ft is not None:
                     fn = ft['em'][0]
                     lpath_l.append(ome.EmissionFilterRef (ID='Filter:%s:%s' % (d1,fn)))
