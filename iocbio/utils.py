@@ -672,7 +672,10 @@ class mfloat (float):
 
     def __new__ (cls, value):
         if isinstance(value, (numpy.ndarray, list)):
-            std = numpy.std (value, ddof=1)
+            try:
+                std = numpy.std (value, ddof=1)
+            except FloatingPointError:
+                std = 'nan'
             value = numpy.mean (value)
         else:
             std = 0.0
@@ -682,6 +685,8 @@ class mfloat (float):
 
     def __str__ (self):
         svalue = float.__str__ (self)
-        if self.std:
+        if isinstance(self.std, float):
             return '%s(+-%s)' % tuple(sround(self, self.std))
+        elif self.std:
+            return '%s(%s)' % (svalue, self.std)
         return svalue
