@@ -16,11 +16,12 @@ class PthreadsPage(ResourcePage):
 class Libfftw3Page(ResourcePage):
 
     depends = ['mingw']
-    download_versions = ['3.2.2']
+    download_versions = ['3.3', '3.2.2']
     download_extensions = {None: '.exe'}
     download_path = {None: 'ftp://ftp.fftw.org/pub/fftw/fftw-%(version)s-dll.zip',
                      #'3.2.2': 'ftp://ftp.fftw.org/pub/fftw/fftw-%(version)s.pl1-dll32.zip',
-                     '3.2.2':'http://www.fftw.org/fftw-3.2.2.tar.gz'
+                     '3.2.2':'http://www.fftw.org/fftw-%(version)s.tar.gz',
+                     '3.3':'http://www.fftw.org/fftw-%(version)s.tar.gz',
                      }
 
     #prefix = os.path.join (get_program_files_directory (), 'fftw3')
@@ -191,7 +192,7 @@ class SubversionPage(ResourcePage):
 
     depends = ['vc6redist']
 
-    download_versions = ['1.6.15']
+    download_versions = ['1.6.17', '1.6.15']
     download_path = {None:'http://sourceforge.net/projects/win32svn/files/%(version)s/Setup-Subversion-%(version)s.msi'}
 
     def get_svn_exe(self):
@@ -235,8 +236,10 @@ class SubversionPage(ResourcePage):
 
 class MingwPage (ResourcePage):
     
-    download_versions = ['20110316']
-    download_path = {'20110316':'http://sourceforge.net/projects/mingw/files/Automated%%20MinGW%%20Installer/mingw-get-inst/mingw-get-inst-20110316/mingw-get-inst-20110316.exe'}
+    download_versions = ['20110802', '20110316']
+    download_path = {
+        '20110802':'http://sourceforge.net/projects/mingw/files/Automated%%20MinGW%%20Installer/mingw-get-inst/mingw-get-inst-20110802/mingw-get-inst-20110802.exe',
+        '20110316':'http://sourceforge.net/projects/mingw/files/Automated%%20MinGW%%20Installer/mingw-get-inst/mingw-get-inst-20110316/mingw-get-inst-20110316.exe'}
 
     components = {r'bin\gfortran.exe': 'gfortran',
                   r'bin\g++.exe': 'g++', r'bin\ar.exe':'binutils',

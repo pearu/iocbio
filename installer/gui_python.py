@@ -249,9 +249,10 @@ print(version)
 
 class PythonPage (ResourcePage):
 
-    download_versions = ['2.7.1', '2.6.6', '2.5.4', '2.4.4', 
+    # specify only those versions that are provided with .msi file.
+    download_versions = ['2.7.2', '2.6.7', '2.5.4', '2.4.4', 
                          '2.3.5', # Running Python fails with runtime error R6034
-                         '3.2', '3.1.3', '3.0.1']
+                         '3.2.1', '3.1.4', '3.0.1']
     download_extensions = {None: '.msi', # default
                            '2.3.5': '.exe'}
     download_path = {None: 'http://www.python.org/ftp/python/%(version)s/python-%(version)s%(ext)s',
@@ -362,13 +363,15 @@ class PythonPage (ResourcePage):
 
 class NumpyPage(PythonPackagePage):
 
-    download_versions = {'1.5.1':dict (python=['2.5', '2.6', '2.7', '3.1']),
-                         '1.4.1':dict (python=['2.5', '2.6']),
-                         '1.3.1':dict (python=['2.5', '2.6']),
-                         '1.2.1':dict (python=['2.4', '2.5']),
-                         '1.1.1':dict (python=['2.3', 
-                                               '2.4',
-                                               '2.5']),
+    download_versions = {
+        '1.6.1':dict (python=['2.5','2.6','2.7','3.1','3.2']),
+        '1.5.1':dict (python=['2.5', '2.6', '2.7', '3.1']),
+        '1.4.1':dict (python=['2.5', '2.6']),
+        '1.3.1':dict (python=['2.5', '2.6']),
+        '1.2.1':dict (python=['2.4', '2.5']),
+        '1.1.1':dict (python=['2.3', 
+                              '2.4',
+                              '2.5']),
                          }
     download_path = {None: 
                      'http://sourceforge.net/projects/numpy/files/NumPy/%(version)s/numpy-%(version)s-win32-superpack-python%(python version:3)s.exe'}
@@ -400,7 +403,8 @@ class MatplotlibPage (PythonPackagePage):
 
 class WxPage (PythonPackagePage):
 
-    download_versions = {'2.9.1.1':dict (python=['2.5', '2.6','2.7'])}
+    download_versions = {'2.9.1.1':dict (python=['2.5', '2.6','2.7']),
+                         '2.9.2.1':dict (python=['2.6', '2.7'])}
 
     download_path = {None: 'http://sourceforge.net/projects/wxpython/files/wxPython/%(version)s/wxPython%(version:3)s-win32-%(version)s-py%(python version:3:2)s.exe'}
 

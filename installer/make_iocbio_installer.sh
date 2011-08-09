@@ -4,7 +4,7 @@
 
 export ARCH=32 # 32, 64
 export PYTHON_VERSION=2.6.6 # [3.2], 3.1.3, 3.0.1, [2.7.1], 2.6.6, 2.5.4, 2.4.4, 2.3.7
-export PYINSTALLER_VERSION=1.5-rc1 # 1.5-rc1, 1.4
+export PYINSTALLER_VERSION=1.5 # 1.5, 1.5-rc1, 1.4
 export WXPYTHON_VERSION=2.9.1.1 # 2.9.1.1, 2.8.10.1 (for py2.4)
 
 PYVER=${PYTHON_VERSION:0:3}
