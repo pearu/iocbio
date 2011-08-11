@@ -18,7 +18,7 @@ CLASSIFIERS = ''
 PLATFORMS = ['Linux', 'Windows']
 MAJOR               = 1
 MINOR               = 2
-MICRO               = 0
+MICRO               = 1
 ISRELEASED          = 'RELEASE' in sys.argv
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 if ISRELEASED:

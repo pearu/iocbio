@@ -432,7 +432,7 @@ class IocbioPage(PythonPackagePage):
     depends = ['numpy', 'scipy', 'wx', 'matplotlib', 'subversion', 'fftw3', 'mingw', 'libtiff']
 
     download_versions = {'svn': dict(),
-                         '1.2.0': dict()}
+                         '1.2.1': dict()}
     download_path = {'svn': 'http://iocbio.googlecode.com/svn/trunk/ iocbio-read-only',
                      None: 'http://iocbio.googlecode.com/files/iocbio-%(version)s.tar.gz'}
 
