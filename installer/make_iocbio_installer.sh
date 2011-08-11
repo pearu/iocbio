@@ -28,7 +28,9 @@ fi
 
 START_EXE=/c/windows/command/start.exe
 START_EXE="c:\\windows\\command\\start.exe"
-test -f $START_EXE && echo "$START_EXE exists"
+test -f $START_EXE || START_EXE="start"
+echo "Using START_EXE=$START_EXE"
+
 export PATH=$PATH:/c/Python$PYVR
 PYTHON_EXE=/c/Python$PYVR/python.exe
 

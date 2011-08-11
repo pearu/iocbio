@@ -169,7 +169,7 @@ def download(url, fileName=None):
     try:
         r = urllib2.urlopen(urllib2.Request(url))
     except urllib2.HTTPError, msg:
-        print 'Failed to open %r: %s' (url, msg)
+        print 'Failed to open %r: %s' % (url, msg)
         return
     result = None
     try:

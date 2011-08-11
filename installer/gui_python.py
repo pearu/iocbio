@@ -241,8 +241,8 @@ print(version)
                 break
         return self.install_source(cwd)
 
-    def install_source(self, source_path):
-        print '%s.install_source (%r) not implemented' % (self.__class__.__name__, source_path)
+    #def install_source(self, source_path):
+    #    print '%s.install_source (%r) not implemented' % (self.__class__.__name__, source_path)
 
     def get_setup_install_command (self):
         return 'setup.py install'

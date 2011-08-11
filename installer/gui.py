@@ -3,6 +3,7 @@
 # Created: Apr 2011
 
 import os
+import time
 import sys
 import wx
 import wx.wizard as wiz
@@ -26,9 +27,10 @@ class Model(wx.Frame):
             logfile = os.path.abspath (logfile)
             if os.path.isfile (logfile):
                 os.remove(logfile)
-            print 'All output is redirected to %r' % (logfile)
+            print 'All output will be redirected to %r' % (logfile)
             self.app = wx.App(redirect=True, filename=logfile)
         self.logfile = logfile
+        print 'time.ctime()->%r' % (time.ctime())
         print 'sys.executable=%r' % (sys.executable)
         print 'sys.platform=%r' % (sys.platform)
         print 'os.name=%r' % (os.name)
@@ -131,23 +133,24 @@ class Model(wx.Frame):
         #print "OnWizPageChanging: %s, %s\n" % (dir, page.__class__)
 
         if dir=='forward':
+            infosource = self.logfile or 'terminal'
             page.start_apply_selection()
             try:
                 r = page.apply_resource_selection()
             except:
-                wx.MessageBox("Failed to apply resource selection, see terminal for information.", "Cancelling Next")
+                wx.MessageBox("Failed to apply resource selection, see %s for information." % (infosource), "Cancelling Next")
                 evt.Veto()
                 page.set_resource_options()
                 page.stop_apply_selection()
                 raise
             if not r:
-                wx.MessageBox("Failed to apply resource selection, see terminal for information.", "Cancelling Next")
+                wx.MessageBox("Failed to apply resource selection, see %s for information." % (infosource) , "Cancelling Next")
                 evt.Veto()
                 page.set_resource_options()
             else:
                 if not page.quick_test():
                     page.quick_test_message = 'TEST FAILED'
-                    wx.MessageBox("%s quick test failed, see terminal for information." % (page.title), "Warning")
+                    wx.MessageBox("%s quick test failed, see %s for information." % (page.title, infosource), "Warning")
                 else:
                     page.quick_test_message = 'TEST OK'
             page.stop_apply_selection()

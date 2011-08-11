@@ -20,7 +20,7 @@ try:
         #'libfftw3'
         ]
 
-    Model('iocbio_installer.log'
+    Model(#'iocbio_installer.log'
           ).run (resources)
 
     print __file__,'normal exit'

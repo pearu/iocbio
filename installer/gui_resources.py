@@ -25,21 +25,34 @@ class Libfftw3Page(ResourcePage):
                      }
 
     #prefix = os.path.join (get_program_files_directory (), 'fftw3')
-    prefix = os.path.join (r'c:\iocbio\fftw3')
+    #prefix = os.path.join (r'c:\iocbio\fftw3')
 
-    def get_install_path(self, installer):
+    def __get_install_path(self, installer):
+        if prefix is None:
+            return
+        path = os.path.join (prefix)
         v = os.path.basename(installer).split ('-')[1]
         if v.endswith('.pl1'):
             v = v[:-4]    
         return os.path.join(self.prefix, v.replace ('.','_'))
 
     def update_environ(self):
-        self.environ['FFTW_PATH'] = self.path
+        if os.path.isfile (self.path):
+            self.environ['FFTW_PATH'] = os.path.dirname(self.path)
+        else:
+            self.environ['FFTW_PATH'] = self.path
         self.environ['FFTW3'] = self.path
 
     def get_resource_options(self):
         labels = []
         tasks = {}
+        prefix = self.get ('mingw prefix')
+        dll = os.path.join(prefix,'bin','libfftw3-3.dll')
+        if os.path.isfile (dll):
+            label = 'Use %s ' % dll
+            labels.append (label)
+            tasks[label] = ('use', dll, None)
+        '''
         for p in glob.glob(os.path.join(self.prefix, '?_?_?')):
             v = os.path.basename (p).replace ('_','.')
             dlls = map(lambda n: os.path.splitext(os.path.basename(n))[0], glob.glob (os.path.join (p, '*.dll')))
@@ -49,13 +62,20 @@ class Libfftw3Page(ResourcePage):
                     continue
                 labels.append (label)
                 tasks[label] = ('use', p, v)
-
+        '''
         return ResourcePage.get_resource_options (self, labels, tasks)
 
     def try_resource(self, version=None):
-        d = os.path.join(self.prefix, version.replace ('.','_'))
-        if os.path.isdir (d):
-            return d
+        prefix = self.get ('mingw prefix')
+        if prefix is None:
+            return
+        dll = os.path.join(prefix,'bin','libfftw3-3.dll')
+        if os.path.isfile (dll):
+            return dll
+        print 'dll=%s does not exist' % (dll)
+        #d = os.path.join(self.prefix, version.replace ('.','_'))
+        #if os.path.isdir (d):
+        #    return d
 
     def apply_resource_selection(self):
         r = ResourcePage.apply_resource_selection(self)
@@ -236,11 +256,14 @@ class SubversionPage(ResourcePage):
 
 class MingwPage (ResourcePage):
     
-    download_versions = ['20110802', '20110316']
+    download_versions = ['20110802-light', '20110802', '20110316', '20110316-light']
     download_path = {
         '20110802':'http://sourceforge.net/projects/mingw/files/Automated%%20MinGW%%20Installer/mingw-get-inst/mingw-get-inst-20110802/mingw-get-inst-20110802.exe',
-        '20110316':'http://sourceforge.net/projects/mingw/files/Automated%%20MinGW%%20Installer/mingw-get-inst/mingw-get-inst-20110316/mingw-get-inst-20110316.exe'}
-
+        '20110316':'http://sourceforge.net/projects/mingw/files/Automated%%20MinGW%%20Installer/mingw-get-inst/mingw-get-inst-20110316/mingw-get-inst-20110316.exe',
+        '20110802-light':'http://sysbio.ioc.ee/download/software/binaries/latest/mingw-%(version)s.zip',
+        '20110316-light':'http://sysbio.ioc.ee/download/software/binaries/latest/mingw-%(version)s.zip',
+        }
+    
     components = {r'bin\gfortran.exe': 'gfortran',
                   r'bin\g++.exe': 'g++', r'bin\ar.exe':'binutils',
                   r'msys\1.0\bin\bash.exe':'msys-bash msys-core msys-coreutils',
@@ -249,7 +272,12 @@ class MingwPage (ResourcePage):
                   r'msys\1.0\bin\patch.exe': 'msys-patch',
                   r'bin\libpthread-2.dll':'pthreads-w32'}
 
-    prefix = r'C:\MinGW'
+    prefix = r'C:\iocbio\MinGW'
+
+    def get_install_path (self, installer):
+        if installer.endswith ('.zip'):
+            return r'C:\\'
+        return ResourcePage.get_install_path(self, installer)
 
     def get_get_exe(self):
         exe = os.path.join(self.prefix, r'bin\mingw-get.exe')
