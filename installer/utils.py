@@ -122,6 +122,25 @@ def winreg_append_to_path(path):
         return False
     return True
 
+def splitcmd(cmd):
+    if cmd.startswith('"'):
+        i = cmd.index('.exe"')
+        n = 5
+    else:
+        i = cmd.index('.exe')
+        n = 4
+    if i==-1:
+        args = cmd.split()
+        path = args[0]
+    else:
+        path = cmd[:i+n]
+        args = [path]+cmd[i+n:].strip ().split()
+    prog = os.path.basename (path)
+    if prog.endswith ('"'): prog = prog[:-1].strip()
+    if path[0]==path[-1]=='"':
+        path = path[1:-1]
+    return path,[prog] + args[1:]
+
 def run_command(cmd, verbose=False, env=None, cwd=None):
     if verbose:
         print 'In %r: %s' % (cwd or '.', cmd)
@@ -130,6 +149,19 @@ def run_command(cmd, verbose=False, env=None, cwd=None):
         for k,v in env.iteritems ():
             new_env[str(k)] = str (v)
         env = new_env
+    shell = True
+    if ('python.exe' in cmd and 'install' in cmd) or ('svn.exe' in cmd and '--version' not in cmd):
+        oldcwd = os.getcwd()
+        path, args = splitcmd(cmd)
+        print 'os.spawnve path = %r, args=%r' % (path, args)
+        if cwd is not None:
+            os.chdir(cwd)
+        status = -1
+        try:
+            status = os.spawnve(os.P_WAIT, path, args, env or {})
+        finally:
+            os.chdir(oldcwd)
+        return status, '', ''
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, env=env, cwd=cwd)
     stdout, stderr = p.communicate()
     stdout = stdout.replace ('\r\n', '\n')

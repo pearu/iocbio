@@ -25,8 +25,11 @@ def configuration(parent_package='',top_path=None):
     
     fftw3_info = get_info('fftw3')
 
-    config.add_extension('discrete_gauss_ext', 
-                         sources = [join('src','discrete_gauss_ext.c'),
-                                    join('src','discrete_gauss.c')],
-                         extra_info = fftw3_info)
+    if fftw3_info:
+        config.add_extension('discrete_gauss_ext', 
+                             sources = [join('src','discrete_gauss_ext.c'),
+                                        join('src','discrete_gauss.c')],
+                             extra_info = fftw3_info)
+    else:
+        print 'FFTW3 not found: skipping discrete_gauss_ext extension'
     return config

@@ -79,10 +79,10 @@ class Libfftw3Page(ResourcePage):
 
     def apply_resource_selection(self):
         r = ResourcePage.apply_resource_selection(self)
-        
-        if 0 and r and not os.path.isfile(os.path.join(self.path, 'libfftw3.lib')):
+        prefix = self.get ('mingw prefix')
+        if 0 and r and not os.path.isfile(os.path.join(prefix, 'bin', 'libfftw3.lib')):
             print '%s.apply_resource_selection HACK: creating empty libfftw3.lib for numpy.distutils fftw detection' % (self.__class__.__name__)
-            f = open(os.path.join (self.path, 'libfftw3.lib'), 'w')
+            f = open(os.path.join (prefix, 'bin', 'libfftw3.lib'), 'w')
             f.close()
         return r
 
