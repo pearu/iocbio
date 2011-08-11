@@ -31,11 +31,12 @@ instance. Before running the script, you have to install wine. The
 make_iocbio_installer.bat will download and install other components
 automatically. So, be ready to step through installer wizards of
 Python, wx, and pyinstaller programs. Note that the iocbio installer
-file depends on the Python version. To build iocbio installer for
-other Python versions, edit the header of the make_iocbio_installer.sh
-file accordingly.
+file depends on the Python version. 
 
-To test the iocbio installer, run
+To build iocbio installer for other Python versions, edit the header
+of the make_iocbio_installer.sh file accordingly.
+
+To test the iocbio installer within wine, run
 
   ./wineit2.sh iocbio_installer_py26.exe
 
@@ -45,3 +46,16 @@ The installer can be also tested under Linux environment by running
 
 that will fireup a GUI window and you can step through all the
 software components.
+
+The ultimate installer test should be carried out under Windows.
+
+Notes
+-----
+
+For using mingw-light, one must run
+
+  make_iocbio_mingw.sh
+
+and copy the resulting file (say, mingw-20110802-light.zip) to
+
+  /net/cens/home/www/sysbio/download/software/binaries/latest

@@ -121,6 +121,9 @@ class LibtiffPage(ResourcePage):
                      '3.6.1': 'http://sourceforge.net/projects/gnuwin32/files/tiff/%(version)s-2-win32/tiff-win32-%(version)s-2%(ext)s',
                      }
 
+    def update_environ(self):
+        self.update_environ_PATH(os.path.dirname(self.path))
+
     def get_tiff_dll(self, version):
         dllpath = os.path.join (get_program_files_directory (), r'GnuWin32\bin\libtiff%s.dll' % (version[0]))
         if os.path.isfile(dllpath):
@@ -256,7 +259,10 @@ class SubversionPage(ResourcePage):
 
 class MingwPage (ResourcePage):
     
-    download_versions = ['20110802-light', '20110802', '20110316', '20110316-light']
+    download_versions = ['20110802-light', 
+                         '20110316-light',
+                         '20110802', '20110316', 
+                         ]
     download_path = {
         '20110802':'http://sourceforge.net/projects/mingw/files/Automated%%20MinGW%%20Installer/mingw-get-inst/mingw-get-inst-20110802/mingw-get-inst-20110802.exe',
         '20110316':'http://sourceforge.net/projects/mingw/files/Automated%%20MinGW%%20Installer/mingw-get-inst/mingw-get-inst-20110316/mingw-get-inst-20110316.exe',

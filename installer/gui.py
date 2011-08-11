@@ -14,7 +14,7 @@ import shutil
 import tempfile
 import platform
 
-from utils import run_command, download, start_installer, extract, winreg_append_to_path
+from utils import run_command, download, start_installer, extract, winreg_append_to_path, isadmin
 
 class Model(wx.Frame):
 
@@ -28,6 +28,7 @@ class Model(wx.Frame):
             if os.path.isfile (logfile):
                 os.remove(logfile)
             print 'All output will be redirected to %r' % (logfile)
+            print 'When finished, press ENTER to close this program...'
             self.app = wx.App(redirect=True, filename=logfile)
         self.logfile = logfile
         print 'time.ctime()->%r' % (time.ctime())
@@ -37,6 +38,7 @@ class Model(wx.Frame):
         print 'platform.uname()->%r' % (platform.uname(),)
         print 'os.environ["PATH"]=%r' % (os.environ["PATH"])
         print 'os.getcwd()->%r' % (os.getcwd())
+        print 'isadmin()->%r' % (isadmin())
 
         wx.Frame.__init__(self, None, -1)
         self.Bind(wiz.EVT_WIZARD_PAGE_CHANGED, self.OnWizPageChanged)
@@ -134,17 +136,25 @@ class Model(wx.Frame):
 
         if dir=='forward':
             infosource = self.logfile or 'terminal'
+
+            page.apply_resource_message = ''
             page.start_apply_selection()
             try:
                 r = page.apply_resource_selection()
             except:
-                wx.MessageBox("Failed to apply resource selection, see %s for information." % (infosource), "Cancelling Next")
+                message = page.apply_resource_message
+                if message:
+                    print message
+                wx.MessageBox("Failed to apply resource selection:\n\t%s\nSee %s for information." % (message, infosource), "Cancelling Next")
                 evt.Veto()
                 page.set_resource_options()
                 page.stop_apply_selection()
                 raise
             if not r:
-                wx.MessageBox("Failed to apply resource selection, see %s for information." % (infosource) , "Cancelling Next")
+                message = page.apply_resource_message
+                if message:
+                    print message
+                wx.MessageBox("Failed to apply resource selection:\n\t%s\nSee %s for information." % (message, infosource), "Cancelling Next")
                 evt.Veto()
                 page.set_resource_options()
             else:
@@ -213,6 +223,7 @@ class WizardPage(wiz.WizardPageSimple):
         self.path = None
         self.version = None
         self.quick_test_message = ''
+        self.apply_resource_message = ''
     def start_apply_selection (self): pass
     def stop_apply_selection (self): pass
     def quick_test(self): return True
@@ -261,6 +272,12 @@ Current environment:
         st = wx.TextCtrl(self, -1, message, style=wx.TE_MULTILINE|wx.TE_READONLY)
         sizer.Add(st, 1, wx.EXPAND, 5)
 
+    def apply_resource_selection (self):
+        if isadmin():
+            print 'You are Administrator'
+            return True
+        self.apply_resource_message = 'This program must be run as Administrator'
+
 class FinalPage(WizardPage):
 
     def __init__(self, parent):
@@ -293,6 +310,9 @@ Current environment:
 \t%s
 
 Clicking Finish will update systems PATH environment variable.
+
+*** Important note for Windows users ***
+\tComputer restart is required for PATH changes to become effective.
 ''' % (self.GetPrev().get_current_state_message (prev=self), 
        self.model.logfile,
        self.get_environ_string ())
@@ -302,8 +322,12 @@ Clicking Finish will update systems PATH environment variable.
         return True
 
     def apply_resource_selection(self):
-        winreg_append_to_path(self.environ['PATH'])
-        return True
+        if winreg_append_to_path(self.environ['PATH']):
+            return True
+        self.apply_resource_message = 'Failed to update winreg PATH: make sure you run as Administrator'
+
+    def stop_apply_selection(self):
+        self.model.app.RestoreStdio()
 
 class ResourcePage (WizardPage):
 
@@ -347,7 +371,7 @@ class ResourcePage (WizardPage):
 
 
     def start_apply_selection(self):        
-        self.status.SetStatusText('Processing selection may take awhile ... Please wait!')
+        self.status.SetStatusText('Processing selection may take awhile ... Please wait! Wait even when window is reported as "Not responding"')
     def stop_apply_selection (self):
         self.status.SetStatusText('Please select and press Next.')
 
@@ -425,6 +449,8 @@ class ResourcePage (WizardPage):
         self.select_list.Set(self.selections)
         if self.selections:
             self.select_list.SetSelection(0)
+        else:
+            self.status.SetStatusText('Please go Back and try other version selections')
 
     def get_resource_options(self, labels=None, tasks=None):
         if labels is None:
@@ -469,7 +495,7 @@ class ResourcePage (WizardPage):
     def apply_resource_selection(self):
         selections = self.get_resource_selection ()
         if not selections:
-            print 'Nothing selected for %s' % (self.title)
+            self.apply_resource_message = 'Nothing selected for %s' % (self.title)
             return False
         selection = selections[0]
         task = self.selection_task_map[selection]
@@ -483,6 +509,7 @@ class ResourcePage (WizardPage):
             installer = task[1]
             version = task[2]
             if not self.get_and_run_installer(installer):
+                self.apply_resource_message = 'Failed to download and run installer: %r' % (installer)
                 return False
 
             path = self.try_resource(version)
@@ -491,13 +518,14 @@ class ResourcePage (WizardPage):
                 self.version = version
                 self.update_environ()
                 return True
-            print 'Installation from binary failed: %s.try_resource(%r) returned None' % (self.__class__.__name__, version)
+            self.apply_resource_message = 'Installation from binary failed: %s.try_resource(%r) returned None' % (self.__class__.__name__, version)
             return False
 
         if task[0]=='get_source':
             source = task[1]
             version = task[2]
             if not self.get_and_install_source(source):
+                self.apply_resource_message = 'Failed to get and install source: %r' % (source)
                 return False
             path = self.try_resource(version)
             if path is not None:
@@ -505,7 +533,7 @@ class ResourcePage (WizardPage):
                 self.version = version
                 self.update_environ()
                 return True
-            print 'Installation from source failed: %s.try_resource(%r) returned None' % (self.__class__.__name__, version)
+            self.apply_resource_message = 'Installation from source failed: %s.try_resource(%r) returned None' % (self.__class__.__name__, version)
             return False
         raise NotImplementedError (`task`)
 

@@ -18,6 +18,18 @@ def unwin(path):
     print 'unwin(%r)->%r->%r' % (path, (os.sep,paths),r)
     return r
 
+def isadmin():
+    if os.name=='nt':
+        return try_winreg_path_update()
+        try:
+            import ctypes
+            return ctypes.windll.shell32.IsUserAnAdmin()
+        except Exception, msg:
+            print 'isadmin: %s' % (msg)
+            return
+    else:
+        return True
+
 def get_appdata_directory():
     try:
         from win32com.shell import shell, shellcon
@@ -90,7 +102,23 @@ def create_shortcut(shortcut_path, target_path):
         persist_file = shortcut.QueryInterface (pythoncom.IID_IPersistFile)
         persist_file.Save (shortcut_path, 0)
 
-
+def try_winreg_path_update():
+    try:
+        import _winreg
+        environ = _winreg.OpenKey(
+            _winreg.HKEY_LOCAL_MACHINE,
+            r'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
+            0,
+            _winreg.KEY_ALL_ACCESS
+            )
+        current_path = _winreg.QueryValueEx (environ, 'PATH')[0]
+        _winreg.SetValueEx(environ, "PATH", None, _winreg.REG_SZ, current_path)
+        _winreg.CloseKey(environ)
+        return True
+    except Exception, msg:
+        print 'try_winreg_path_update: %s' % msg
+        return False
+    
 def winreg_append_to_path(path):
     try:
         import _winreg
@@ -119,6 +147,7 @@ def winreg_append_to_path(path):
         _winreg.CloseKey(environ)
     except Exception, msg:
         print msg
+        print 'Windows users: make sure you run the installer as Administrator.'
         return False
     return True
 

@@ -133,7 +133,7 @@ print(version)
     def apply_resource_selection(self):
         selections = self.get_resource_selection ()
         if not selections:
-            print 'Nothing selected for %s' % (self.title)
+            self.apply_resource_message = 'Nothing selected for %s' % (self.title)
             return False
         selection = selections[0]
         task = self.selection_task_map[selection]
@@ -250,7 +250,7 @@ print(version)
 class PythonPage (ResourcePage):
 
     # specify only those versions that are provided with .msi file.
-    download_versions = ['2.7.2', '2.6.7', '2.5.4', '2.4.4', 
+    download_versions = ['2.7.2', '2.6.6', '2.5.4', '2.4.4', 
                          '2.3.5', # Running Python fails with runtime error R6034
                          '3.2.1', '3.1.4', '3.0.1']
     download_extensions = {None: '.msi', # default
@@ -309,7 +309,7 @@ class PythonPage (ResourcePage):
                 tasks[labels[-1]] = ('use', EXE, VER)
 
         for v in self.download_versions:
-            if not sys.version.startswith (v):
+            if not sys.version.startswith (v[:3]):
                 continue
             download_path = self.download_path.get (v, self.download_path.get(None, ''))
             if download_path:
@@ -331,7 +331,7 @@ class PythonPage (ResourcePage):
     def apply_resource_selection(self):
         selections = self.get_resource_selection ()
         if not selections:
-            print 'Nothing selected for %s' % (self.title)
+            self.apply_resource_message = 'Nothing selected for %s' % (self.title)
             return False
         selection = selections[0]
         task = self.selection_task_map[selection]
@@ -355,7 +355,7 @@ class PythonPage (ResourcePage):
                     self.version = VER[:3]
                     self.update_environ()
                     return True
-            print 'Installation failed:',`installer`
+            self.apply_resource_message = 'Installation failed:'+`installer`
             return False
 
         raise NotImplementedError (`task`)
@@ -429,7 +429,7 @@ class Fftw3Page(PythonPackagePage):
 
 class IocbioPage(PythonPackagePage):
     
-    depends = ['numpy', 'scipy', 'subversion', 'fftw3', 'mingw', 'libtiff']
+    depends = ['numpy', 'scipy', 'wx', 'matplotlib', 'subversion', 'fftw3', 'mingw', 'libtiff']
 
     download_versions = {'svn': dict(),
                          '1.2.0': dict()}
