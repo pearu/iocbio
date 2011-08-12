@@ -35,7 +35,7 @@ import os
 import sys
 from ..io import ImageStack
 from ..utils import ProgressBar, encode, tostr, expand_to_shape, contract_to_shape
-from ..utils import mul_seq, float2dtype, Options
+from ..utils import mul_seq, float2dtype, Options, VERBOSE
 from .psf import normalize_uint8, discretize
 from ..io import RowFile
 import time
