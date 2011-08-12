@@ -362,7 +362,7 @@ static PyObject* kullback_leibler_divergence(PyObject *self, PyObject *args)
 	      result += f0 - f + f*log(f/f0);
 	    count ++;
 	  }
-	Py_BuildValue("f", result/count);
+	return Py_BuildValue("f", result/count);
       }
       break;
     case PyArray_FLOAT32:
@@ -380,7 +380,7 @@ static PyObject* kullback_leibler_divergence(PyObject *self, PyObject *args)
 	      result += f0 - f + f*log(f/f0);
 	    count ++;
 	  }
-	Py_BuildValue("f", result/count);
+	return Py_BuildValue("f", result/count);
       }
       break;
     default:

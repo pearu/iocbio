@@ -2,7 +2,7 @@
 # THIS FILE IS GENERATED FROM iocbio/setup.py
 short_version='1.2.1'
 version='1.2.1'
-release=True
+release=False
 
 if not release:
     version += '.dev'
