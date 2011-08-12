@@ -176,11 +176,15 @@ class Deconvolve(FFTTasks):
     def set_cache_dir (self, cache_dir):
         """Set working directory.
         """
+        if VERBOSE>9:
+            print 'Entering %s.set_cache_dir' % (self.__class__.__name__)
         self.cache_dir = cache_dir
 
     def set_save_data(self, pathinfo, data_shape, data_type):
         """Set data for saving results.
         """
+        if VERBOSE>9:
+            print 'Entering %s.set_save_data' % (self.__class__.__name__)
         self.save_pathinfo = pathinfo
         self.save_data_shape = data_shape
         self.save_data_type = data_type
@@ -192,6 +196,8 @@ class Deconvolve(FFTTasks):
         data will be degraded (convolved and with Poisson noise) input
         data.
         """
+        if VERBOSE>9:
+            print 'Entering %s.set_test_data' % (self.__class__.__name__)
         self.test_data = None
         options = self.options
         snr = None
@@ -274,6 +280,8 @@ class Deconvolve(FFTTasks):
         """
         if self.cache_dir is None:
             return
+        if VERBOSE>9:
+            print 'Entering %s.save' % (self.__class__.__name__)
         f = os.path.join(self.cache_dir, filename)
         ImageStack(contract_to_shape(estimate, 
                                      estimate.shape if use_estimate_shape else self.save_data_shape, 
@@ -284,6 +292,8 @@ class Deconvolve(FFTTasks):
     def deconvolve(self):
         """ Execute deconvolution iteration and return estimate.
         """
+        if VERBOSE>9:
+            print 'Entering %s.deconvolve' % (self.__class__.__name__)
         options = self.options
         save_intermediate_results = options.get(save_intermediate_results=False)
 
@@ -483,7 +493,8 @@ class DeconvolveRLPoisson (Deconvolve):
     """
 
     def __init__(self, psf_images, stack_images, voxel_sizes, options):
-
+        if VERBOSE>9:
+            print 'Entering %s.__init__' % (self.__class__.__name__)
         if psf_images is not None:
             assert psf_images.shape==stack_images.shape,`psf_images.shape, stack_images.shape`
 
@@ -508,6 +519,8 @@ class DeconvolveRLPoisson (Deconvolve):
         return '_deconvolved_mul_l%s' % (self.lambda_)
     
     def compute_estimate(self, estimate):
+        if VERBOSE>9:
+            print 'Entering %s.compute_estimate' % (self.__class__.__name__)
         options = self.options
         psf_f = self.convolve_kernel_fourier
         adj_psf_f = self.convolve_kernel_fourier_conj
@@ -688,6 +701,8 @@ def deconvolve(psf, stack, working_dir = None, data_type = None,
     --------
     iocbio.microscope.deconvolution
     """
+    if VERBOSE>9:
+        print 'Entering %s.deconvolve' % (__file__)
     options = Options(options)
     if working_dir is None:
         import tempfile
@@ -790,6 +805,8 @@ def deconvolve_smooth(psf, stack, deconvolve_dir,
     --------
     deconvolve
     """
+    if VERBOSE>9:
+        print 'Entering %s.deconvolve_smooth' % (__file__)
     if data_type is None:
         data_type = stack.images.dtype
 

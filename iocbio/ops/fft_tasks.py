@@ -67,6 +67,8 @@ class FFTTasks(object):
         """
         if _cache:
             return
+        if VERBOSE>9:
+            print 'Entering FFTTasks.load_wisdoms'
         try:
             import fftw3
         except ImportError, msg:
@@ -83,11 +85,13 @@ class FFTTasks(object):
             wisdom_file_name = os.path.join('.iocbio','fft_tasks','%s_wisdom_data.txt' % (fftw.__name__))
             if os.path.isfile(wisdom_file_name):
                 if VERBOSE:
-                    print 'Loading wisdom from file %r' % (wisdom_file_name)
+                    print 'Loading wisdom from file %r' % (wisdom_file_name),
                 try:
                     fftw.import_wisdom_from_file(wisdom_file_name)
+                    if VERBOSE:
+                        print 'ok'
                 except IOError, msg:
-                    print 'Failed to load wisdom from file %r: %s' % (wisdom_file_name, msg)
+                    print '\nFailed to load wisdom from file %r: %s' % (wisdom_file_name, msg)
                     continue
                 _cache.append(wisdom_file_name)
                 FFTTasks._wisdoms[wisdom_file_name] = fftw.export_wisdom_to_string()
@@ -101,6 +105,8 @@ class FFTTasks(object):
         """
         if _cache:
             return
+        if VERBOSE>9:
+            print 'Entering FFTTasks.save_wisdoms'
         try:
             import fftw3
         except ImportError, msg:
@@ -125,11 +131,13 @@ class FFTTasks(object):
                     #print 'Wisdom for %s has not changed, saving is not needed.' % (fftw.__name__)
                     return
                 if VERBOSE:
-                    print 'Saving wisdom to file %r' % (wisdom_file_name)
+                    print 'Saving wisdom to file %r..' % (wisdom_file_name),
                 try:
                     fftw.export_wisdom_to_file (wisdom_file_name)
+                    if VERBOSE:
+                        print 'ok'
                 except Exception, msg:
-                    print 'Failed to export wisdom to file %r: %s' % (wisdom_file_name, msg)
+                    print '\nFailed to export wisdom to file %r: %s' % (wisdom_file_name, msg)
             atexit.register(save_wisdom)
             _cache.append(wisdom_file_name)
             save_wisdom()
@@ -173,6 +181,8 @@ class FFTTasks(object):
         --------
         iocbio.ops.fft_tasks
         """
+        if VERBOSE>9:
+            print 'Entering %s.get_optimal_fft_size' % (cls.__name__)
         if size==2**int(numpy.log2(size)):
             if return_speedup:
                 return size, 1
@@ -225,6 +235,8 @@ class FFTTasks(object):
         --------
         iocbio.ops.fft_tasks
         """
+        if VERBOSE>9:
+            print 'Entering %s.__init__' % (self.__class__.__name__)
         if options is None:
             options = Options()
         flags = [options.get(fftw_plan_flags='estimate')]
@@ -268,6 +280,8 @@ class FFTTasks(object):
         self.convolve_kernel_fourier = None
 
     def clear(self):
+        if VERBOSE>9:
+            print 'Entering %s.clear' % (self.__class__.__name__)
         del self._fft_plan
         del self._ifft_plan
         del self._cache
@@ -289,6 +303,8 @@ class FFTTasks(object):
         --------
         iocbio.ops.fft_tasks, ifft
         """
+        if VERBOSE>9:
+            print 'Entering %s.fft' % (self.__class__.__name__)
         cache = self._cache
         cache[:] = data
         self._fft_plan.execute()
@@ -313,6 +329,8 @@ class FFTTasks(object):
         --------
         iocbio.ops.fft_tasks, fft
         """
+        if VERBOSE>9:
+            print 'Entering %s.ifft' % (self.__class__.__name__)
         cache = self._cache
         cache[:] = data
         self._ifft_plan.execute()
@@ -332,6 +350,8 @@ class FFTTasks(object):
         --------
         iocbio.ops.fft_tasks, convolve, set_convolve_fourier_kernel
         """
+        if VERBOSE>9:
+            print 'Entering %s.set_convolve_kernel' % (self.__class__.__name__)
         cache = self._cache
         cache[:] = kernel
         self._fft_plan.execute()
@@ -349,6 +369,8 @@ class FFTTasks(object):
         --------
         iocbio.ops.fft_tasks, convolve, set_convolve_kernel
         """
+        if VERBOSE>9:
+            print 'Entering %s.set_convolve_fourier_kernel' % (self.__class__.__name__)
         assert kernel_f.shape==self.shape,`kernel_f.shape, self.shape`
         kernel_f = kernel_f.astype(self.complex_dtype)
         self.convolve_kernel_fourier = kernel_f
@@ -373,6 +395,8 @@ class FFTTasks(object):
         --------
         iocbio.ops.fft_tasks, set_convolve_kernel, set_convolve_fourier_kernel
         """
+        if VERBOSE>9:
+            print 'Entering %s.convolve' % (self.__class__.__name__)
         kernel_f = self.convolve_kernel_fourier_normal
         if kernel_f is None:
             raise TypeError ('Convolve kernel not specified')
