@@ -179,16 +179,18 @@ def run_command(cmd, verbose=False, env=None, cwd=None):
             new_env[str(k)] = str (v)
         env = new_env
     shell = True
-    if ('python.exe' in cmd and 'install' in cmd) or ('svn.exe' in cmd and '--version' not in cmd):
+    if 0 and ('python.exe' in cmd and 'install' in cmd) or ('svn.exe' in cmd and '--version' not in cmd):
         oldcwd = os.getcwd()
         path, args = splitcmd(cmd)
         print 'os.spawnve path = %r, args=%r' % (path, args)
-        if cwd is not None:
+        if cwd:
+            print 'chdir',cwd
             os.chdir(cwd)
         status = -1
         try:
             status = os.spawnve(os.P_WAIT, path, args, env or {})
         finally:
+            print 'chdir',oldcwd
             os.chdir(oldcwd)
         return status, '', ''
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, env=env, cwd=cwd)
@@ -285,12 +287,12 @@ def extract(filename, extract_to):
     print 'DONE'
     return r
 
-def run_python(python_exe, python_code, expected_output=None, suppress_errors=False, env=None):
+def run_python(python_exe, python_code, expected_output=None, suppress_errors=False, env=None, cwd=None):
     tmp = tempfile.mktemp('.py')
     f = open(tmp, 'w')
     f.write (python_code)
     f.close()
-    r = run_command('%s %s' % (python_exe, tmp), env=env)
+    r = run_command('%s %s' % (python_exe, tmp), env=env, cwd=cwd)
     if suppress_errors:
         pass
     elif r[0]:

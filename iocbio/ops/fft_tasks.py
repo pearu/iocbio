@@ -69,6 +69,10 @@ class FFTTasks(object):
             return
         if VERBOSE>9:
             print 'Entering FFTTasks.load_wisdoms'
+        if os.name=='nt':
+            if VERBOSE:
+                print 'FFTTasks: load_wisdoms is disabled under windows'
+            return
         try:
             import fftw3
         except ImportError, msg:
@@ -107,6 +111,10 @@ class FFTTasks(object):
             return
         if VERBOSE>9:
             print 'Entering FFTTasks.save_wisdoms'
+        if os.name=='nt':
+            if VERBOSE:
+                print 'FFTTasks: save_wisdoms is disabled under windows'
+            return
         try:
             import fftw3
         except ImportError, msg:

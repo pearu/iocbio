@@ -14,15 +14,9 @@ try:
     import gui_resources
     import gui_python
 
-    from utils import get_appdata_directory
     working_dir = r'c:\iocbio\_install'
-    if not os.path.isdir (working_dir):
-        print 'Making directory', working_dir
-        os.makedirs(working_dir)
-    print 'chdir', working_dir
-    os.chdir(working_dir)
 
-    installer_log_tmpl = 'iocbio_installer_%d.log'
+    installer_log_tmpl = os.path.join(working_dir, 'iocbio_installer_%d.log')
     i = 0
     installer_log = installer_log_tmpl % i
     while os.path.isfile(installer_log):
@@ -33,7 +27,8 @@ try:
         'iocbio'
         ]
 
-    Model(#installer_log
+    Model(logfile=installer_log,
+          working_dir = working_dir
           ).run (resources)
 
     print __file__,'normal exit'

@@ -3,7 +3,7 @@
 SVNVERSION=`svnversion`
 
 
-PYVER=27
+PYVER=26
 
 PACKAGENAME=iocbio
 SUMMARY="IOCBio software installer (revision $SVNVERSION)"

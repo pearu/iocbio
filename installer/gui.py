@@ -20,7 +20,15 @@ class Model(wx.Frame):
 
     page_classes = {}
     
-    def __init__ (self, logfile=None):
+    def __init__ (self, 
+                  logfile=None,
+                  working_dir = None):
+        if working_dir is not None:
+            if not os.path.isdir (working_dir):
+                os.makedirs(working_dir)
+            print 'chdir',working_dir
+            os.chdir(working_dir)
+        self.working_dir = working_dir or '.'
         if logfile is None:
             self.app = wx.App(redirect=False)
         else:
@@ -33,6 +41,7 @@ class Model(wx.Frame):
         self.logfile = logfile
         print 'time.ctime()->%r' % (time.ctime())
         print 'sys.executable=%r' % (sys.executable)
+        print 'sys.path=%r' % (sys.path)
         print 'sys.platform=%r' % (sys.platform)
         print 'os.name=%r' % (os.name)
         print 'platform.uname()->%r' % (platform.uname(),)
@@ -187,7 +196,9 @@ class WizardPage(wiz.WizardPageSimple):
     def __init__(self, parent):
         self.model = parent.model
         wiz.WizardPageSimple.__init__(self, parent)    
-        self.environ = {}
+        self.environ = os.environ.copy()
+        try: del self.environ['PYTHONPATH']
+        except KeyError: pass
         self.reset_resource()
 
     def skip (self):
@@ -381,7 +392,8 @@ class ResourcePage (WizardPage):
 
     def get_current_state_message(self, prev=None):
         messages = []
-        for k,v in self.environ.iteritems ():
+        for k in sorted(self.environ):
+            v = self.environ[k]
             if k=='PATH':
                 # in windows PATH may be very long..
                 l = ''

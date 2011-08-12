@@ -173,7 +173,7 @@ print(version)
             if os.path.isdir(sourcedir):
                 r = run_command('%s update' % (svn), env=self.environ, cwd=sourcedir, verbose=True)
             else:
-                r = run_command('%s checkout %s' % (svn, task[1]), env=self.environ, verbose=True)
+                r = run_command('%s checkout %s' % (svn, task[1]), env=self.environ, verbose=True, cwd=os.path.dirname(sourcedir) or '.')
             if r[0]:
                 return False
             if not self.install_source(sourcedir):
@@ -202,6 +202,10 @@ print(version)
         raise NotImplementedError (`task`)
 
     def run_python(self, *args, **kws):
+        if 'cwd' not in kws:
+            kws['cwd'] = self.model.working_dir
+        if 'env' not in kws:
+            kws['env'] = self.environ
         return run_python(self.get('python path'), *args, **kws)
 
     def install_source(self, sourcedir):
@@ -376,6 +380,51 @@ class NumpyPage(PythonPackagePage):
     download_path = {None: 
                      'http://sourceforge.net/projects/numpy/files/NumPy/%(version)s/numpy-%(version)s-win32-superpack-python%(python version:3)s.exe'}
 
+class Pywin32Page(PythonPackagePage):
+    download_versions = {
+        '216': dict (python=['2.3','2.4','2.5','2.6','2.7','3.1']),
+        '216.1': dict (python=['3.2'])
+        }
+    download_path = {None: 'http://sourceforge.net/projects/pywin32/files/pywin32/Build%(version)s/pywin32-%(version)s.win32-py%(python version:3)s.exe',
+                     '216.1': 'http://sourceforge.net/projects/pywin32/files/pywin32/Build216/pywin32-%(version)s.win32-py%(python version:3)s.exe',
+                     }
+
+    def try_python_package(self, version=None):
+        """ Return Python package path and version as 2-tuple.
+        When package is not available, return (None, None).
+        """
+        r = self.run_python (\
+'''
+import os
+import sys
+import win32api as package
+version_file = os.path.join(os.path.dirname(os.path.dirname(package.__file__)),"pywin32.version.txt")
+assert os.path.isfile (version_file), `version_file`
+version = open (version_file).read()
+print("@%s@@@%s" % (os.path.dirname(package.__file__), version))
+''')
+        if not r[0]:
+            i = r[1].find('@')+1
+            PATH, VER = r[1][i:].split ('@@@')
+            VER = VER.rstrip()
+            if VER=='N/A' and version is not None: VER=version
+            return PATH, VER
+        return None, None
+
+    def quick_test(self):
+        if self.path is not None:
+            r = self.run_python('''
+import os
+import win32api as package
+version_file = os.path.join(os.path.dirname(os.path.dirname(package.__file__)),"pywin32.version.txt")
+assert os.path.isfile (version_file), `version_file`
+version = open (version_file).read()
+print "win32 version: ", version
+''')
+            return not r[0]
+        else:
+            print '%s quick test skipped' % (self.title)
+
 class ScipyPage (PythonPackagePage):
 
     depends = ['python', 'numpy']
@@ -422,7 +471,7 @@ class Fftw3Page(PythonPackagePage):
 
     def quick_test(self):
         if self.path is not None:
-            r = run_python(self.get('python path'), 'import %s as package' % (self.packagename), '')
+            r = self.run_python('import %s as package' % (self.packagename), '')
             return not r[0]
         else:
             print '%s quick test skipped' % (self.title)
@@ -430,6 +479,8 @@ class Fftw3Page(PythonPackagePage):
 class IocbioPage(PythonPackagePage):
     
     depends = ['numpy', 'scipy', 'wx', 'matplotlib', 'subversion', 'fftw3', 'mingw', 'libtiff']
+    if os.name=='nt':
+        depends.append('pywin32')
 
     download_versions = {'svn': dict(),
                          '1.2.1': dict()}
@@ -441,7 +492,7 @@ class IocbioPage(PythonPackagePage):
 
     def quick_test(self):
         if self.path is not None:
-            r = run_python(self.get('python path'), 'import %s.version' % (self.packagename), self.version)
+            r = self.run_python('import %s.version' % (self.packagename), self.version)
             return not r[0]
         else:
             print '%s quick test skipped' % (self.title)
@@ -469,7 +520,7 @@ class BzrlibPage(PythonPackagePage):
 
     def quick_test(self):
         if self.path is not None:
-            r = run_python(self.get('python path'), 'import %s as package; print(package.__version__)' % (self.packagename), self.version)
+            r = self.run_python('import %s as package; print(package.__version__)' % (self.packagename), self.version)
             if r[0]:
                 return False
             r = run_command('bzr --version', env=self.environ)

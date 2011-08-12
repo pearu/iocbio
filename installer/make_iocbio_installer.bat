@@ -1,7 +1,7 @@
 @rem Author: Pearu Peterson
 @rem Created: Apr 2011
 @ECHO OFF
-echo %0
+echo "ARGS:" %0 %1
 
 set MINGW_INSTALLER=mingw-get-inst-20110316.exe
 set MINGW_ROOT=C:\MinGW
@@ -31,6 +31,6 @@ GOTO SKIP
 :SKIP
 :HAS_BASH
 @echo "%BASH_EXE%" exists
-%BASH_EXE% make_iocbio_installer.sh
+%BASH_EXE% make_iocbio_installer.sh %1
 :END
 @echo EOF %0

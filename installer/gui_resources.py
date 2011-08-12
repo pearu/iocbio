@@ -230,9 +230,9 @@ class SubversionPage(ResourcePage):
         if exe is None:
             return
         if ' ' in exe:
-            r = run_command('"%s" --version' % (exe), verbose=True)
+            r = run_command('"%s" --version' % (exe), verbose=True, env=self.environ)
         else:
-            r = run_command('%s --version' % (exe), verbose=True)
+            r = run_command('%s --version' % (exe), verbose=True, env=self.environ)
         if not r[0]:
             line = r[1].split('\n')[0]
             if line.startswith('svn, version'):

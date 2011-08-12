@@ -3,7 +3,20 @@
 # Created: Apr 2011
 
 export ARCH=32 # 32, 64
-export PYTHON_VERSION=2.6.6 # [3.2], 3.1.3, 3.0.1, [2.7.1], 2.6.6, 2.5.4, 2.4.4, 2.3.7
+
+if [ "$1" == "2.6" ] ; then
+    export PYTHON_VERSION=2.6.6 
+elif [ "$1" == "2.7" ] ; then
+    export PYTHON_VERSION=2.7.1 
+elif [ "$1" == "2.5" ] ; then
+    export PYTHON_VERSION=2.5.4 
+else
+    echo $*
+    echo
+    echo "Usage: $0 <python version x.x>"
+    exit 1
+    export PYTHON_VERSION=2.6.6 # [3.2], 3.1.3, 3.0.1, [2.7.1], 2.6.6, 2.5.4, 2.4.4, 2.3.7
+fi
 export PYINSTALLER_VERSION=1.5 # 1.5, 1.5-rc1, 1.4
 export WXPYTHON_VERSION=2.9.1.1 # 2.9.1.1, 2.8.10.1 (for py2.4)
 
