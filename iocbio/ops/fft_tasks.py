@@ -87,7 +87,7 @@ class FFTTasks(object):
                 try:
                     fftw.import_wisdom_from_file(wisdom_file_name)
                 except IOError, msg:
-                    print 'load_wisdoms: %s' % (msg)
+                    print 'Failed to load wisdom from file %r: %s' % (wisdom_file_name, msg)
                     continue
                 _cache.append(wisdom_file_name)
                 FFTTasks._wisdoms[wisdom_file_name] = fftw.export_wisdom_to_string()
@@ -126,7 +126,10 @@ class FFTTasks(object):
                     return
                 if VERBOSE:
                     print 'Saving wisdom to file %r' % (wisdom_file_name)
-                fftw.export_wisdom_to_file (wisdom_file_name)
+                try:
+                    fftw.export_wisdom_to_file (wisdom_file_name)
+                except Exception, msg:
+                    print 'Failed to export wisdom to file %r: %s' % ((wisdom_file_name, msg)
             atexit.register(save_wisdom)
             _cache.append(wisdom_file_name)
             save_wisdom()
