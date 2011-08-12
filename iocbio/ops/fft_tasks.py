@@ -67,9 +67,19 @@ class FFTTasks(object):
         """
         if _cache:
             return
-        import fftw3
-        import fftw3f
+        try:
+            import fftw3
+        except ImportError, msg:
+            fftw3 = None
+            print 'FFTTasks.load_wisdoms: %s' % (msg)
+        try:
+            import fftw3f
+        except ImportError, msg:
+            fftw3f = None
+            print 'FFTTasks.load_wisdoms: %s' % (msg)
         for fftw in [fftw3, fftw3f]:
+            if fftw is None:
+                continue
             wisdom_file_name = os.path.join('.iocbio','fft_tasks','%s_wisdom_data.txt' % (fftw.__name__))
             if os.path.isfile(wisdom_file_name):
                 if VERBOSE:
@@ -91,10 +101,20 @@ class FFTTasks(object):
         """
         if _cache:
             return
-        import fftw3
-        import fftw3f
+        try:
+            import fftw3
+        except ImportError, msg:
+            fftw3 = None
+            print 'FFTTasks.load_wisdoms: %s' % (msg)
+        try:
+            import fftw3f
+        except ImportError, msg:
+            fftw3f = None
+            print 'FFTTasks.load_wisdoms: %s' % (msg)
         import atexit
         for fftw in [fftw3, fftw3f]:
+            if fftw is None:
+                continue
             wisdom_file_name = os.path.join('.iocbio','fft_tasks','%s_wisdom_data.txt' % (fftw.__name__))
             dirpath = os.path.dirname(wisdom_file_name)
             if dirpath and not os.path.exists(dirpath):
@@ -154,7 +174,10 @@ class FFTTasks(object):
             if return_speedup:
                 return size, 1
             return size
-        import fftw3f as fftw
+        try:
+            import fftw3f as fftw
+        except ImportError:
+            import fftw3 as fftw
         max_size = 2**int(numpy.log2(size)+1)
         if max_nof_tries is not None:
             max_size = min (size+max_nof_tries, max_size)
@@ -211,7 +234,7 @@ class FFTTasks(object):
         threads = getattr(options, 'fftw_threads', 1)
 
         if float_type=='single':
-            import fftw3f as fftw
+            import fftw3f as fftw # hint: on failure to import select double float type
             cache = numpy.empty(shape, numpy.complex64)
             self.float_dtype = numpy.float32
             self.complex_dtype = numpy.complex64
