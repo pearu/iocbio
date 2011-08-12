@@ -179,8 +179,10 @@ class FFTTasks(object):
             return size
         try:
             import fftw3f as fftw
+            complex_dtype = numpy.complex64
         except ImportError:
             import fftw3 as fftw
+            complex_dtype = numpy.complex128
         max_size = 2**int(numpy.log2(size)+1)
         if max_nof_tries is not None:
             max_size = min (size+max_nof_tries, max_size)
@@ -190,7 +192,7 @@ class FFTTasks(object):
         for sz in range (size, max_size + 1):
             flops = flops_cache.get(sz)
             if flops is None:
-                cache = numpy.empty((sz,), dtype=numpy.complex64)
+                cache = numpy.empty((sz,), dtype=complex_dtype)
                 plan = fftw.Plan(cache, cache, direction='forward', flags=['estimate'])
                 iplan = fftw.Plan(cache, cache, direction='backward', flags=['estimate'])
                 flops = sum(plan.get_flops())+ sum(iplan.get_flops())
