@@ -129,7 +129,7 @@ class FFTTasks(object):
                 try:
                     fftw.export_wisdom_to_file (wisdom_file_name)
                 except Exception, msg:
-                    print 'Failed to export wisdom to file %r: %s' % ((wisdom_file_name, msg)
+                    print 'Failed to export wisdom to file %r: %s' % (wisdom_file_name, msg)
             atexit.register(save_wisdom)
             _cache.append(wisdom_file_name)
             save_wisdom()
