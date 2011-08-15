@@ -5,3 +5,4 @@
 include MANIFEST.in
 include *.txt
 include setup.py
+include iocbio/*/scripts/*.py
