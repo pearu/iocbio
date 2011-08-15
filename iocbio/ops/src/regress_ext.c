@@ -71,7 +71,10 @@
     case PyArray_UINT16: *(npy_uint16*)(PTR) = value; break;		\
     case PyArray_UINT8: *(npy_uint8*)(PTR) = value; break;		\
     default:								\
-      PyErr_SetString(PyExc_TypeError,"regress|kernel:set_value: unsupported array dtype"); \
+      PyErr_SetObject(PyExc_TypeError,					\
+		      PyString_FromFormat(				\
+					  "regress|kernel:set_value: unsupported array dtype %s", \
+					  PyString_AsString(PyObject_Repr(PyObject_Type(ARR))))); \
       goto fail;							\
     }
 
@@ -89,7 +92,10 @@
     case PyArray_UINT16: value = *(npy_uint16*)(PTR); break;		\
     case PyArray_UINT8: value = *(npy_uint8*)(PTR); break;		\
     default:								\
-      PyErr_SetString(PyExc_TypeError,"regress:get_value: unsupported array dtype"); \
+      PyErr_SetObject(PyExc_TypeError,					\
+		      PyString_FromFormat(				\
+					  "regress:get_value: unsupported array dtype %s", \
+					  PyString_AsString(PyObject_Repr(PyObject_Type(ARR))))); \
       goto fail;							\
     }
 

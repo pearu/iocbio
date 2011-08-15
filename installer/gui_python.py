@@ -483,7 +483,7 @@ class IocbioPage(PythonPackagePage):
         depends.append('pywin32')
 
     download_versions = {'svn': dict(),
-                         '1.2.1': dict()}
+                         '1.2.2': dict()}
     download_path = {'svn': 'http://iocbio.googlecode.com/svn/trunk/ iocbio-read-only',
                      None: 'http://iocbio.googlecode.com/files/iocbio-%(version)s.tar.gz'}
 
