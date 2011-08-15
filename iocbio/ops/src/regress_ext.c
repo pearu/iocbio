@@ -74,7 +74,7 @@
       PyErr_SetObject(PyExc_TypeError,					\
 		      PyString_FromFormat(				\
 					  "regress|kernel:set_value: unsupported array dtype %s", \
-					  PyString_AsString(PyObject_Repr(PyObject_Type(ARR))))); \
+					  PyString_AsString(PyObject_Repr((PyObject*)PyArray_DESCR(ARR)->typeobj)))); \
       goto fail;							\
     }
 
@@ -95,7 +95,7 @@
       PyErr_SetObject(PyExc_TypeError,					\
 		      PyString_FromFormat(				\
 					  "regress:get_value: unsupported array dtype %s", \
-					  PyString_AsString(PyObject_Repr(PyObject_Type(ARR))))); \
+					  PyString_AsString(PyObject_Repr((PyObject*)PyArray_DESCR(ARR)->typeobj)))); \
       goto fail;							\
     }
 
