@@ -323,9 +323,9 @@ def spots_to_psf(image_stack, psf_dir, options = None):
         print '  Computing background field..'
         sys.stdout.flush()
         bg = background1.mean(0, dtype=float) if background1.shape[0]>1 else background1[0].astype(float)
-        bg1 = regress(bg, scales)
+        bg1, bg1_grad = regress(bg, scales)
         bg = background2.mean(0, dtype=float) if background2.shape[0]>1 else background2[0].astype(float)
-        bg2 = regress(bg, scales)
+        bg2, bg2_grad = regress(bg, scales)
         bg21 = bg2 - bg1
 
         print '    Background field means:', tostr(bg1.mean()), tostr(bg2.mean())

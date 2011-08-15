@@ -566,10 +566,10 @@ def do_scan(S, K, max_ai_clock_rate, ai_task, ao_task, do_task, N, M, pixel_time
 
     from ioc.microscope.regress import regress
     regress_scale = min(1, 20/N)
-    i_pos = regress(i_pos, (regress_scale,), method='average')
-    j_pos = regress(j_pos, (regress_scale,), method='average')
-    vx_pos = regress(vx_pos, (regress_scale,), method='average')
-    vy_pos = regress(vy_pos, (regress_scale,), method='average')
+    i_pos, i_pos_grad = regress(i_pos, (regress_scale,), method='average')
+    j_pos, j_pos_grad = regress(j_pos, (regress_scale,), method='average')
+    vx_pos, vx_pos_grad = regress(vx_pos, (regress_scale,), method='average')
+    vy_pos, vy_pos_grad = regress(vy_pos, (regress_scale,), method='average')
 
     plt = mk_figure(vx_target, vy_target, i_target, j_target, vx_input, vy_input,
                     i_input, j_input,

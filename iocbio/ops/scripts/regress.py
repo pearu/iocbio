@@ -108,12 +108,12 @@ def runner(parser, options, args):
     else:
         raise NotImplementedError (`options.link_function`)
 
-    new_images = regress (images, scales,
-                          kernel = kernel_type,
-                          method = smoothing_method,
-                          boundary = boundary_condition,
-                          verbose = verbose)
-
+    new_images, new_images_grad = regress (images, scales,
+                                           kernel = kernel_type,
+                                           method = smoothing_method,
+                                           boundary = boundary_condition,
+                                           verbose = verbose)
+    
     if options.link_function == 'identity':
         pass
     elif options.link_function == 'log':
@@ -123,7 +123,7 @@ def runner(parser, options, args):
         raise NotImplementedError (`options.link_function`)
 
     if verbose:
-        print 'Leak: %.3f%%' % ( 100*(1-new_images.sum ()/stack.images.sum ()))
+        print 'Leak: %.3f%%' % ( 100*(1-new_images.sum()/stack.images.sum()) )
         print 'MSE:', ((new_images - stack.images)**2).mean()
         print 'Energy:', ((stack.images)**2).sum()
         print 'Saving result to',options.output_path

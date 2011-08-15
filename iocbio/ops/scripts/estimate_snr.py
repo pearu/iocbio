@@ -51,12 +51,12 @@ def runner(parser, options, args):
     high = stack.images[high_indices]
 
     from iocbio.ops import regress
-    average = regress (stack.images, scales,
-                       kernel = kernel_type,
-                       method = smoothing_method,
-                       boundary = boundary_condition,
-                       verbose = True, enable_fft=True)
-
+    average, average_grad = regress (stack.images, scales,
+                                     kernel = kernel_type,
+                                     method = smoothing_method,
+                                     boundary = boundary_condition,
+                                     verbose = True, enable_fft=True)
+    
     ImageStack(average, pathinfo=stack.pathinfo).save('average.tif')
     noise = stack.images - average
     ImageStack(noise-noise.min(), pathinfo=stack.pathinfo).save('noise.tif')
@@ -82,11 +82,11 @@ def runner(parser, options, args):
 
     noise = stack.images - average
 
-    var = regress (noise*noise, scales,
-                   kernel = kernel_type,
-                   method = smoothing_method,
-                   boundary = boundary_condition,
-                   verbose = True, enable_fft=True)
+    var, var_grad = regress (noise*noise, scales,
+                             kernel = kernel_type,
+                             method = smoothing_method,
+                             boundary = boundary_condition,
+                             verbose = True, enable_fft=True)
 
     print 'VAR min, max, mean = %s, %s, %s' % (var.min (), var.max (), var.mean ())
 

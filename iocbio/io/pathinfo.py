@@ -747,7 +747,7 @@ class Configuration(PathInfo):
     """
 
     _widefield_protocol_modes = ['FluorescenceTransmission', 'Fluorescence_Transmission',
-                                 'Fluorescence',
+                                 'Fluorescence', 'ElectroFluoTrans', 'ElectroFluorescence',
                                  'MyocyteMechanics', 'Myocyte_Mechanics',
                                  'MyocyteMechanicsFluorescence',
                                  'Transmission'

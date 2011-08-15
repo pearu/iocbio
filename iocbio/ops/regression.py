@@ -208,7 +208,7 @@ def regress(data, scales,
       Regression data.
     new_data_grad : numpy.ndarray
       Gradient of regression data only if method=='linear', otherwise
-      nothing is returned.
+      None is returned.
 
     See also
     --------
@@ -253,5 +253,5 @@ def regress(data, scales,
                                         smoothing_methods[method], boundary_conditions[boundary],
                                         write_func)
     if method=='average':
-        return result
+        return result, None
     return result, grad
