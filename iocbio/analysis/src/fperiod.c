@@ -3,10 +3,10 @@
 
     fperiod_compute_period - estimate the fundamental period of a sequence, high-level interface
 
-    fperiod_find_acf_maximum - find maximum of ACF of a sequence
+    fperiod_find_cf_maximum - find maximum of CF of a sequence
     fperiod_subtract_average - return fluctuations of a sequence
     fperiod_subtract_average1 - return fluctuations of a sequence
-    fperiod_acf - evaluate ACF of a sequence
+    fperiod_cf - evaluate CF of a sequence
 
   Author: Pearu Peterson
   Created: March 2011
@@ -30,26 +30,45 @@ static void fperiod_power(double* f, int n, int m, double exp);
 #define FLOATMIN -1.7976931348623157e+308
 #define FLOATMAX 1.7976931348623157e+308
 
-#define ENABLE_ACF_SUPERPOSITION
+#define ENABLE_CF_SUPERPOSITION
 
-double fperiod_compute_period(double* f, int n, int m, double structure_size, double exp, int method)
+int fperiod_compute_period(double* f, int n, int m, double structure_size, double exp, int method,
+			   double* period, double* period2)
 {
-  double period;
-#ifdef ENABLE_ACF_SUPERPOSITION
+  int status = 0;
+#ifdef ENABLE_CF_SUPERPOSITION
   double *r = (double*)malloc(sizeof(double)*(m*n));
 #else
   double *r = (double*)malloc(sizeof(double)*(n));
 #endif
-  period = fperiod_compute_period_cache(f, n, m, structure_size, exp, method, r);
+  status = fperiod_compute_period_cache(f, n, m, structure_size, exp, method, r, period, period2);
   free(r);
-  return period;
+  return status;
 }
 
-double fperiod_compute_period_cache(double* f, int n, int m, double structure_size, double exp, int method, double *r)
+/*
+Parameters
+----------
+
+  f - an array of n*m values
+  n - length of a sample sequence
+  m - number of different sample sequences
+  structure_size - initial estimate of the fundamental period
+  exp - exponent applied to a oscillatory sequence
+  method - if 1 then compute arg max of CF, if 2 then compute arg min of CF'', if 3 then compute both
+
+Returns
+-------
+  status - if 1 then period was found, if 2 then period2 was found, if 3 both period and period2 were found, 0 for not found
+  period - arg max of CF
+  period2 - arg min of CF''
+*/
+
+int fperiod_compute_period_cache(double* f, int n, int m, double structure_size, double exp, int method, double *r, double* period, double* period2)
 {
   int lbound, ubound, smoothness;
-  int j, k;
-  double period = 0.0, p;
+  int j, k, status = 0;
+  double p;
   if (r==0) return -3.0;
   if (structure_size>0)
     {
@@ -63,34 +82,18 @@ double fperiod_compute_period_cache(double* f, int n, int m, double structure_si
       ubound = n-1;
       smoothness = 0;
     }
-#ifdef ENABLE_ACF_SUPERPOSITION
   fperiod_subtract_average(f, n, m, smoothness, r);
-  //fperiod_subtract_average(r, n, m, smoothness, f);
   fperiod_power(r, n, m, exp);
+  *period2 = *period = 0.0;
   switch (method)
     {
-    case 0: period = fperiod_find_acf_maximum(r, n, m, lbound, ubound); break;
-    case 1: period = fperiod_find_acf_d2_minimum(r, n, m, lbound, ubound); break;
+    case 1: *period = fperiod_find_cf_maximum(r, n, m, lbound, ubound); status = 1; break;
+    case 2: *period2 = fperiod_find_cf_d2_minimum(r, n, m, lbound, ubound); status = 2; break;
+    case 3: 
+      status = fperiod_find_cf_argmax_argmin2der(r, n, m, lbound, ubound, period, period2);
+      break;
     }
-#else
-  k = 1;
-  for(j=0; j<m; ++j)
-    {
-      fperiod_subtract_average1(f+j*n, n, 1, smoothness, r, 1);
-      p = fperiod_find_acf_maximum(r, n, 1, lbound, ubound);
-      if (p>0)
-	{
-	  //printf("p=%f\n",p);
-	  period = (period*(k-1)+p)/k;
-	  k ++;
-	}
-    }
-#endif
-  return period;
-
-
-  //fperiod_subtract_average(r, n, m, smoothness, f);
-
+  return status;
 }
 
 /*
@@ -117,7 +120,7 @@ Returns
 #define ISNONNEG(r) ((r)>smallest_non_negative)
 #define ISLTONE(r) ISNONNEG(1-(r))
 
-double fperiod_find_acf_maximum(double* f, int n, int m, int lbound, int ubound)
+double fperiod_find_cf_maximum(double* f, int n, int m, int lbound, int ubound)
 {
   int j, j_max_v = 0;
   double y = 0.0, y2 = 0.0;
@@ -167,15 +170,16 @@ double fperiod_find_acf_maximum(double* f, int n, int m, int lbound, int ubound)
 	}
     }
 
+  /*
   if (y==0.0)
     {
-      printf("fperiod_find_acf_maximum: no acf maximum found within range [%d, %d]\n", lbound, ubound);
+      printf("fperiod_find_cf_maximum: no cf maximum found within range [%d, %d]\n", lbound, ubound);
     }
-
+  */
   return y;
 }
 
-double fperiod_find_acf_d2_minimum(double* f, int n, int m, int lbound, int ubound)
+double fperiod_find_cf_d2_minimum(double* f, int n, int m, int lbound, int ubound)
 {
   int j, j_min_b = 0, j_max_v = 0;
   double y = 0.0, y2 = 0.0;
@@ -218,30 +222,125 @@ double fperiod_find_acf_d2_minimum(double* f, int n, int m, int lbound, int ubou
 	    }
 	}
       else
-	printf("fperiod_find_acf_d2_minimum: j,r=%d, %f, a, a1, b, b1=%f, %f, %f, %f\n", j, r, a, a1, b, b1);
+	printf("fperiod_find_cf_d2_minimum: j,r=%d, %f, a, a1, b, b1=%f, %f, %f, %f\n", j, r, a, a1, b, b1);
     }
 
+  /*
   if (y==0.0)
     {
-      printf("fperiod_find_acf_d2_minimum: no acf_d2 minimum found within range [%d, %d]\n", lbound, ubound);
+      printf("fperiod_find_cf_d2_minimum: no cf_d2 minimum found within range [%d, %d]\n", lbound, ubound);
     }
-
+  */
   return y;
 }
+
+int fperiod_find_cf_argmax_argmin2der(double* f, int n, int m, int lbound, int ubound,
+				       double* argmax, double* argmin2der)
+{
+  int j, j_max_v = 0, status = 0;
+  double y = 0.0, y2 = 0.0;
+  double max_v = FLOATMIN;
+  double min_b = FLOATMAX;
+  double a, b, c, d, c1, d1, r, v, am1, bm1;
+  double smallest_non_negative = -(n*m*EPSNEG);
+  double largest_non_positive = (n*m*EPSPOS);
+  double vm1, v0, v1;
+
+  if (lbound<=0 || lbound>=ubound || ubound>n-1)
+    return -1;
+  if (n<3 || m<0)
+    return -2;
+
+  //compute_coeffs_1(lbound, f, n, m, &c1);
+  compute_coeffs_32(lbound, f, n, m, &a, &b);
+  for (j=lbound+1;j<ubound;++j)
+    {
+      am1 = a;
+      bm1 = b;
+      compute_coeffs(j, f, n, m, &a, &b, &c, &d);
+      /* Find arg min of CF'' */
+      if (ISNONNEG(a) && ISNONPOS(am1))
+	{
+	  /* vm1, v0, v1 define a parabola with minimum point at r */
+	  vm1 = bm1;
+	  v0 = b;
+	  v1 = b + a;
+	  r = -0.5*(v1-vm1)/(vm1+v1-2.0*v0);
+	  if (ISLTONE(-r) && ISLTONE(r))
+	    {
+	      //TODO: compute minimum of parabola
+	      if (b<min_b)
+		{
+		  y2 = (double)j + r;
+		  min_b = b;
+		  status |= 2;
+		}
+	    }
+	  /*
+	  else
+	    printf("fperiod_find_cf_argmax_argmin2der: j,r=%d, %f, a, am1, b, bm1=%f, %f, %f, %f\n", j, r, a, bm1, b, bm1);
+	  */
+	}
+
+      /* Find arg max of CF */
+      if (ISZERO(a))
+	{
+	  if (ISZERO(b))
+	    continue;
+	  r = -0.5*c/b;
+	}
+      else
+	{
+	  d1 = b*b-a*c;      
+
+	  if (ISZERO(d1))
+	    r = -b/a;
+	  else if (d1>0)
+	    /* note that r = (-b+sqrt(d1))/a would violate the negativity of second derivative */
+	    r = -(b+sqrt(d1))/a;
+	  else
+	    {
+	      continue;
+	    }
+	}
+      if (ISNONNEG(r) && ISLTONE(r))
+	{
+	  v = ((a/3.0*r + b)*r+c)*r + d/3.0;
+	  if (v>max_v)
+	    {
+	      max_v = v;
+	      y = (double)j + r;
+	      j_max_v = j;
+	      status |= 1;
+	    }
+	}
+    }
+
+  /*
+  if (y==0.0)
+    {
+      printf("fperiod_find_cf_argmax_argmin2der: no cf maximum found within range [%d, %d]\n", lbound, ubound);
+    }
+  */
+  *argmax = y;
+  *argmin2der = y2;
+  return status;
+}
+
 
 /*
 Parameters
 ----------
-  y - argument to acf, must be nonnegative and less than n-1
+  y - argument to cf, must be nonnegative and less than n-1
   f - an array of n*m values
   n - length of a sample sequence
   m - number of sample sequences
 
 Returns
 -------
-  acf - acf value at y
+  cf - cf value at y
  */
-double fperiod_acf(double y, double* f, int n, int m)
+double fperiod_cf(double y, double* f, int n, int m)
 {
   int j=floor(y);
   double r = y-j;
@@ -252,7 +351,7 @@ double fperiod_acf(double y, double* f, int n, int m)
   return ((a/3.0*r + b)*r+c)*r + d/3.0;
 }
 
-double fperiod_acf_d1(double y, double* f, int n, int m)
+double fperiod_cf_d1(double y, double* f, int n, int m)
 {
   int j=floor(y);
   double r = y-j;
@@ -261,7 +360,7 @@ double fperiod_acf_d1(double y, double* f, int n, int m)
   return (a*r + 2*b)*r+c;
 }
 
-double fperiod_acf_d2(double y, double* f, int n, int m)
+double fperiod_cf_d2(double y, double* f, int n, int m)
 {
   int j=floor(y);
   double r = y-j;
@@ -521,11 +620,69 @@ void fperiod_subtract_average_2d(double* f, int n, int m, int smoothness, double
   //memcpy(r, f, sizeof(double)*m*n);
 }
 
-void fperiod_subtract_average1(double* f, int n, int fstride, int smoothness, double* r, int rstride)
+void fperiod_mark_crests(double* f, int n, int m, int structure_size, int q, double* r)
 {
+  int j;
+  int smoothness;
+  if (structure_size>0)
+    smoothness = ((float)structure_size/2.0-1.0)/2.0;
+  else
+    smoothness = 0;
+  for(j=0; j<m; ++j)
+    fperiod_mark_crests1(f+j*n, n, 1, smoothness, r+j*n*q, q);
+}
+
+
 #define ISMAX(index) (f[fstride*((index)-(1+smoothness))]<=f[fstride*((index)+smoothness)]) && (f[fstride*((index)-smoothness)]>=f[fstride*((index)+(1+smoothness))])
 #define ISMIN(index) (f[fstride*((index)-(1+smoothness))]>=f[fstride*((index)+smoothness)]) && (f[fstride*((index)-smoothness)]<=f[fstride*((index)+(1+smoothness))])
 #define ISEXTREME(index) (ISMAX(index)?1:(ISMIN(index)?-1:0))
+
+void fperiod_mark_crests1(double*f ,int n, int fstride, int smoothness, double*r, int rstride)
+{
+  int i, j;
+  double v0, vm1, v1, p;
+  int flag=0, new_flag;
+  int count=0;
+  double smallest_non_negative = -(n*EPSNEG);
+  double largest_non_positive = (n*EPSPOS);
+  for (i=0; i<n; ++i)
+      r[rstride*(i)] = 0;
+  for (i=1+smoothness;i<n-(1+smoothness); ++i)
+    {
+      new_flag = ISMAX(i);
+      if (!new_flag)
+	continue;
+      if (flag==new_flag)
+	count++;
+      else
+	count = 1;
+      flag = new_flag;
+      
+      v0 = vm1 = v1 = 0.0;
+      for (j=-smoothness;j<1+smoothness; ++j)
+	{
+	  v0 += f[fstride*(i+j)];
+	  vm1 += f[fstride*(i+j-1)];
+	  v1 += f[fstride*(i+j+1)];
+	}
+      vm1 /= (1+2*smoothness);
+      v0 /= (1+2*smoothness);
+      v1 /= (1+2*smoothness);
+      p = -0.5*(v1-vm1)/(vm1+v1-2.0*v0);
+      if (ISLTONE(-p) && ISLTONE(p))
+	{
+	  r[(int)(((double)i+p)*(double)rstride)] = 1;
+	  //r[(int)(((double)i+p)*(double)rstride)-1] = 0.5;
+	  //r[(int)(((double)i+p)*(double)rstride)+1] = 0.5;
+	  //r[rstride*i-1] = vm1;
+	  //r[rstride*i] = v0;
+	  //r[rstride*i+1] = v1;
+	}
+    }
+}
+
+void fperiod_subtract_average1(double* f, int n, int fstride, int smoothness, double* r, int rstride)
+{
   double prev_extreme_point = -1;
   double prev_average_point = -1;
   double prev_extreme_value = 0;

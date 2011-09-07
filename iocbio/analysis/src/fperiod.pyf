@@ -2,43 +2,44 @@
 python module fperiod
   interface
 
-     function fperiod_compute_period(f, n, m, structure_size, exp, method) result (y)
+     function fperiod_compute_period(f, n, m, structure_size, exp, method, period, period2) result (status)
        intent(c) fperiod_compute_period
+       integer :: status
        double precision, dimension (m, n), intent(in,c):: f
        integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
        integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
        double precision, intent(c,in), optional :: structure_size = 0
        double precision, intent(c,in), optional :: exp = 1.0
-       double precision :: y
-       integer, intent(c,in), optional :: method = 0
+       integer, intent(c,in), optional :: method = 3
+       double precision, intent(out) :: period, period2
      end function fperiod_compute_period
 
-     function fperiod_acf(y, f, n, m) result (v)
-       intent(c) fperiod_acf
+     function fperiod_cf(y, f, n, m) result (v)
+       intent(c) fperiod_cf
        double precision intent(in, c) :: y
        double precision dimension (m, n), intent(in,c):: f
        integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
        integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
        double precision :: v
-     end function fperiod_acf
+     end function fperiod_cf
 
-     function fperiod_acf_d1(y, f, n, m) result (v)
-       intent(c) fperiod_acf_d1
+     function fperiod_cf_d1(y, f, n, m) result (v)
+       intent(c) fperiod_cf_d1
        double precision intent(in, c) :: y
        double precision dimension (m, n), intent(in,c):: f
        integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
        integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
        double precision :: v
-     end function fperiod_acf_d1
+     end function fperiod_cf_d1
 
-     function fperiod_acf_d2(y, f, n, m) result (v)
-       intent(c) fperiod_acf_d2
+     function fperiod_cf_d2(y, f, n, m) result (v)
+       intent(c) fperiod_cf_d2
        double precision intent(in, c) :: y
        double precision dimension (m, n), intent(in,c):: f
        integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
        integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
        double precision :: v
-     end function fperiod_acf_d2
+     end function fperiod_cf_d2
 
      subroutine fperiod_subtract_average(f, n, m, structure_size, r)
        intent(c) fperiod_subtract_average
@@ -49,6 +50,17 @@ python module fperiod
        integer, intent(c,in), optional :: structure_size = 0
        double precision intent(c,out), dimension (m,n) :: r
      end subroutine fperiod_subtract_average
+
+     subroutine fperiod_mark_crests(f, n, m, structure_size, q, r)
+       intent(c) fperiod_mark_crests
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer, intent(c,in), optional :: structure_size = 0
+       integer, intent (c, in), optional :: q = 10
+       double precision intent(c,out), dimension (m,n*q), depend(n,m,q) :: r
+     end subroutine fperiod_mark_crests
 
      subroutine fperiod_subtract_average_2d(f, n, m, smoothness, r)
        intent(c) fperiod_subtract_average_2d
