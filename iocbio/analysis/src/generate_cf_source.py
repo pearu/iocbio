@@ -28,35 +28,65 @@ class IndexedGenerator:
     def __getitem__(self, index):
         return self.ring.Number(Symbol(Indexed(self.name, index)))
 
-R = PolynomialRing[('s','r')]
+class Generator:
+    def __init__(self, pwf):
+        """
+        Parameters
+        ----------
+        pwf : {callable, 'constant', 'linear', 'catmulrom'}
+          Specify piecewise polynomial function pwf(f, i, s) where f
+          denotes a sequence of nodal values, i denotes i-th piece and
+          s denotes local variable of the polynomial. For example,
+          use `pwf = lambda f,i,s: f[i] + s*(f[i+1]-f[i])` for piecewise
+          linear function. Note that when pwf is evaluated, f will be
+          instance of IndexGenerator, i will be Symbol and s will be
+          instance of PolynomialRing['s', 'r'].
+        """
+        if isinstance(pwf, str):
+            if pwf=='constant':
+                pwf = lambda f,i,s: f[i]
+            elif pwf=='linear':
+                pwf = lambda f,i,s: f[i] + s*(f[i+1]-f[i])
+            else:
+                raise NotImplementedError(`pwf`)
+        self.pwf = pwf
+        self.ring = R = PolynomialRing[('s','r')]
+        self.namespace = dict(s = R('s'), r=R('r'), i=Symbol('i'),
+                              j = Symbol('j'), N=Symbol('N'),
+                              f = IndexedGenerator(R, 'f'),
+                              pwf = pwf)
 
-s = R('s')
-r = R('r')
+    def convolution(self):
+        for k,v in self.namespace.iteritems():
+            exec k+' = v'
 
+        # int(f(x)*f(x+y), x=0..N-1)
+        integrand1 = pwf(f,i,s)*pwf(f,i+j,s+r)+pwf(f,N-2-j, s)*pwf(f,N-2,s+r)
+        integrand2 = pwf(f,i,s)*pwf(f,i+j+1,s-(1-r))
+        integral1 = integrand1.variable_integrate(s, 0, 1-r)
+        integral2 = integrand2.variable_integrate(s, 1-r, 1)
+        integral_fx_fxy = (integral1 + integral2).expand() # sum(intergal_fx_fxy, i=0..N-2-j)
+    
+        return integral_fx_fxy
 
-#r = Symbol('r')
-i = Symbol('i')
-j = Symbol('j')
-N = Symbol('N')
-f = IndexedGenerator(R, 'f')
+    def show_convolution(self):
+        poly = self.convolution()
+        for k in sorted(poly.data):
+            expr = poly.data[k]
+            expr = expr.head.to_ADD(type(expr), expr.data, expr)
+            assert str(expr.head)=='ADD',`expr.head`
+            loop_terms = []
+            nonloop_terms = []
+            for term in expr.data:
+                if 'i' in str(term):
+                    loop_terms.append(term)
+                else:
+                    nonloop_terms.append(term)
+                
+            print '%s: %s + {%s}' % (self.ring({k:1}), self.ring.ring.Add(*loop_terms), self.ring.ring.Add(*nonloop_terms))
 
-def pwf(i, s): # piecewise f
-    return f[i] + s*(f[i+1]-f[i])
-
-
-integrand1 = pwf(i,s)*pwf(i+j,s+r)+pwf(N-2-j, s)*pwf(N-2,s+r)
-integrand2 = pwf(i,s)*pwf(i+j+1,s-(1-r))
-
-undefintegral1 = integrand1.variable_integrate(s, 0, 1-r)
-undefintegral2 = integrand2.variable_integrate(s, 1-r, 1)
-print undefintegral1
-print undefintegral2
-
-sys.exit()
-integral1 = undefintegral1.variable_subs(s,1-r) - undefintegral1.variable_subs(s,0)
-integral2 = undefintegral2.variable_subs(s,1) - undefintegral2.variable_subs(s,1-r)
-for exps, coeff in integral1.data.iteritems():
-    print exps, coeff.expand()
+g = Generator('linear')
+g.show_convolution()
 
 
 
