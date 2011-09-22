@@ -52,6 +52,10 @@ class Generator:
                 pwf = lambda f,i,s: f[i]
             elif pwf=='linear':
                 pwf = lambda f,i,s: f[i] + s*(f[i+1]-f[i])
+            elif pwf=='qint':
+                pwf = lambda f,i,s: f[i-1]*(s-1)*s/2 + f[i]*(1-s*s) + f[i+1]*(1+s)*s/2
+            elif pwf=='cint':
+                pwf = lambda f,i,s: (f[i-1]*s*((2-s)*s-1) + f[i]*(2+s*s*(3*s-5)) + f[i+1]*s*((4-3*s)*s+1) + f[i+2]*s*s*(s-1))/2
             else:
                 raise NotImplementedError(`pwf`)
         self.pwf = pwf
@@ -144,6 +148,7 @@ class Generator:
         cf_source_template = '''
 %(cf_proto)s
 {
+  /* %(cf_def)s */
   int p, i, q;
   int k = n - 2 - j;
   %(init_coeffs)s
@@ -171,13 +176,19 @@ class Generator:
             update_nonloop_coeffs = '\n      '.join('b%s += %s;' % (e[0], poly_r_diff.data.get(e, 0)) for e in diff_exps)
             cf_proto = 'void cf_%(name)s_compute_coeffs_diff%(order)s(int j, double *f, int n, int m, %(decl_coeffs)s)' % (locals())
 
+            if order:
+                cf_def = 'diff(int(%s, x=0..L-y), y, order=%s) = sum(a_k*r^k, k=0..%s) where y=j+r' % (integrand, order, len(exps)-1)
+            else:
+                cf_def = 'int(%s, x=0..L-y) = sum(a_k*r^k, k=0..%s) where y=j+r' % (integrand, len(exps)-1)
+            cf_def += '\n     f(x)=sum([0<=s<1]*(%s), i=0..N-1) where s=x-i' % (eval('pwf(f,i,s)', self.namespace).evalf())
+
             cf_source = cf_source_template % (locals())
             cf_source = re.sub(r'(\(f\[(?P<index>[^\]]+)\]\)[*]{2,2}2)', r'(f[\g<index>]*f[\g<index>])', cf_source)
             cf_source = re.sub(r'(\(f\[(?P<index>[^\]]+)\]\)[*]{2,2}(?P<exp>\d+))', r'pow(f[\g<index>], \g<exp>)', cf_source)
             cf_source = re.sub(r'(?P<numer>\d+)[/](?P<denom>\d+)', r'\g<numer>.0/\g<denom>.0', cf_source)
             yield cf_proto, cf_source
 
-g = Generator('linear')
+g = Generator('qint')
 for proto, source in g.generate_source('mcf1_pw1'):
     print source
     pass
