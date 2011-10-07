@@ -57,6 +57,26 @@
 
 #define REGRESS_KERNEL_LOOP_END }
 
+int get_array_type_num(ARR)
+{
+  int type_num = PyArray_TYPE(ARR);
+  switch (PyArray_TYPE(ARR))
+    {
+    case PyArray_FLOAT64:
+    case PyArray_FLOAT32:
+    case PyArray_INT64:
+    case PyArray_INT32:
+    case PyArray_INT16:
+    case PyArray_INT8:
+    case PyArray_UINT64:
+    case PyArray_UINT32:
+    case PyArray_UINT16:
+    case PyArray_UINT8:
+      return type_num;
+    }
+  return type_num;
+}
+
 #define REGRESS_SET_VALUE(ARR, PTR, value)				\
   switch (PyArray_TYPE(ARR))						\
     {									\

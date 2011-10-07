@@ -11,9 +11,10 @@ import sys
 from sympycore import Symbol, Calculus, PolynomialRing, Expr, heads
 
 class Indexed:
-    def __init__(self, name, index):
+    def __init__(self, name, index, indexed_subs):
         self.name = name
         self.index = index
+        self.indexed_subs = indexed_subs
     def __str__(self):
         return '%s[%s]' % (self.name, self.index)
     def __repr__(self):
@@ -26,15 +27,16 @@ class Indexed:
         return hash((self.__class__.__name__, self.name, self.index))
 
 class IndexedGenerator:
-    def __init__(self, ring, name):
+    def __init__(self, ring, name, indexed_subs):
         self.ring = ring
         self.name = name
+        self.indexed_subs = indexed_subs
     def __getitem__(self, index):
-        #return self.ring.Number(index)
-        return self.ring.Number(Symbol(Indexed(self.name, index)))
+        index = Indexed(self.name, index, self.indexed_subs)
+        return self.ring.Number(Symbol(index))
 
 class Generator:
-    def __init__(self, pwf):
+    def __init__(self, pwf, extension='cutoff'):
         """
         Parameters
         ----------
@@ -60,10 +62,22 @@ class Generator:
                 raise NotImplementedError(`pwf`)
         self.pwf = pwf
         self.ring = R = PolynomialRing[('s','r')]
+        if extension=='cutoff':
+            def indexed_subs(expr, old, new):
+                assert isinstance (expr, Calculus) and expr.head is heads.SYMBOL,`expr.pair`
+                index = expr.data.index.subs(old, new)
+                if 1 and isinstance(index, Calculus) and index.head is heads.NUMBER:
+                    if index.data < 0:
+                        return Calculus(0)
+                return Symbol(Indexed(expr.data.name, index, expr.data.indexed_subs))
+        else:
+            raise NotImplementedError (`extension`)
+        self.extension = extension
+
         self.namespace = dict(s = R('s'), r=R('r'), i=Symbol('i'),
                               o=Symbol('o'),
                               j = Symbol('j'), N=Symbol('n'),
-                              f = IndexedGenerator(R, 'f'),
+                              f = IndexedGenerator(R, 'f', indexed_subs),
                               pwf = pwf, R=R)
 
     def integrate(self, integrand='f(x)*f(x+y)', extension='cutoff'):
@@ -172,6 +186,12 @@ class Generator:
             poly_r_diff = poly_r.variable_diff(self.namespace['r'], order)
             diff_exps = sorted(set(poly_i_diff.data.keys() + poly_r_diff.data.keys()))
 
+            if not order:
+                print get_all_indices(poly_i_diff)
+                r = subs_indices(poly_i_diff, self.namespace['o'], 0)
+                r = subs_indices(r, self.namespace['i'], 0)
+                print r
+
             update_loop_coeffs = '\n        '.join('b%s += %s;' % (e[0], poly_i_diff.data.get(e, 0)) for e in diff_exps)
             update_nonloop_coeffs = '\n      '.join('b%s += %s;' % (e[0], poly_r_diff.data.get(e, 0)) for e in diff_exps)
             cf_proto = 'void cf_%(name)s_compute_coeffs_diff%(order)s(int j, double *f, int n, int m, %(decl_coeffs)s)' % (locals())
@@ -188,9 +208,48 @@ class Generator:
             cf_source = re.sub(r'(?P<numer>\d+)[/](?P<denom>\d+)', r'\g<numer>.0/\g<denom>.0', cf_source)
             yield cf_proto, cf_source
 
-g = Generator('qint')
-for proto, source in g.generate_source('mcf1_pw1'):
-    print source
+def get_all_indices(expr):
+    r = set()
+    if isinstance (expr, Indexed):
+        r.add (expr.index)
+    elif isinstance (expr, Expr):
+        r = r.union (r, get_all_indices(expr.data))
+    elif isinstance (expr, (list, tuple)):
+        for item in expr:
+            r = r.union (r, get_all_indices(item))
+    elif isinstance (expr, dict):
+        for k, v in expr.iteritems ():
+            r = r.union (r, get_all_indices(k))
+            r = r.union (r, get_all_indices(v))
+    return r
+
+def subs_indices(expr, old, new):
+    if isinstance (expr, Expr):
+        if expr.head is heads.SYMBOL and isinstance(expr.data, Indexed):
+            return expr.data.indexed_subs(expr, old, new)
+        return expr.__class__ (expr.head, subs_indices(expr.data, old, new))
+    if isinstance (expr, dict):
+        r = {}
+        for k, v in expr.iteritems():
+            new_k = subs_indices (k, old, new)
+            new_v = subs_indices (v, old, new)
+            # TODO: CHECK PARENT
+            if isinstance (new_k, Calculus) and new_k==0:
+                continue
+            r[new_k] = new_v
+        return expr.__class__(r)    
+    if isinstance (expr, tuple):
+        return expr.__class__([subs_indices (item, old, new) for item in expr])
+    if isinstance (expr, list):
+        return expr.__class__ ([subs_indices (item, old, new) for item in expr])
+    if isinstance (expr, (int, float)):
+        return expr
+    raise NotImplementedError(`expr, old, new`)
+
+g = Generator('cint')
+for proto, source in g.generate_source('test',
+                                       integrand='f(x)*f(x+y)'):
+    #print source
     pass
 
 
