@@ -43,12 +43,17 @@ class IndexedGenerator:
         index = Indexed(self.name, index, self.indexed_subs)
         return self.ring.Number(Symbol(index))
 
+def str_replace(text, repl_list):
+    for k, v in repl_list:
+        text = text.replace (k, v)
+    return text
+
 class Generator:
     def __init__(self, pwf, extension='cutoff'):
         """
         Parameters
         ----------
-        pwf : {callable, 'constant', 'linear', 'qint', 'cint'}
+        pwf : {'constant', 'linear', 'qint', 'cint'}
           Specify piecewise polynomial function pwf(f, i, s) where f
           denotes a sequence of nodal values, i denotes i-th piece and
           s denotes local variable of the polynomial. For example,
@@ -60,21 +65,26 @@ class Generator:
         offsets = 0,0
         if isinstance(pwf, str):
             if pwf=='constant':
-                pwf = lambda f,i,s: f[i]
+                pwf1 = pwf2 = lambda f,i,s: f[i]
             elif pwf=='linear':
-                pwf = lambda f,i,s: f[i] + s*(f[i+1]-f[i])
+                pwf1 = pwf2 = lambda f,i,s: f[i] + s*(f[i+1]-f[i])
                 if 0:
                     pwf = lambda f,i,s,d=1: f[i-d] + s*(f[i+1+d]-f[i-d])
                     offsets = 1,1
+            elif pwf=='linear_constant':
+                pwf1 = lambda f,i,s: f[i] + s*(f[i+1]-f[i])
+                pwf2 = lambda f,i,s: f[i]
+            elif pwf=='constant_linear':
+                pwf1 = lambda f,i,s: f[i]
+                pwf2 = lambda f,i,s: f[i] + s*(f[i+1]-f[i])
             elif pwf=='qint':
-                pwf = lambda f,i,s: f[i-1]*(s-1)*s/2 + f[i]*(1-s*s) + f[i+1]*(1+s)*s/2
+                pwf1 = pwf2 = lambda f,i,s: f[i-1]*(s-1)*s/2 + f[i]*(1-s*s) + f[i+1]*(1+s)*s/2
                 offsets = 1,1
             elif pwf=='cint':
-                pwf = lambda f,i,s: (f[i-1]*s*((2-s)*s-1) + f[i]*(2+s*s*(3*s-5)) + f[i+1]*s*((4-3*s)*s+1) + f[i+2]*s*s*(s-1))/2
+                pwf1 = pwf2 = lambda f,i,s: (f[i-1]*s*((2-s)*s-1) + f[i]*(2+s*s*(3*s-5)) + f[i+1]*s*((4-3*s)*s+1) + f[i+2]*s*s*(s-1))/2
                 offsets = 1,2
             else:
                 raise NotImplementedError(`pwf`)
-        self.pwf = pwf
         self.offsets = offsets
         self.ring = R = PolynomialRing[('s','r')]
         if extension=='cutoff':
@@ -94,7 +104,9 @@ class Generator:
                               o=Symbol('o'),
                               j = Symbol('j'), N=Symbol('n'),
                               f = IndexedGenerator(R, 'f', indexed_subs),
-                              pwf = pwf, R=R)
+                              pwf1 = pwf1,
+                              pwf2 = pwf2,
+                              R=R)
 
     def integrate(self, integrand='f(x)*f(x+y)', extension='cutoff'):
         """ Integrate integrand of piecewise polynomial functions
@@ -124,9 +136,31 @@ class Generator:
             exec k+' = v'
 
         if extension=='cutoff':
-            integrand1 = eval(integrand.replace('f(x)','pwf(f,i,s)').replace('f(x+y)','pwf(f,i+j,s+r)').replace('x','(R.Number(i)+s)'))
-            integrand2 = eval(integrand.replace('f(x)','pwf(f,N-2-j, s)').replace('f(x+y)','pwf(f,N-2,s+r)').replace('x','(R.Number(N-2-j)+s)'))
-            integrand3 = eval(integrand.replace('f(x)','pwf(f,i,s)').replace('f(x+y)','pwf(f,i+j+1,s+r-1)').replace('x','(R.Number(i)+s)'))
+            integrand1 = eval(str_replace(integrand,[
+                        ('f(x)','pwf1(f,i,s)'),
+                        ('f(x+y)','pwf1(f,i+j,s+r)'),
+                        ('f1(x)','pwf1(f,i,s)'),
+                        ('f1(x+y)','pwf1(f,i+j,s+r)'),
+                        ('f2(x)','pwf2(f,i,s)'),
+                        ('f2(x+y)','pwf2(f,i+j,s+r)'),
+                        ('x','(R.Number(i)+s)')])
+                              )
+            integrand2 = eval(str_replace(integrand,[
+                        ('f(x)','pwf1(f,N-2-j, s)'),
+                        ('f(x+y)','pwf1(f,N-2,s+r)'),
+                        ('f1(x)','pwf1(f,N-2-j, s)'),
+                        ('f1(x+y)','pwf1(f,N-2,s+r)'),
+                        ('f2(x)','pwf2(f,N-2-j, s)'),
+                        ('f2(x+y)','pwf2(f,N-2,s+r)'),
+                        ('x','(R.Number(N-2-j)+s)')]))
+            integrand3 = eval(str_replace(integrand,[
+                        ('f(x)','pwf1(f,i,s)'),
+                        ('f(x+y)','pwf1(f,i+j+1,s+r-1)'),
+                        ('f1(x)','pwf1(f,i,s)'),
+                        ('f1(x+y)','pwf1(f,i+j+1,s+r-1)'),
+                        ('f2(x)','pwf2(f,i,s)'),
+                        ('f2(x+y)','pwf2(f,i+j+1,s+r-1)'),
+                        ('x','(R.Number(i)+s)')]))
 
             integral1 = integrand1.variable_integrate(s, 0, 1-r)
             integral2 = integrand2.variable_integrate(s, 0, 1-r)
@@ -237,7 +271,8 @@ class Generator:
                 cf_def = 'diff(int(%s, x=0..L-y), y, order=%s) = sum(a_k*r^k, k=0..%s) where y=j+r' % (integrand, order, len(exps)-1)
             else:
                 cf_def = 'int(%s, x=0..L-y) = sum(a_k*r^k, k=0..%s) where y=j+r' % (integrand, len(exps)-1)
-            cf_def += '\n     f(x)=sum([0<=s<1]*(%s), i=0..N-1) where s=x-i' % (eval('pwf(f,i,s)', self.namespace).evalf())
+            cf_def += '\n     f1(x)=sum([0<=s<1]*(%s), i=0..N-1) where s=x-i' % (eval('pwf1(f,i,s)', self.namespace).evalf())
+            cf_def += '\n     f2(x)=sum([0<=s<1]*(%s), i=0..N-1) where s=x-i' % (eval('pwf2(f,i,s)', self.namespace).evalf())
 
             order_cases.append('case %(order)s: cf_%(name)s_compute_coeffs_diff%(order)s(j, fm, n, m, %(coeffs)s); break;' % (locals()))
 
@@ -250,7 +285,8 @@ class Generator:
         cf_proto = 'void cf_%(name)s_compute_coeffs(int j, double *fm, int n, int m, int order, %(decl_coeffs)s)' % (locals())
         order_cases = '\n    '.join(order_cases)
         cf_def = 'diff(int(%s, x=0..L-y), y, order) = sum(a_k*r^k, k=0..%s) where y=j+r' % (integrand, len(exps)-1)
-        cf_def += '\n     f(x)=sum([0<=s<1]*(%s), i=0..N-1) where s=x-i' % (eval('pwf(f,i,s)', self.namespace).evalf())
+        cf_def += '\n     f1(x)=sum([0<=s<1]*(%s), i=0..N-1) where s=x-i' % (eval('pwf1(f,i,s)', self.namespace).evalf())
+        cf_def += '\n     f2(x)=sum([0<=s<1]*(%s), i=0..N-1) where s=x-i' % (eval('pwf2(f,i,s)', self.namespace).evalf())
         cf_source_template = '''
 %(cf_proto)s
 {
@@ -400,7 +436,7 @@ extern "C" {
     source_file.write(source_header)
 
     for name, (pwf, integrand) in dict(
-        test = ('linear', 'f(x)*f(x+y)'), 
+        test = ('linear_constant', 'f1(x)*f2(x+y)'), 
         ).iteritems():
         g = Generator(pwf)
         for proto, source in g.generate_source(name,
