@@ -10,4 +10,8 @@ def configuration(parent_package='',top_path=None):
     config.add_extension('fperiod', sources = [
             join('src','fperiod.pyf'),
             join('src','fperiod.c')])
+
+    config.add_extension('cf', sources = [
+            join('src','cf.pyf'),
+            join('src','cf.c')])
     return config
