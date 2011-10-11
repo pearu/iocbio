@@ -13,6 +13,7 @@ from sympycore import Symbol, Calculus, PolynomialRing, Expr, heads
 
 
 indexed_str = 'direct'
+indexed_map = {}
 class Indexed:
     def __init__(self, name, index, indexed_subs):
         self.name = name
@@ -24,6 +25,11 @@ class Indexed:
             return '%s[%s]' % (self.name, str(self.index).replace(' ',''))
         elif indexed_str=='macro':
             return '%s(%s)' % (self.name.upper(), str(self.index).replace(' ',''))
+        elif indexed_str=='variable':
+            v = '%s_%s' % (self.name, str(self.index).replace(' ','').replace('+','p').replace('-','m'))
+            e = '%s(%s)' % (self.name.upper(), str(self.index).replace(' ',''))
+            indexed_map[v] = e
+            return v
         raise NotImplementedError(`indexed_str`)
     def __repr__(self):
         return '%s(%r, %r)' % (self.__class__.__name__, self.name, self.index)
@@ -81,6 +87,9 @@ class Generator:
                 if 1:
                     pwf1 = pwf2 = lambda f,i,s: f[i-1]*(s-1)*s/2 + f[i]*(1-s*s) + f[i+1]*(1+s)*s/2
                     offsets = 1,1
+                elif 1:
+                    pwf1 = pwf2 = lambda f,i,s: f[i-2]*4*(s-s**2)/3+f[i-1]*(1-10*s+9*s*s)/6+f[i]*(4+4*s-7*s**2)/6+f[i+1]*(1+2*s+s**2)/6+f[i+2]*s**2/6
+                    offsets = 2,2
                 elif 1:
                     pwf1 = pwf2 = lambda f,i,s: f[i-2]*(-s+s*s)/12+f[i-1]*2*(s-s*s)/3+f[i]*(1-s*s)+f[i+1]*(-2*s+5*s*s)/3+f[i+2]*(s-s*s)/12
                     #f[-2]*(-1/12*s+1/12*s^2)+f[-1]*(2/3*s-2/3*s^2)+f[0]*(1-s^2)+f[1]*(-2/3*s+5/3*s^2)+f[2]*(1/12*s-1/12*s^2)
@@ -216,7 +225,7 @@ class Generator:
                         integrand = '(f(x)-f(0))*(2*f(x+y)-f(x)-f(0))',
                         extension='cutoff',
                         max_diff_order=3):
-        global indexed_str
+        global indexed_str, indexed_map
         #self.show_convolution(integrand)
         poly_i, poly_r = self.integrate(integrand)
         exps = sorted(set(poly_i.data.keys() + poly_r.data.keys()))
@@ -240,30 +249,20 @@ class Generator:
   /* %(cf_def)s */
   int p, i;
   int k = n - 2 - j;
-  int k0 = (%(start_offset)s>k ? k : %(start_offset)s);
-  int k1 = k-%(end_offset)s;
+  //int k0 = (%(start_offset)s>k ? k : %(start_offset)s);
+  //int k1 = k-%(end_offset)s;
   double *f = fm;
   %(init_coeffs)s
+  %(decl_vars)s
   if (k>=0)
   {
     for(p=0; p<m; ++p, f+=n)
     {
-      i = 0;
-      //printf("k0=%%d, k=%%d, k1=%%d\\n", k0, k, k1);
-      for (;i<k0; ++i)
+      %(init_vars)s
+      for(i=0;i<k;++i)
       {
-      //printf("i0=%%d\\n", i);
-        %(update_loop_coeffs_start)s
-      }
-      for (; i<k1; ++i)
-      {
-        //printf("i1=%%d\\n", i);
+        %(init_vars_i)s
         %(update_loop_coeffs)s
-      }
-      for (; i<k; ++i)
-      {
-        //printf("i2=%%d\\n", i);
-        %(update_loop_coeffs_end)s
       }
       %(update_nonloop_coeffs)s
     }
@@ -278,14 +277,16 @@ class Generator:
             poly_i_diff = poly_i.variable_diff(self.namespace['r'], order)
             poly_r_diff = poly_r.variable_diff(self.namespace['r'], order)
             diff_exps = sorted(set(poly_i_diff.data.keys() + poly_r_diff.data.keys()))
-            
+            indexed_map.clear()
+            indexed_str = 'variable'
+            update_nonloop_coeffs = '\n      '.join('b%s += %s;' % (e[0], poly_r_diff.data.get(e, Calculus(0)).evalf(16)) for e in diff_exps)
+            #update_loop_coeffs_macro = '\n        '.join('b%s += %s;' % (e[0], poly_i_diff.data.get(e, Calculus(0)).evalf()) for e in diff_exps)
+            update_loop_coeffs = '\n        '.join('b%s += %s;' % (e[0], poly_i_diff.data.get(e, Calculus(0)).evalf(16)) for e in diff_exps)
             indexed_str = 'macro'
-            update_loop_coeffs_start = '\n        '.join('b%s += %s;' % (e[0], poly_i_diff.data.get(e, 0)) for e in diff_exps)
-            update_loop_coeffs_end = '\n        '.join('b%s += %s;' % (e[0], poly_i_diff.data.get(e, 0)) for e in diff_exps)
-            update_nonloop_coeffs = '\n      '.join('b%s += %s;' % (e[0], poly_r_diff.data.get(e, 0)) for e in diff_exps)
-            #indexed_str = 'direct'
-            update_loop_coeffs = '\n        '.join('b%s += %s;' % (e[0], poly_i_diff.data.get(e, 0)) for e in diff_exps)
 
+            decl_vars = 'double ' + ', '.join(indexed_map) + ';'
+            init_vars = '\n      '.join(['%s = %s;' % (v,e) for v,e in indexed_map.iteritems() if 'i' not in v])
+            init_vars_i = '\n        '.join(['%s = %s;' % (v,e) for v,e in indexed_map.iteritems() if 'i' in v])
 
             cf_proto = 'void cf_%(name)s_compute_coeffs_diff%(order)s(int j, double *fm, int n, int m, %(decl_coeffs)s)' % (locals())
 
