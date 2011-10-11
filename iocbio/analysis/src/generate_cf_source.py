@@ -78,22 +78,36 @@ class Generator:
                 pwf1 = lambda f,i,s: f[i]
                 pwf2 = lambda f,i,s: f[i] + s*(f[i+1]-f[i])
             elif pwf=='qint':
-                pwf1 = pwf2 = lambda f,i,s: f[i-1]*(s-1)*s/2 + f[i]*(1-s*s) + f[i+1]*(1+s)*s/2
-                #offsets = 1,1
+                if 1:
+                    pwf1 = pwf2 = lambda f,i,s: f[i-1]*(s-1)*s/2 + f[i]*(1-s*s) + f[i+1]*(1+s)*s/2
+                    offsets = 1,1
+                elif 1:
+                    pwf1 = pwf2 = lambda f,i,s: f[i-2]*(-s+s*s)/12+f[i-1]*2*(s-s*s)/3+f[i]*(1-s*s)+f[i+1]*(-2*s+5*s*s)/3+f[i+2]*(s-s*s)/12
+                    #f[-2]*(-1/12*s+1/12*s^2)+f[-1]*(2/3*s-2/3*s^2)+f[0]*(1-s^2)+f[1]*(-2/3*s+5/3*s^2)+f[2]*(1/12*s-1/12*s^2)
+                    offsets = 2,2
             elif pwf=='cint':
-                pwf1 = pwf2 = lambda f,i,s: (f[i-1]*s*((2-s)*s-1) + f[i]*(2+s*s*(3*s-5)) + f[i+1]*s*((4-3*s)*s+1) + f[i+2]*s*s*(s-1))/2
-                #offsets = 1,2
+                if 1:
+                    # catmull-rom
+                    pwf1 = pwf2 = lambda f,i,s: (f[i-1]*s*((2-s)*s-1) + f[i]*(2+s*s*(3*s-5)) + f[i+1]*s*((4-3*s)*s+1) + f[i+2]*s*s*(s-1))/2
+                    offsets = 1,2
+                elif 1:
+                    pwf1 = pwf2 = lambda f,i,s: f[i-2]*(-s+2*s*s-s*s*s)/12 + f[i-1]*(2*s/3-5*s*s/4+7*s**3/12)+f[i]*(1-11*s*s/3+8*s**3/3)+f[i+1]*(-2*s/3+13*s**2/3-8*s**3/3)+f[i+2]*(s/12+s**2/2-7*s**3/12)+f[i+3]*(-s**2/12+s**3/12)
+                    offsets = 2,3
+                elif 1:
+                    pwf1 = pwf2 = lambda f,i,s:f[i]*(1-3*s*s+2*s*s*s)+f[i+1]*(3*s*s-2*s*s*s)
+                    offsets = 0,0
             else:
                 raise NotImplementedError(`pwf`)
+        else:
+            raise NotImplementedError(`pwf`)
         self.offsets = offsets
         self.ring = R = PolynomialRing[('s','r')]
         if extension=='cutoff':
             def indexed_subs(expr, *subs_args):
                 assert isinstance (expr, Calculus) and expr.head is heads.SYMBOL,`expr.pair`
                 index = expr.data.index.subs(*subs_args)
-                index1 = index #.subs('o', 0)
-                if 1 and isinstance(index1, Calculus) and index1.head is heads.NUMBER:
-                    if index1.data < 0:
+                if isinstance(index, Calculus) and index.head is heads.NUMBER:
+                    if index.data < 0:
                         return Calculus(0)
                 return Symbol(Indexed(expr.data.name, index, expr.data.indexed_subs))
         else:
@@ -335,8 +349,52 @@ class Generator:
        double precision :: value
     end function  %(name)s_evaluate
         '''
-        
         yield cf_proto, cf_source_template % (locals()), pyf_template % (locals())
+
+
+
+        for k in [1,2]:
+            cf_proto = 'double cf_%(name)s_f%(k)s_evaluate(double x, double *f, int n, int order)' % (locals ())
+            cases = []
+            for order in range(3):
+                f_expr = eval('pwf%s(f,i,s)'%(k), self.namespace).variable_diff(self.namespace['s'], order).evalf ();
+                f_exps = sorted (f_expr.data)[::-1]
+                if not f_exps:
+                    break
+                horner = f_expr.data[f_exps[0]]
+                for e in f_exps[1:]:
+                    horner = '%s + (%s)*s' % (f_expr.data[e], horner)
+                cases.append('case %s: return %s;' % (order, horner))
+            cases = '\n    '.join (cases)
+            cf_source_template = '''
+#ifdef F
+#undef F
+#endif
+#define F(I) ((I)<0?0.0:((I)>=n?0.0:f[(I)]))
+%(cf_proto)s
+{
+  int i = floor(x);
+  double s = x - floor(x);
+  switch (order)
+  {
+    %(cases)s
+  }
+  return 0.0;
+}
+        '''
+            pyf_template = '''
+    function %(name)s_f%(k)s_evaluate (x, f, n, order) result (value)
+      intent (c) %(name)s_f%(k)s_evaluate
+      fortranname cf_%(name)s_f%(k)s_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function %(name)s_f%(k)s_evaluate
+'''
+
+            yield cf_proto, cf_source_template % (locals()), pyf_template % (locals())
 
         cf_proto = 'double cf_%(name)s_find_piecewise_linear_zero(int j0, int j1, double *fm, int n, int m)' % (locals())
         order = poly_order-1
