@@ -23,6 +23,66 @@ def show_cf ():
     def a33(y, order=0, f=f):
         return array([cf.a33_evaluate(y0, f, order=order) for y0 in y])
 
+    def a11_extremes(order=0, f=f):
+        y = 0
+        status=0
+        l = []
+        while status==0:
+            status, y = cf.a11_find_extreme(int(y+1),len(x)-1, f, order=order)
+            if status==0:
+                l.append(y)
+        return l
+
+    def a11_zeros(order=0, f=f):
+        y = 0
+        status=0
+        l = []
+        while status==0:
+            status, y = cf.a11_find_zero(int(y+1),len(x)-1, f, order=order)
+            if status==0:
+                l.append(y)
+        return l
+
+    def a22_extremes(order=0, f=f):
+        y = 0
+        status=0
+        l = []
+        while status==0:
+            status, y = cf.a22_find_extreme(int(y+1),len(x)-1, f, order=order)
+            if status==0:
+                l.append(y)
+        return l
+
+    def a22_zeros(order=0, f=f):
+        y = 0
+        status=0
+        l = []
+        while status==0:
+            status, y = cf.a22_find_zero(int(y+1),len(x)-1, f, order=order)
+            if status==0:
+                l.append(y)
+        return l
+
+    def a33_extremes(order=0, f=f):
+        y = 0
+        status=0
+        l = []
+        while status==0:
+            status, y = cf.a33_find_extreme(int(y+1),len(x)-1, f, order=order)
+            if status==0:
+                l.append(y)
+        return l
+
+    def a33_zeros(order=0, f=f):
+        y = 0
+        status=0
+        l = []
+        while status==0:
+            status, y = cf.a33_find_zero(int(y+1),len(x)-1, f, order=order)
+            if status==0:
+                l.append(y)
+        return l
+
     plt.figure(figsize=(8,12))
 
     plt.subplot(211)
@@ -39,8 +99,16 @@ def show_cf ():
     styles = ['-', '--', ':']
     colors = ['b', 'r', 'g', 'k', 'c']
     for i,a in enumerate([a11, a22, a33]):
+        extremes = eval ('%s_extremes' % (a.__name__))
+        zeros = eval ('%s_zeros' % (a.__name__))
         for order in range (4):
             plt.plot(y, a(y, order), colors[order]+styles[i], label='%s_%s' % (a.__name__,order))
+            for y1 in extremes(order=order):
+                plt.axvline(x=y1,linewidth=1, color=colors[order])
+
+            for y1 in zeros(order=order):
+                plt.axvline(x=y1,linewidth=2, color=colors[order])
+        
     plt.xlabel ('y')
     plt.legend ()
 

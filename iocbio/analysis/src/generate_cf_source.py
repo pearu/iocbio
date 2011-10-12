@@ -220,6 +220,125 @@ class Generator:
                 
             print '%s: sum(%s,i=0..N-3-j) + {%s}' % (self.ring({k:1}), expr_i, expr_r)
 
+    def generate_approximation_source(self):
+        # the following coefficient tables are computed with the following maple program:
+        """
+        max_order:=7:
+        ff:=(i,s)->sum(a[i,k]*s^k,k=0..max_order):
+        p:=s->p0+p1*s+p2*s^2:
+        f:=int((ff(1,1+s)-p(s))^2,s=-1..0)+int((ff(2,s)-p(s))^2,s=0..1)+int((ff(3,s-1)-p(s))^2,s=1..2);
+        sol:=solve({diff(f,p0), diff(f,p1), diff(f,p2)}, {p0,p1,p2});
+        'a[i]=['evalf(coeff(subs(sol,p0),a[i,j]),16)'$j=0..7]'$i=1..3; # where pp=p0,p1,p2
+        """
+        p0_coeffs_table3 = dict (
+            a1 = [.4320987654320988, .2592592592592593, .1851851851851852, .1438271604938272, .1174603174603175, 0.9920634920634921e-1, 0.8583186360964139e-1, 0.7561728395061728e-1], 
+            a2 = [.5802469135802469, .2716049382716049, .1728395061728395, .1253086419753086, 0.9770723104056437e-1, 0.7980599647266314e-1, 0.6731334509112287e-1, 0.5812757201646091e-1], 
+            a3 = [-0.1234567901234568e-1, -0.8641975308641975e-1, -0.8641975308641975e-1, -0.7839506172839506e-1, -0.7019400352733686e-1, -0.6305114638447972e-1, -0.5702527924750147e-1, -0.5195473251028807e-1]
+            )            
+        p1_coeffs_table3 = dict (
+            a1 = [-.6913580246913580, -.1851851851851852, -0.7407407407407407e-1, -0.3456790123456790e-1, -0.1693121693121693e-1, -0.7936507936507936e-2, -0.2939447383891828e-2, 0.], 
+            a2 = [.4938271604938272, .2839506172839506, .1975308641975309, .1506172839506173, .1213403880070547, .1014109347442681, 0.8700764256319812e-1, 0.7613168724279835e-1], 
+            a3 = [.1975308641975309, 0.1234567901234568e-1, -0.2469135802469136e-1, -0.3456790123456790e-1, -0.3668430335097002e-1, -0.3615520282186949e-1, -0.3468547912992357e-1, -0.3292181069958848e-1]
+            )
+        p2_coeffs_table3 = dict (
+            a1 = [.2469135802469136, 0., -0.3703703703703704e-1, -0.4320987654320988e-1, -0.4232804232804233e-1, -0.3968253968253968e-1, -0.3674309229864785e-1, -0.3395061728395062e-1], 
+            a2 = [-.4938271604938272, -.2469135802469136, -.1604938271604938, -.1172839506172840, -0.9171075837742504e-1, -0.7495590828924162e-1, -0.6319811875367431e-1, -0.5452674897119342e-1],
+            a3 = [.2469135802469136, .2469135802469136, .2098765432098765, .1790123456790123, .1552028218694885, .1366843033509700, .1219870664315109, .1100823045267490]
+            )
+
+        l0_coeffs_table3 = dict (
+            a1 = [.5555555555555556, .2592592592592593, .1666666666666667, .1222222222222222, 0.9629629629629630e-1, 0.7936507936507936e-1, 0.6746031746031746e-1, 0.5864197530864198e-1], 
+            a2 = [.3333333333333333, .1481481481481481, 0.9259259259259259e-1, 0.6666666666666667e-1, 0.5185185185185185e-1, 0.4232804232804233e-1, 0.3571428571428571e-1, 0.3086419753086420e-1],
+            a3 = [.1111111111111111, 0.3703703703703704e-1, 0.1851851851851852e-1, 0.1111111111111111e-1, 0.7407407407407407e-2, 0.5291005291005291e-2, 0.3968253968253968e-2, 0.3086419753086420e-2]
+            )
+        l1_coeffs_table3 = dict (
+            a1 = [-.4444444444444444, -.1851851851851852, -.1111111111111111, -0.7777777777777778e-1, -0.5925925925925926e-1, -0.4761904761904762e-1, -0.3968253968253968e-1, -0.3395061728395062e-1],
+            a2 = [0., 0.3703703703703704e-1, 0.3703703703703704e-1, 0.3333333333333333e-1, 0.2962962962962963e-1, 0.2645502645502646e-1, 0.2380952380952381e-1, 0.2160493827160494e-1],
+            a3 = [.4444444444444444, .2592592592592593, .1851851851851852, .1444444444444444, .1185185185185185, .1005291005291005, 0.8730158730158730e-1, 0.7716049382716049e-1]
+            )
+
+        p0_coeffs_table1 = dict (
+            a1 = [1., 0., 0., 0.5000000000000000e-1, 0.8571428571428571e-1, .1071428571428571, .1190476190476190, .1250000000000000]
+            )
+        p1_coeffs_table1 = dict (
+            a1 = [0., 1., 0., -.6000000000000000, -.9142857142857143, -1.071428571428571, -1.142857142857143, -1.166666666666667]
+            )
+        p2_coeffs_table1 = dict (
+            a1 = [0., 0., 1., 1.500000000000000, 1.714285714285714, 1.785714285714286, 1.785714285714286, 1.750000000000000]
+            )
+
+        l0_coeffs_table1 = dict (
+            a1 = [1., 0., -.1666666666666667, -.2000000000000000, -.2000000000000000, -.1904761904761905, -.1785714285714286, -.1666666666666667],
+            )
+        l1_coeffs_table1 = dict (
+            a1 = [0., 1., 1., .9000000000000000, .8000000000000000, .7142857142857143, .6428571428571429, .5833333333333333]
+            )
+
+        for poly_order in range (8):
+            decl_coeffs1 = ', '.join('double a1_%s' % (i) for i in range(poly_order+1))
+            decl_coeffs2 = ', '.join('double a2_%s' % (i) for i in range(poly_order+1))
+            decl_coeffs3 = ', '.join('double a3_%s' % (i) for i in range(poly_order+1))
+
+            cf_proto = 'void cf_quadratic_approximation_3_%(poly_order)s(%(decl_coeffs1)s, %(decl_coeffs2)s, %(decl_coeffs3)s, double* p0, double* p1, double* p2)' % (locals ())
+
+            p0 = '+'.join(['%.16e*%s_%s' % (p0_coeffs_table3[a][i],a,i) for a in ['a1','a2', 'a3'] for i in range(poly_order+1)])
+            p1 = '+'.join(['%.16e*%s_%s' % (p1_coeffs_table3[a][i],a,i) for a in ['a1','a2', 'a3'] for i in range(poly_order+1)])
+            p2 = '+'.join(['%.16e*%s_%s' % (p2_coeffs_table3[a][i],a,i) for a in ['a1','a2', 'a3'] for i in range(poly_order+1)])
+
+            cf_source_template = '''
+%(cf_proto)s
+{
+  *p0 = %(p0)s;
+  *p1 = %(p1)s;
+  *p2 = %(p2)s;
+}
+            '''
+            yield cf_proto, cf_source_template %(locals ()), ''            
+
+            cf_proto = 'void cf_quadratic_approximation_1_%(poly_order)s(%(decl_coeffs1)s, double* p0, double* p1, double* p2)' % (locals ())
+
+            p0 = '+'.join(['%.16e*%s_%s' % (p0_coeffs_table1[a][i],a,i) for a in ['a1'] for i in range(poly_order+1)])
+            p1 = '+'.join(['%.16e*%s_%s' % (p1_coeffs_table1[a][i],a,i) for a in ['a1'] for i in range(poly_order+1)])
+            p2 = '+'.join(['%.16e*%s_%s' % (p2_coeffs_table1[a][i],a,i) for a in ['a1'] for i in range(poly_order+1)])
+
+            cf_source_template = '''
+%(cf_proto)s
+{
+  *p0 = %(p0)s;
+  *p1 = %(p1)s;
+  *p2 = %(p2)s;
+}
+            '''
+            yield cf_proto, cf_source_template %(locals ()), ''
+
+            cf_proto = 'void cf_linear_approximation_3_%(poly_order)s(%(decl_coeffs1)s, %(decl_coeffs2)s, %(decl_coeffs3)s, double* p0, double* p1)' % (locals ())
+
+            p0 = '+'.join(['%.16e*%s_%s' % (l0_coeffs_table3[a][i],a,i) for a in ['a1','a2', 'a3'] for i in range(poly_order+1)])
+            p1 = '+'.join(['%.16e*%s_%s' % (l1_coeffs_table3[a][i],a,i) for a in ['a1','a2', 'a3'] for i in range(poly_order+1)])
+
+            cf_source_template = '''
+%(cf_proto)s
+{
+  *p0 = %(p0)s;
+  *p1 = %(p1)s;
+}
+            '''
+            yield cf_proto, cf_source_template %(locals ()), ''            
+            
+            cf_proto = 'void cf_linear_approximation_1_%(poly_order)s(%(decl_coeffs1)s, double* p0, double* p1)' % (locals ())
+
+            p0 = '+'.join(['%.16e*%s_%s' % (l0_coeffs_table1[a][i],a,i) for a in ['a1'] for i in range(poly_order+1)])
+            p1 = '+'.join(['%.16e*%s_%s' % (l1_coeffs_table1[a][i],a,i) for a in ['a1'] for i in range(poly_order+1)])
+
+            cf_source_template = '''
+%(cf_proto)s
+{
+  *p0 = %(p0)s;
+  *p1 = %(p1)s;
+}
+            '''
+            yield cf_proto, cf_source_template %(locals ()), ''            
+
     def generate_source(self,
                         name = 'mcf1',
                         integrand = '(f(x)-f(0))*(2*f(x+y)-f(x)-f(0))',
@@ -231,9 +350,20 @@ class Generator:
         exps = sorted(set(poly_i.data.keys() + poly_r.data.keys()))
         poly_order = max([e[0] for e in exps])
         coeffs = ', '.join('a%s' % (i) for i in range(poly_order+1))
+        coeffs1 = ', '.join('a1_%s' % (i) for i in range(poly_order+1))
+        coeffs2 = ', '.join('a2_%s' % (i) for i in range(poly_order+1))
+        coeffs3 = ', '.join('a3_%s' % (i) for i in range(poly_order+1))
         refcoeffs = ', '.join('&a%s' % (i) for i in range(poly_order+1))
+        refcoeffs1 = ', '.join('&a1_%s' % (i) for i in range(poly_order+1))
+        refcoeffs2 = ', '.join('&a2_%s' % (i) for i in range(poly_order+1))
+        refcoeffs3 = ', '.join('&a3_%s' % (i) for i in range(poly_order+1))
         decl_coeffs = ', '.join('double* a%s' % (i) for i in range(poly_order+1))
         init_coeffs_ref = '\n  '.join('double a%s = 0.0;' % (i) for i in range(poly_order+1))
+        init_coeffs_ref1 = '\n  '.join('double a1_%s = 0.0;' % (i) for i in range(poly_order+1))
+        init_coeffs_ref2 = '\n  '.join('double a2_%s = 0.0;' % (i) for i in range(poly_order+1))
+        init_coeffs_ref3 = '\n  '.join('double a3_%s = 0.0;' % (i) for i in range(poly_order+1))
+        set_coeffs_ref21 = '\n    '.join('a1_%s = a2_%s;' % (i,i) for i in range(poly_order+1))
+        set_coeffs_ref32 = '\n    '.join('a2_%s = a3_%s;' % (i,i) for i in range(poly_order+1))
         init_coeffs = '\n  '.join('double b%s = 0.0;' % (i) for i in range(poly_order+1))
         set_coeffs = '\n  '.join('*a%s = b%s;' % (i, i) for i in range(poly_order+1))
         set_coeffs0 = '\n      '.join('*a%s = 0.0;' % (i,) for i in range(poly_order+1))
@@ -273,6 +403,8 @@ class Generator:
 
         start_offset, end_offset = self.offsets
         order_cases = []
+        order_cases_extreme = []
+        order_cases_zero = []
         for order in range(poly_order+1):
             poly_i_diff = poly_i.variable_diff(self.namespace['r'], order)
             poly_r_diff = poly_r.variable_diff(self.namespace['r'], order)
@@ -305,6 +437,189 @@ class Generator:
             cf_source = re.sub(r'(?P<numer>\d+)[/](?P<denom>\d+)', r'\g<numer>.0/\g<denom>.0', cf_source)
             yield cf_proto, cf_source, ''
 
+            cf_proto2 = 'int cf_%(name)s_find_extreme_diff%(order)s(int j0, int j1, double *fm, int n, int m, double* result)' % (locals())
+            poly_order2 = poly_order-order
+            coeffs1_2 = ','.join(coeffs1.split(',')[:poly_order2+1])
+            coeffs2_2 = ','.join(coeffs2.split(',')[:poly_order2+1])
+            coeffs3_2 = ','.join(coeffs3.split(',')[:poly_order2+1])
+            order_cases_extreme.append('case %(order)s: return cf_%(name)s_find_extreme_diff%(order)s(j0, j1, fm, n, m, result);' % (locals()))
+            cf_source_template2_3 = '''
+%(cf_proto2)s
+{
+  int count = 0;
+  int j;
+  double s;
+  double p0 = 0.0;
+  double p1 = 0.0;
+  double p2 = 0.0;
+  %(init_coeffs_ref1)s
+  %(init_coeffs_ref2)s
+  %(init_coeffs_ref3)s
+  int start_j = (j0>0?j0-1:0);
+  int end_j = (j1<n-1?j1+1:n-1);
+  int status = -1;
+  for (j=start_j; j<end_j; ++j)
+  {
+    %(set_coeffs_ref21)s
+    %(set_coeffs_ref32)s
+    cf_%(name)s_compute_coeffs_diff%(order)s(j, fm, n, m, %(refcoeffs3)s);
+    count ++;
+    if (count<3)
+      continue;
+    cf_quadratic_approximation_3_%(poly_order2)s(%(coeffs1_2)s, %(coeffs2_2)s, %(coeffs3_2)s, &p0, &p1, &p2);
+    if (p2!=0.0)
+    {
+       s = -0.5*p1/p2;
+       if (s>=0.0 && s<=1.0)
+         {
+            *result = (double) (j-1) + s;
+            status = 0;
+            printf("cf_%(name)s_find_extreme_diff%(order)s: j-1=%%d, s=%%f RETURN\\n",j-1,s);
+            break;
+         }
+       else if (s>=-1 && s<=2.0)
+         {
+            printf("cf_%(name)s_find_extreme_diff%(order)s: j-1=%%d, s=%%f\\n",j-1,s);
+         }
+    }
+  }
+  return status;
+}
+            '''
+
+            cf_source_template2_1 = '''
+%(cf_proto2)s
+{
+  int count = 0;
+  int j;
+  double s;
+  double p0 = 0.0;
+  double p1 = 0.0;
+  double p2 = 0.0;
+  %(init_coeffs_ref1)s
+  int start_j = (j0>0?j0:0);
+  int end_j = (j1<n?j1:n-1);
+  int status = -1;
+  for (j=start_j; j<end_j; ++j)
+  {
+    cf_%(name)s_compute_coeffs_diff%(order)s(j, fm, n, m, %(refcoeffs1)s);
+    cf_quadratic_approximation_1_%(poly_order2)s(%(coeffs1_2)s, &p0, &p1, &p2);
+    if (p2!=0.0)
+    {
+       s = -0.5*p1/p2;
+       if (s>=0.0 && s<=1.0)
+         {
+            *result = (double) (j) + s;
+            status = 0;
+            printf("cf_%(name)s_find_extreme_diff%(order)s: j=%%d, s=%%f RETURN\\n",j,s);
+            break;
+         }
+       else if (s>=-1 && s<=2.0)
+         {
+            printf("cf_%(name)s_find_extreme_diff%(order)s: j=%%d, s=%%f\\n",j,s);
+         }
+    }
+  }
+  return status;
+}
+            '''
+            
+            if poly_order2<2:
+                yield cf_proto2, cf_source_template2_3 %(locals ()), ''
+            else:
+                yield cf_proto2, cf_source_template2_1 %(locals ()), ''
+
+            cf_proto2 = 'int cf_%(name)s_find_zero_diff%(order)s(int j0, int j1, double *fm, int n, int m, double* result)' % (locals())
+            poly_order2 = poly_order-order
+            coeffs1_2 = ','.join(coeffs1.split(',')[:poly_order2+1])
+            coeffs2_2 = ','.join(coeffs2.split(',')[:poly_order2+1])
+            coeffs3_2 = ','.join(coeffs3.split(',')[:poly_order2+1])
+            order_cases_zero.append('case %(order)s: return cf_%(name)s_find_zero_diff%(order)s(j0, j1, fm, n, m, result);' % (locals()))
+            cf_source_template2_3 = '''
+%(cf_proto2)s
+{
+  int count = 0;
+  int j;
+  double s;
+  double p0 = 0.0;
+  double p1 = 0.0;
+  %(init_coeffs_ref1)s
+  %(init_coeffs_ref2)s
+  %(init_coeffs_ref3)s
+  int start_j = (j0>0?j0-1:0);
+  int end_j = (j1<n-1?j1+1:n-1);
+  int status = -1;
+  for (j=start_j; j<end_j; ++j)
+  {
+    %(set_coeffs_ref21)s
+    %(set_coeffs_ref32)s
+    cf_%(name)s_compute_coeffs_diff%(order)s(j, fm, n, m, %(refcoeffs3)s);
+    count ++;
+    if (count<3)
+      continue;
+    cf_linear_approximation_3_%(poly_order2)s(%(coeffs1_2)s, %(coeffs2_2)s, %(coeffs3_2)s, &p0, &p1);
+    if (p1!=0.0)
+    {
+       s = -p0/p1;
+       if (s>=0.0 && s<=1.0)
+         {
+            *result = (double) (j-1) + s;
+            status = 0;
+            printf("cf_%(name)s_find_zero_diff%(order)s: j-1=%%d, s=%%f RETURN\\n",j-1,s);
+            break;
+         }
+       else if (s>=-1 && s<=2.0)
+         {
+            printf("cf_%(name)s_find_zero_diff%(order)s: j-1=%%d, s=%%f\\n",j-1,s);
+         }
+    }
+  }
+  return status;
+}
+            '''
+
+            cf_source_template2_1 = '''
+%(cf_proto2)s
+{
+  int count = 0;
+  int j;
+  double s;
+  double p0 = 0.0;
+  double p1 = 0.0;
+  %(init_coeffs_ref1)s
+  int start_j = (j0>=0?j0:0);
+  int end_j = (j1<n?j1:n-1);
+  int status = -1;
+  for (j=start_j; j<end_j; ++j)
+  {
+    cf_%(name)s_compute_coeffs_diff%(order)s(j, fm, n, m, %(refcoeffs1)s);
+    cf_linear_approximation_1_%(poly_order2)s(%(coeffs1_2)s, &p0, &p1);
+    if (p1!=0.0)
+    {
+       s = -p0/p1;
+       if (s>=0.0 && s<=1.0)
+         {
+            *result = (double) (j) + s;
+            status = 0;
+            printf("cf_%(name)s_find_zero_diff%(order)s: j=%%d, s=%%f RETURN\\n",j,s);
+            break;
+         }
+       else if (s>=-1 && s<=2.0)
+         {
+            printf("cf_%(name)s_find_zero_diff%(order)s: j=%%d, s=%%f\\n",j,s);
+         }
+    }
+  }
+  return status;
+}
+            '''
+            if poly_order2<1:
+                yield cf_proto2, cf_source_template2_3 %(locals ()), ''
+            else:
+                yield cf_proto2, cf_source_template2_1 %(locals ()), ''
+
+            
+
         cf_proto = 'void cf_%(name)s_compute_coeffs(int j, double *fm, int n, int m, int order, %(decl_coeffs)s)' % (locals())
         order_cases = '\n    '.join(order_cases)
         cf_def = 'diff(int(%s, x=0..L-y), y, order) = sum(a_k*r^k, k=0..%s) where y=j+r' % (integrand, poly_order)
@@ -323,6 +638,64 @@ class Generator:
 }
         '''
         yield cf_proto, cf_source_template % (locals()), ''
+
+        cf_proto = 'int cf_%(name)s_find_extreme(int j0, int j1, double *fm, int n, int m, int order, double* result)' % (locals())
+        order_cases = '\n    '.join(order_cases_extreme)
+        cf_source_template = '''
+%(cf_proto)s
+{
+  switch (order)
+  {
+    %(order_cases)s
+    default:
+      *result = 0.0;
+  }
+  return -2;
+}
+        '''
+        pyf_template = '''
+    function %(name)s_find_extreme(j0, j1, f, n, m, order, res) result (status)
+       intent(c) %(name)s_find_extreme
+       fortranname cf_%(name)s_find_extreme
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  %(name)s_find_extreme
+        '''
+        yield cf_proto, cf_source_template % (locals()), pyf_template % (locals ())
+
+        cf_proto = 'int cf_%(name)s_find_zero(int j0, int j1, double *fm, int n, int m, int order, double* result)' % (locals())
+        order_cases = '\n    '.join(order_cases_zero)
+        cf_source_template = '''
+%(cf_proto)s
+{
+  switch (order)
+  {
+    %(order_cases)s
+    default:
+      *result = 0.0;
+  }
+  return -2;
+}
+        '''
+        pyf_template = '''
+    function %(name)s_find_zero(j0, j1, f, n, m, order, res) result (status)
+       intent(c) %(name)s_find_zero
+       fortranname cf_%(name)s_find_zero
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  %(name)s_find_zero
+        '''
+        yield cf_proto, cf_source_template % (locals()), pyf_template % (locals ())
 
         cf_proto = 'double cf_%(name)s_evaluate(double y, double *fm, int n, int m, int order)' % (locals())
         horner = 'a%s' % (poly_order)
@@ -396,49 +769,6 @@ class Generator:
 '''
 
             yield cf_proto, cf_source_template % (locals()), pyf_template % (locals())
-
-        cf_proto = 'double cf_%(name)s_find_piecewise_linear_zero(int j0, int j1, double *fm, int n, int m)' % (locals())
-        order = poly_order-1
-        cf_source_template = '''
-%(cf_proto)s
-{
-  %(init_coeffs_ref)s
-  int j;
-  for (j=j0; j<j1; ++j)
-  {
-    cf_%(name)s_compute_coeffs_diff%(order)s(j, fm, n, m, %(refcoeffs)s);  
-  }
-  return 0;
-}
-        '''
-
-        pyf_template = '''
-    subroutine %(name)s_find_piecewise_linear_zero(f, n, m)
-       intent(c) %(name)s_find_piecewise_linear_zero
-       fortranname cf_%(name)s_find_piecewise_linear_zero
-       double precision dimension (m, n), intent(in,c):: f
-       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
-       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
-    end subroutine  %(name)s_find_piecewise_linear_zero
-        '''
-        
-        yield cf_proto, cf_source_template % (locals()), pyf_template % (locals())
-
-        cf_proto = 'double cf_%(name)s_find_piecewise_quadratic_zero(int j0, int j1, double *fm, int n, int m)' % (locals())
-        order = poly_order-2
-        cf_source_template = '''
-%(cf_proto)s
-{
-  %(init_coeffs_ref)s
-  int j;
-  for (j=j0; j<j1; ++j)
-  {
-    cf_%(name)s_compute_coeffs_diff%(order)s(j, fm, n, m, %(refcoeffs)s);  
-  }
-  return 0;
-}
-        '''
-        yield cf_proto, cf_source_template % (locals()), ''
         
 def generate():
     this_file = __file__
@@ -501,17 +831,23 @@ end python module
 
     for name, (pwf, integrand) in dict(
         a11 = ('linear', 'f1(x)*f2(x+y)'),
-        a10 = ('linear_constant', 'f1(x)*f2(x+y)'),
+        #a10 = ('linear_constant', 'f1(x)*f2(x+y)'),
         a22 = ('qint', 'f1(x)*f2(x+y)'),
         a33 = ('cint', 'f1(x)*f2(x+y)'),
         ).iteritems():
         g = Generator(pwf)
         for proto, source, interface in g.generate_source(name,
-                                               integrand=integrand):
+                                                          integrand=integrand):
             source_file.write(source)
             header_file.write('extern %s;\n' % (proto))
             if interface:
                 pyf_file.write(interface)
+
+    for proto, source, interface in g.generate_approximation_source ():
+        source_file.write(source)
+        header_file.write('extern %s;\n' % (proto))
+        if interface:
+            pyf_file.write(interface)
 
     header_file.write(header_footer)
     source_file.write(source_footer)
