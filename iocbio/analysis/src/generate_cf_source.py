@@ -160,6 +160,10 @@ class Generator:
 
         if extension=='cutoff':
             integrand1 = eval(str_replace(integrand,[
+                        ('f1(0)','f[0]'),
+                        ('f2(0)','f[0]'),
+                        ('f1(L)','f[N-1]'),
+                        ('f2(L)','f[N-1]'),
                         ('f(x)','pwf1(f,i,s)'),
                         ('f(x+y)','pwf1(f,i+j,s+r)'),
                         ('f1(x)','pwf1(f,i,s)'),
@@ -169,6 +173,10 @@ class Generator:
                         ('x','(R.Number(i)+s)')])
                               )
             integrand2 = eval(str_replace(integrand,[
+                        ('f1(0)','f[0]'),
+                        ('f2(0)','f[0]'),
+                        ('f1(L)','f[N-1]'),
+                        ('f2(L)','f[N-1]'),
                         ('f(x)','pwf1(f,N-2-j, s)'),
                         ('f(x+y)','pwf1(f,N-2,s+r)'),
                         ('f1(x)','pwf1(f,N-2-j, s)'),
@@ -177,6 +185,10 @@ class Generator:
                         ('f2(x+y)','pwf2(f,N-2,s+r)'),
                         ('x','(R.Number(N-2-j)+s)')]))
             integrand3 = eval(str_replace(integrand,[
+                        ('f1(0)','f[0]'),
+                        ('f2(0)','f[0]'),
+                        ('f1(L)','f[N-1]'),
+                        ('f2(L)','f[N-1]'),
                         ('f(x)','pwf1(f,i,s)'),
                         ('f(x+y)','pwf1(f,i+j+1,s+r-1)'),
                         ('f1(x)','pwf1(f,i,s)'),
@@ -378,23 +390,25 @@ class Generator:
 {
   /* %(cf_def)s */
   int p, i;
-  int k = n - 2 - j;
+  //int k = n - 2 - j;
   //int k0 = (%(start_offset)s>k ? k : %(start_offset)s);
   //int k1 = k-%(end_offset)s;
   double *f = fm;
   %(init_coeffs)s
   %(decl_vars)s
-  if (k>=0)
+  if (/*k>=0 ||*/ 1)
   {
     for(p=0; p<m; ++p, f+=n)
     {
       %(init_vars)s
-      for(i=0;i<k;++i)
+      for(i=-2*n;i<=n*2;++i)
       {
         %(init_vars_i)s
         %(update_loop_coeffs)s
       }
+      /*
       %(update_nonloop_coeffs)s
+      */
     }
   }
   %(set_coeffs)s
@@ -433,6 +447,7 @@ class Generator:
 
             cf_source = cf_source_template % (locals())
             cf_source = re.sub(r'(\(f\[(?P<index>[^\]]+)\]\)[*]{2,2}2)', r'(f[\g<index>]*f[\g<index>])', cf_source)
+            cf_source = re.sub(r'(f_(?P<index>[\w\d]+)[*]{2,2}2)', r'(f_\g<index>*f_\g<index>)', cf_source)
             cf_source = re.sub(r'(\(f\[(?P<index>[^\]]+)\]\)[*]{2,2}(?P<exp>\d+))', r'pow(f[\g<index>], \g<exp>)', cf_source)
             cf_source = re.sub(r'(?P<numer>\d+)[/](?P<denom>\d+)', r'\g<numer>.0/\g<denom>.0', cf_source)
             yield cf_proto, cf_source, ''
@@ -474,12 +489,7 @@ class Generator:
          {
             *result = (double) (j-1) + s;
             status = 0;
-            printf("cf_%(name)s_find_extreme_diff%(order)s: j-1=%%d, s=%%f RETURN\\n",j-1,s);
             break;
-         }
-       else if (s>=-1 && s<=2.0)
-         {
-            printf("cf_%(name)s_find_extreme_diff%(order)s: j-1=%%d, s=%%f\\n",j-1,s);
          }
     }
   }
@@ -490,7 +500,6 @@ class Generator:
             cf_source_template2_1 = '''
 %(cf_proto2)s
 {
-  int count = 0;
   int j;
   double s;
   double p0 = 0.0;
@@ -511,12 +520,7 @@ class Generator:
          {
             *result = (double) (j) + s;
             status = 0;
-            printf("cf_%(name)s_find_extreme_diff%(order)s: j=%%d, s=%%f RETURN\\n",j,s);
             break;
-         }
-       else if (s>=-1 && s<=2.0)
-         {
-            printf("cf_%(name)s_find_extreme_diff%(order)s: j=%%d, s=%%f\\n",j,s);
          }
     }
   }
@@ -565,12 +569,7 @@ class Generator:
          {
             *result = (double) (j-1) + s;
             status = 0;
-            printf("cf_%(name)s_find_zero_diff%(order)s: j-1=%%d, s=%%f RETURN\\n",j-1,s);
             break;
-         }
-       else if (s>=-1 && s<=2.0)
-         {
-            printf("cf_%(name)s_find_zero_diff%(order)s: j-1=%%d, s=%%f\\n",j-1,s);
          }
     }
   }
@@ -581,7 +580,6 @@ class Generator:
             cf_source_template2_1 = '''
 %(cf_proto2)s
 {
-  int count = 0;
   int j;
   double s;
   double p0 = 0.0;
@@ -601,12 +599,7 @@ class Generator:
          {
             *result = (double) (j) + s;
             status = 0;
-            printf("cf_%(name)s_find_zero_diff%(order)s: j=%%d, s=%%f RETURN\\n",j,s);
             break;
-         }
-       else if (s>=-1 && s<=2.0)
-         {
-            printf("cf_%(name)s_find_zero_diff%(order)s: j=%%d, s=%%f\\n",j,s);
          }
     }
   }
@@ -705,8 +698,12 @@ class Generator:
 %(cf_proto)s
 {
   %(init_coeffs_ref)s
+  /*
   int j = floor((y<0?-y:y));
   double r = (y<0?-y:y) - j;
+  */
+  int j = floor (y);
+  double r = y - j;
   cf_%(name)s_compute_coeffs(j, fm, n, m, order, %(refcoeffs)s);
   return %(horner)s;
 }
@@ -830,11 +827,24 @@ end python module
     pyf_file.write(pyf_header)
 
     for name, (pwf, integrand) in dict(
+        a00 = ('constant', 'f1(x)*f2(x+y)'),
         a11 = ('linear', 'f1(x)*f2(x+y)'),
-        #a10 = ('linear_constant', 'f1(x)*f2(x+y)'),
         a22 = ('qint', 'f1(x)*f2(x+y)'),
         a33 = ('cint', 'f1(x)*f2(x+y)'),
+        b00 = ('constant','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)-f2(L))'),
+        b11 = ('linear','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)-f2(L))'),
+        b22 = ('qint','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)-f2(L))'),
+        b33 = ('cint','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)-f2(L))'),
+        c00 = ('constant','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)+f(x)/2+3*f[0]/2-9*f2(L)/4)'),
+        c11 = ('linear','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)+f(x)/2+3*f[0]/2-9*f2(L)/4)'),
+        c22 = ('qint','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)+f(x)/2+3*f[0]/2-9*f2(L)/4)'),
+        c33 = ('cint','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)+f(x)/2+3*f[0]/2-9*f2(L)/4)'),
+        e11 = ('linear', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))'),
         ).iteritems():
+        if not name.startswith ('e'):
+            continue
+        #if name not in ['a11','a22','a33']:
+        #    continue
         g = Generator(pwf)
         for proto, source, interface in g.generate_source(name,
                                                           integrand=integrand):
