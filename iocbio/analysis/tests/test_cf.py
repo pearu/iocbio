@@ -5,10 +5,10 @@ from iocbio.analysis import cf
 
 def show_cf ():
     x = arange (50, dtype=float)
-    xx = arange(0,len (x), 0.01)
-    y = arange(-len (x)*2,len (x)+10, 0.01)
+    xx = arange(-2,len (x)+2, 0.01)
+    y = arange(0,len (x)+1, 0.01)
     P = (len(x)-1)*0.4
-    f = sin(2*pi*(x/P-0.3)) + 0#.5
+    f = sin(2*pi*(x/P-0.2)) + 0#.5
     print 'P=',P
     
     def f1(x, order, f=f):
@@ -18,10 +18,10 @@ def show_cf ():
     def f3(x, order, f=f):
         return array([cf.a33_f1_evaluate(x0, f, order=order) for x0 in x])
 
-    def a00(y, order=0, f=f): return array([cf.a00_evaluate(y0, f, order=order) for y0 in y])
+    def a00(y, order=0, f=f): return -2*array([cf.a00_evaluate(y0, f, order=order) for y0 in y])
     def b00(y, order=0, f=f): return array([cf.b00_evaluate(y0, f, order=order) for y0 in y])
     def c00(y, order=0, f=f): return array([cf.c00_evaluate(y0, f, order=order) for y0 in y])
-    def a11(y, order=0, f=f): return array([cf.a11_evaluate(y0, f, order=order) for y0 in y])
+    def a11(y, order=0, f=f): return -2*array([cf.a11_evaluate(y0, f, order=order) for y0 in y])
     def b11(y, order=0, f=f): return array([cf.b11_evaluate(y0, f, order=order) for y0 in y])
     def c11(y, order=0, f=f): return array([cf.c11_evaluate(y0, f, order=order) for y0 in y])
     def a22(y, order=0, f=f): return array([cf.a22_evaluate(y0, f, order=order) for y0 in y])
@@ -30,7 +30,10 @@ def show_cf ():
     def a33(y, order=0, f=f): return array([cf.a33_evaluate(y0, f, order=order) for y0 in y])
     def b33(y, order=0, f=f): return array([cf.b33_evaluate(y0, f, order=order) for y0 in y])
     def c33(y, order=0, f=f): return array([cf.c33_evaluate(y0, f, order=order) for y0 in y])
+    def e00(y, order=0, f=f): return array([cf.e00_evaluate(y0, f, order=order) for y0 in y])
     def e11(y, order=0, f=f): return array([cf.e11_evaluate(y0, f, order=order) for y0 in y])
+    def e22(y, order=0, f=f): return array([cf.e22_evaluate(y0, f, order=order) for y0 in y])
+    def e33(y, order=0, f=f): return array([cf.e33_evaluate(y0, f, order=order) for y0 in y])
 
     def make_extremes(name):
         func = getattr (cf, '%s_find_extreme' % name, None)
@@ -61,9 +64,11 @@ def show_cf ():
     a00_extremes = make_extremes('a00')
     b00_extremes = make_extremes('b00')
     c00_extremes = make_extremes('c00')
+    e00_extremes = make_extremes('e00')
     a00_zeros = make_zeros('a00')
     b00_zeros = make_zeros('b00')
     c00_zeros = make_zeros('c00')
+    e00_zeros = make_zeros('e00')
 
     a11_extremes = make_extremes('a11')
     b11_extremes = make_extremes('b11')
@@ -77,16 +82,20 @@ def show_cf ():
     a22_extremes = make_extremes('a22')
     b22_extremes = make_extremes('b22')
     c22_extremes = make_extremes('c22')
+    e22_extremes = make_extremes('e22')
     a22_zeros = make_zeros('a22')
     b22_zeros = make_zeros('b22')
     c22_zeros = make_zeros('c22')
+    e22_zeros = make_zeros('e22')
 
     a33_extremes = make_extremes('a33')
     b33_extremes = make_extremes('b33')
     c33_extremes = make_extremes('c33')
+    e33_extremes = make_extremes('e33')
     a33_zeros = make_zeros('a33')
     b33_zeros = make_zeros('b33')
     c33_zeros = make_zeros('c33')
+    e33_zeros = make_zeros('e33')
 
     plt.figure(figsize=(8,12))
 
@@ -105,22 +114,27 @@ def show_cf ():
     colors = ['b', 'r', 'g', 'k', 'c']
     i = -1
     plt.axvline (x=P, color='y')
-    for a in [a00, b00, c00,
+    for a in [a00, b00, c00, e00,
               a11, b11, c11, e11,
-              a22, b22, c22,
-              a33, b33, c33,
+              a22, b22, c22, e22,
+              a33, b33, c33, e33,
               ]:
         extremes = eval ('%s_extremes' % (a.__name__))
         zeros = eval ('%s_zeros' % (a.__name__))
         for order in range (4):
             if (a.__name__, order) not in [
-                #('a00',0),
+                ('e11',0),
+                ('a11',0),
                 #('a33',0),
                 #('a33',1),
                 #('a33',2),
-                ('e11',0),
-                ('e11',1),
-                ('e11',2),
+                #('e11',0),
+                #('e11',1),
+                #('e22',0),
+                #('e22',1),
+                #('e33',0),
+                #('e33',1),
+                #('e11',2),
                 #('a11',1),
                 #('a11',1),
                 #('b11',0),
@@ -139,6 +153,7 @@ def show_cf ():
             for y1 in extremes(order=order):
                 plt.axvline(x=y1, color=color, linestyle=style, marker='^')
 
+            continue
             for y1 in zeros(order=order):
                 plt.axvline(x=y1, color=color, linestyle=style, marker='o')
 

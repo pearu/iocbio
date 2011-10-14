@@ -30,6 +30,8 @@ class Indexed:
             e = '%s(%s)' % (self.name.upper(), str(self.index).replace(' ',''))
             indexed_map[v] = e
             return v
+        elif indexed_str=='latex':
+            return '%s_{%s}' % (self.name, self.index)
         raise NotImplementedError(`indexed_str`)
     def __repr__(self):
         return '%s(%r, %r)' % (self.__class__.__name__, self.name, self.index)
@@ -361,6 +363,19 @@ class Generator:
         poly_i, poly_r = self.integrate(integrand)
         exps = sorted(set(poly_i.data.keys() + poly_r.data.keys()))
         poly_order = max([e[0] for e in exps])
+        if 1 or name=='e00':
+            indexed_str = 'latex'
+            print 'name=',name
+            if name[0]=='a':
+                print '\\acf_f(y)=',
+            else:
+                print '\\dn_f(y)=',
+            print '+'.join(['%s_%s(\\flo{y}) %s%s' % (name[0],e[0], ('\\rem{y}' if e[0] else ''), ('^%s' % (e[0]) if e[0]>1 else '')) for e in exps])
+            for e in exps:
+                print '%s_%s(\\flo{y})=' % (name[0],e[0]), ('\sum_{i=0}^{N-3-j}%s'%(poly_i.data[e])).replace ('(','').replace (')','').replace ('**','^').replace ('*','').replace (' ',''),
+                print '\\\\\n+',('%s'%(poly_r.data[e])).replace ('(','').replace (')','').replace ('**','^').replace ('*','').replace (' ','')
+
+            print '-'*10
         coeffs = ', '.join('a%s' % (i) for i in range(poly_order+1))
         coeffs1 = ', '.join('a1_%s' % (i) for i in range(poly_order+1))
         coeffs2 = ', '.join('a2_%s' % (i) for i in range(poly_order+1))
@@ -384,31 +399,27 @@ class Generator:
 #ifdef F
 #undef F
 #endif
-#define F(I) ((I)<0?0.0:((I)>=n?0.0:f[(I)]))
+#define F(I) ((I)<0?((1-(I))*f[0]+(I)*f[1]):((I)>=n?(((I)-n+2)*f[n-1]-((I)-n+1)*f[n-2]):f[(I)]))
 
 %(cf_proto)s
 {
   /* %(cf_def)s */
   int p, i;
-  //int k = n - 2 - j;
-  //int k0 = (%(start_offset)s>k ? k : %(start_offset)s);
-  //int k1 = k-%(end_offset)s;
+  int k = n - 3 - j;
   double *f = fm;
   %(init_coeffs)s
   %(decl_vars)s
-  if (/*k>=0 ||*/ 1)
+  if (j>=0 && j<=n-2)
   {
     for(p=0; p<m; ++p, f+=n)
     {
       %(init_vars)s
-      for(i=-2*n;i<=n*2;++i)
+      for(i=0;i<=k;++i)
       {
         %(init_vars_i)s
         %(update_loop_coeffs)s
       }
-      /*
       %(update_nonloop_coeffs)s
-      */
     }
   }
   %(set_coeffs)s
@@ -741,7 +752,8 @@ class Generator:
 #ifdef F
 #undef F
 #endif
-#define F(I) ((I)<0?0.0:((I)>=n?0.0:f[(I)]))
+#define F(I) ((I)<0?((1-(I))*f[0]+(I)*f[1]):((I)>=n?(((I)-n+2)*f[n-1]-((I)-n+1)*f[n-2]):f[(I)]))
+
 %(cf_proto)s
 {
   int i = floor(x);
@@ -831,18 +843,21 @@ end python module
         a11 = ('linear', 'f1(x)*f2(x+y)'),
         a22 = ('qint', 'f1(x)*f2(x+y)'),
         a33 = ('cint', 'f1(x)*f2(x+y)'),
-        b00 = ('constant','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)-f2(L))'),
-        b11 = ('linear','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)-f2(L))'),
-        b22 = ('qint','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)-f2(L))'),
-        b33 = ('cint','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)-f2(L))'),
-        c00 = ('constant','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)+f(x)/2+3*f[0]/2-9*f2(L)/4)'),
-        c11 = ('linear','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)+f(x)/2+3*f[0]/2-9*f2(L)/4)'),
-        c22 = ('qint','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)+f(x)/2+3*f[0]/2-9*f2(L)/4)'),
-        c33 = ('cint','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)+f(x)/2+3*f[0]/2-9*f2(L)/4)'),
+        #b00 = ('constant','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)-f2(L))'),
+        #b11 = ('linear','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)-f2(L))'),
+        #b22 = ('qint','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)-f2(L))'),
+        #b33 = ('cint','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)-f2(L))'),
+        #c00 = ('constant','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)+f(x)/2+3*f[0]/2-9*f2(L)/4)'),
+        #c11 = ('linear','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)+f(x)/2+3*f[0]/2-9*f2(L)/4)'),
+        #c22 = ('qint','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)+f(x)/2+3*f[0]/2-9*f2(L)/4)'),
+        #c33 = ('cint','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)+f(x)/2+3*f[0]/2-9*f2(L)/4)'),
+        e00 = ('constant', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))'),
         e11 = ('linear', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))'),
+        e22 = ('qint', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))'),
+        e33 = ('cint', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))'),
         ).iteritems():
-        if not name.startswith ('e'):
-            continue
+        #if not name.startswith ('e'):
+        #    continue
         #if name not in ['a11','a22','a33']:
         #    continue
         g = Generator(pwf)

@@ -1,0 +1,448 @@
+
+
+python module cf
+  interface
+    
+    function a33_find_extreme(j0, j1, f, n, m, order, res) result (status)
+       intent(c) a33_find_extreme
+       fortranname cf_a33_find_extreme
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  a33_find_extreme
+        
+    function a33_find_zero(j0, j1, f, n, m, order, res) result (status)
+       intent(c) a33_find_zero
+       fortranname cf_a33_find_zero
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  a33_find_zero
+        
+    function a33_evaluate(y, f, n, m, order) result (value)
+       intent(c) a33_evaluate
+       fortranname cf_a33_evaluate
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision :: value
+    end function  a33_evaluate
+        
+    function a33_f1_evaluate (x, f, n, order) result (value)
+      intent (c) a33_f1_evaluate
+      fortranname cf_a33_f1_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function a33_f1_evaluate
+
+    function a33_f2_evaluate (x, f, n, order) result (value)
+      intent (c) a33_f2_evaluate
+      fortranname cf_a33_f2_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function a33_f2_evaluate
+
+    function a22_find_extreme(j0, j1, f, n, m, order, res) result (status)
+       intent(c) a22_find_extreme
+       fortranname cf_a22_find_extreme
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  a22_find_extreme
+        
+    function a22_find_zero(j0, j1, f, n, m, order, res) result (status)
+       intent(c) a22_find_zero
+       fortranname cf_a22_find_zero
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  a22_find_zero
+        
+    function a22_evaluate(y, f, n, m, order) result (value)
+       intent(c) a22_evaluate
+       fortranname cf_a22_evaluate
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision :: value
+    end function  a22_evaluate
+        
+    function a22_f1_evaluate (x, f, n, order) result (value)
+      intent (c) a22_f1_evaluate
+      fortranname cf_a22_f1_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function a22_f1_evaluate
+
+    function a22_f2_evaluate (x, f, n, order) result (value)
+      intent (c) a22_f2_evaluate
+      fortranname cf_a22_f2_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function a22_f2_evaluate
+
+    function e33_find_extreme(j0, j1, f, n, m, order, res) result (status)
+       intent(c) e33_find_extreme
+       fortranname cf_e33_find_extreme
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  e33_find_extreme
+        
+    function e33_find_zero(j0, j1, f, n, m, order, res) result (status)
+       intent(c) e33_find_zero
+       fortranname cf_e33_find_zero
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  e33_find_zero
+        
+    function e33_evaluate(y, f, n, m, order) result (value)
+       intent(c) e33_evaluate
+       fortranname cf_e33_evaluate
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision :: value
+    end function  e33_evaluate
+        
+    function e33_f1_evaluate (x, f, n, order) result (value)
+      intent (c) e33_f1_evaluate
+      fortranname cf_e33_f1_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function e33_f1_evaluate
+
+    function e33_f2_evaluate (x, f, n, order) result (value)
+      intent (c) e33_f2_evaluate
+      fortranname cf_e33_f2_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function e33_f2_evaluate
+
+    function e22_find_extreme(j0, j1, f, n, m, order, res) result (status)
+       intent(c) e22_find_extreme
+       fortranname cf_e22_find_extreme
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  e22_find_extreme
+        
+    function e22_find_zero(j0, j1, f, n, m, order, res) result (status)
+       intent(c) e22_find_zero
+       fortranname cf_e22_find_zero
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  e22_find_zero
+        
+    function e22_evaluate(y, f, n, m, order) result (value)
+       intent(c) e22_evaluate
+       fortranname cf_e22_evaluate
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision :: value
+    end function  e22_evaluate
+        
+    function e22_f1_evaluate (x, f, n, order) result (value)
+      intent (c) e22_f1_evaluate
+      fortranname cf_e22_f1_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function e22_f1_evaluate
+
+    function e22_f2_evaluate (x, f, n, order) result (value)
+      intent (c) e22_f2_evaluate
+      fortranname cf_e22_f2_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function e22_f2_evaluate
+
+    function e11_find_extreme(j0, j1, f, n, m, order, res) result (status)
+       intent(c) e11_find_extreme
+       fortranname cf_e11_find_extreme
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  e11_find_extreme
+        
+    function e11_find_zero(j0, j1, f, n, m, order, res) result (status)
+       intent(c) e11_find_zero
+       fortranname cf_e11_find_zero
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  e11_find_zero
+        
+    function e11_evaluate(y, f, n, m, order) result (value)
+       intent(c) e11_evaluate
+       fortranname cf_e11_evaluate
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision :: value
+    end function  e11_evaluate
+        
+    function e11_f1_evaluate (x, f, n, order) result (value)
+      intent (c) e11_f1_evaluate
+      fortranname cf_e11_f1_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function e11_f1_evaluate
+
+    function e11_f2_evaluate (x, f, n, order) result (value)
+      intent (c) e11_f2_evaluate
+      fortranname cf_e11_f2_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function e11_f2_evaluate
+
+    function a00_find_extreme(j0, j1, f, n, m, order, res) result (status)
+       intent(c) a00_find_extreme
+       fortranname cf_a00_find_extreme
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  a00_find_extreme
+        
+    function a00_find_zero(j0, j1, f, n, m, order, res) result (status)
+       intent(c) a00_find_zero
+       fortranname cf_a00_find_zero
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  a00_find_zero
+        
+    function a00_evaluate(y, f, n, m, order) result (value)
+       intent(c) a00_evaluate
+       fortranname cf_a00_evaluate
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision :: value
+    end function  a00_evaluate
+        
+    function a00_f1_evaluate (x, f, n, order) result (value)
+      intent (c) a00_f1_evaluate
+      fortranname cf_a00_f1_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function a00_f1_evaluate
+
+    function a00_f2_evaluate (x, f, n, order) result (value)
+      intent (c) a00_f2_evaluate
+      fortranname cf_a00_f2_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function a00_f2_evaluate
+
+    function e00_find_extreme(j0, j1, f, n, m, order, res) result (status)
+       intent(c) e00_find_extreme
+       fortranname cf_e00_find_extreme
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  e00_find_extreme
+        
+    function e00_find_zero(j0, j1, f, n, m, order, res) result (status)
+       intent(c) e00_find_zero
+       fortranname cf_e00_find_zero
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  e00_find_zero
+        
+    function e00_evaluate(y, f, n, m, order) result (value)
+       intent(c) e00_evaluate
+       fortranname cf_e00_evaluate
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision :: value
+    end function  e00_evaluate
+        
+    function e00_f1_evaluate (x, f, n, order) result (value)
+      intent (c) e00_f1_evaluate
+      fortranname cf_e00_f1_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function e00_f1_evaluate
+
+    function e00_f2_evaluate (x, f, n, order) result (value)
+      intent (c) e00_f2_evaluate
+      fortranname cf_e00_f2_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function e00_f2_evaluate
+
+    function a11_find_extreme(j0, j1, f, n, m, order, res) result (status)
+       intent(c) a11_find_extreme
+       fortranname cf_a11_find_extreme
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  a11_find_extreme
+        
+    function a11_find_zero(j0, j1, f, n, m, order, res) result (status)
+       intent(c) a11_find_zero
+       fortranname cf_a11_find_zero
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  a11_find_zero
+        
+    function a11_evaluate(y, f, n, m, order) result (value)
+       intent(c) a11_evaluate
+       fortranname cf_a11_evaluate
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision :: value
+    end function  a11_evaluate
+        
+    function a11_f1_evaluate (x, f, n, order) result (value)
+      intent (c) a11_f1_evaluate
+      fortranname cf_a11_f1_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function a11_f1_evaluate
+
+    function a11_f2_evaluate (x, f, n, order) result (value)
+      intent (c) a11_f2_evaluate
+      fortranname cf_a11_f2_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function a11_f2_evaluate
+
+  end interface
+end python module
+    
