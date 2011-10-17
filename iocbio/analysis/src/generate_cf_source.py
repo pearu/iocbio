@@ -234,6 +234,66 @@ class Generator:
                 
             print '%s: sum(%s,i=0..N-3-j) + {%s}' % (self.ring({k:1}), expr_i, expr_r)
 
+    def generate_find_real_zero_in_01_source(self):
+        codes = {2:\
+'''
+/* Code translated from http://www.netlib.org/toms/493, subroutine QUAD, with modifications. */
+#define ABS(X) ((X)<0.0?-(X):(X))
+double b, e, d, lr, sr;
+//printf("a_0,a_1,a_2, e=%f, %f, %f\\n", a_0, a_1, a_2);
+if (a_2==0.0)
+  {
+    if (a_1!=0.0) return -a_0/a_1;
+    return -1.0;
+  }
+else
+  {
+    if (a_0==0.0)
+      return 0.0;
+    b = a_1*0.5;
+    if (ABS(b) < ABS(a_0))
+    {
+      e = a_2;
+      if (a_0<0.0)
+        e = -a_2;
+      e = b*(b/ABS(a_0)) - e;
+      d = sqrt(ABS(e))*sqrt(ABS(a_0));
+    }
+    else
+    {
+      e = 1.0 - (a_2/b)*(a_0/b);
+      d = sqrt(ABS(e))*ABS(b);
+    }
+    if (e>=0)
+    {
+      if (b>=0.0) d=-d;
+      lr = (-b+d)/a_2;
+      if (lr==0.0)
+        return 0.0;
+      sr = (a_0/lr)/a_2;
+      //printf("p(lr=%f)=%f\\n", lr,a_0+lr*(a_1+lr*a_2));
+      //printf("p(sr=%f)=%f\\n", sr,a_0+sr*(a_1+sr*a_2));
+      if (lr>=0 && lr<=1.0)
+        return lr;
+      return sr;
+    }
+  }
+'''
+                 }
+        
+        for poly_order in [2]:
+            decl_coeffs = ', '.join('double a_%s' % (i) for i in range(poly_order+1))
+            cf_proto = 'double cf_find_real_zero_in_01_%(poly_order)s(%(decl_coeffs)s)' % (locals ())
+            code = codes.get(poly_order, 'printf("Not implemented: %s\\n");' % (cf_proto))
+            cf_source_template = '''
+%(cf_proto)s
+{
+  %(code)s
+  return -1.0;
+}
+            '''
+            yield cf_proto, cf_source_template %(locals ()), ''
+
     def generate_approximation_source(self):
         # the following coefficient tables are computed with the following maple program:
         """
@@ -576,6 +636,7 @@ class Generator:
     if (p1!=0.0)
     {
        s = -p0/p1;
+       //printf("cf_%(name)s_find_zero_diff%(order)s: j=%%d, p0=%%f, p1=%%f, s=%%f\\n",j,p0,p1, s);
        if (s>=0.0 && s<=1.0)
          {
             *result = (double) (j-1) + s;
@@ -603,9 +664,11 @@ class Generator:
   {
     cf_%(name)s_compute_coeffs_diff%(order)s(j, fm, n, m, %(refcoeffs1)s);
     cf_linear_approximation_1_%(poly_order2)s(%(coeffs1_2)s, &p0, &p1);
+
     if (p1!=0.0)
     {
        s = -p0/p1;
+       //printf("cf_%(name)s_find_zero_diff%(order)s: j=%%d, p0=%%f, p1=%%f, s=%%f\\n",j,p0,p1, s);
        if (s>=0.0 && s<=1.0)
          {
             *result = (double) (j) + s;
@@ -617,7 +680,37 @@ class Generator:
   return status;
 }
             '''
-            if poly_order2<1:
+
+            cf_source_template2_d = '''
+%(cf_proto2)s
+{
+  int j;
+  double s;
+  double p0 = 0.0;
+  double p1 = 0.0;
+  %(init_coeffs_ref1)s
+  int start_j = (j0>=0?j0:0);
+  int end_j = (j1<n?j1:n-1);
+  int status = -1;
+  for (j=start_j; j<end_j; ++j)
+  {
+    cf_%(name)s_compute_coeffs_diff%(order)s(j, fm, n, m, %(refcoeffs1)s);
+    s = cf_find_real_zero_in_01_%(poly_order2)s(%(coeffs1_2)s);
+    //printf("j,s=%%d, %%f\\n",j,s);
+    if (s>=0.0 && s<=1.0)
+      {
+        *result = (double) (j) + s;
+        status = 0;
+        break;
+      }
+  }
+  return status;
+}
+            '''
+
+            if poly_order2==2 and order==1:
+                yield cf_proto2, cf_source_template2_d %(locals ()), ''
+            elif poly_order2<1:
                 yield cf_proto2, cf_source_template2_3 %(locals ()), ''
             else:
                 yield cf_proto2, cf_source_template2_1 %(locals ()), ''
@@ -869,6 +962,12 @@ end python module
                 pyf_file.write(interface)
 
     for proto, source, interface in g.generate_approximation_source ():
+        source_file.write(source)
+        header_file.write('extern %s;\n' % (proto))
+        if interface:
+            pyf_file.write(interface)
+
+    for proto, source, interface in g.generate_find_real_zero_in_01_source ():
         source_file.write(source)
         header_file.write('extern %s;\n' % (proto))
         if interface:
