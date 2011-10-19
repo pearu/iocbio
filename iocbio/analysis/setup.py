@@ -11,6 +11,10 @@ def configuration(parent_package='',top_path=None):
             join('src','fperiod.pyf'),
             join('src','fperiod.c')])
 
+    config.add_extension('dp', sources = [
+            join('src','dp.pyf'),
+            join('src','iocbio_detrend.c')])
+
     config.add_extension('cf', sources = [
             join('src','cf.pyf'),
             join('src','cf.c')])

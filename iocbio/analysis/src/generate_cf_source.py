@@ -423,7 +423,7 @@ else
         poly_i, poly_r = self.integrate(integrand)
         exps = sorted(set(poly_i.data.keys() + poly_r.data.keys()))
         poly_order = max([e[0] for e in exps])
-        if 1 or name=='e00':
+        if name in ['a00', 'e00']:
             indexed_str = 'latex'
             print 'name=',name
             if name[0]=='a':
@@ -948,6 +948,10 @@ end python module
         e11 = ('linear', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))'),
         e22 = ('qint', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))'),
         e33 = ('cint', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))'),
+        n00 = ('constant', '(f1(x))*(f2(x))'),
+        n11 = ('linear', '(f1(x))*(f2(x))'),
+        n22 = ('qint', '(f1(x))*(f2(x))'),
+        n33 = ('cint', '(f1(x))*(f2(x))'),
         ).iteritems():
         #if not name.startswith ('e'):
         #    continue

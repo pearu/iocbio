@@ -1,0 +1,36 @@
+! -*- f90 -*-
+python module dp
+  interface
+
+     subroutine detrend(f, n, m, period, r)
+       fortranname iocbio_detrend
+       intent(c) detrend
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       double precision intent(c,in), optional :: period = 0.0
+       double precision intent(c,out), dimension (m,n) :: r
+     end subroutine detrend
+
+     subroutine trend(f, n, m, period, r)
+       fortranname iocbio_trend
+       intent(c) trend
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       double precision intent(c,in), optional :: period = 0.0
+       double precision intent(c,out), dimension (m,n) :: r
+     end subroutine trend
+
+     subroutine trend_spline(f, n, period, nof_extremes, extreme_positions, extreme_values, nof_averages, average_positions, average_values)
+       fortranname iocbio_compute_trend_spline_data
+       intent(c) trend_spline
+       double precision dimension (n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = len(f)
+       double precision intent(c,in), optional :: period = 0.0
+       integer intent (out) :: nof_extremes, nof_averages
+       double precision intent(c,out), depend(n), dimension (n) :: extreme_positions, extreme_values, average_positions, average_values
+     end subroutine trend_spline
+
+  end interface
+end module dp
