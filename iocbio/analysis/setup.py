@@ -13,9 +13,13 @@ def configuration(parent_package='',top_path=None):
 
     config.add_extension('dp', sources = [
             join('src','dp.pyf'),
-            join('src','iocbio_detrend.c')])
+            join('src','iocbio_detrend.c'),
+            join('src','iocbio_fperiod.c'),
+            join('src','iocbio_ipwf.c'),
+            ])
 
-    config.add_extension('cf', sources = [
-            join('src','cf.pyf'),
-            join('src','cf.c')])
+    config.add_extension('ipwf', sources = [
+            join('src','ipwf.pyf'),
+            join('src','iocbio_ipwf.c'),
+            ])
     return config

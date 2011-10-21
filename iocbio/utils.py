@@ -690,3 +690,11 @@ class mfloat (float):
         elif self.std:
             return '%s(%s)' % (svalue, self.std)
         return svalue
+
+    def tolatex(self):
+        svalue = float.__str__ (self)
+        if isinstance(self.std, float):
+            return '%s\pm%s' % tuple(sround(self, self.std))
+        elif self.std:
+            return '%s\pm%s' % (svalue, self.std)
+        return svalue
