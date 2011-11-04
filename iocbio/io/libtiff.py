@@ -53,7 +53,7 @@ except ImportError:
 
 if tiff_h is None:
     if not os.path.isabs(lib):
-        for d in ['/usr/lib', '/usr/local']:
+        for d in ['/usr/lib', '/usr/local', '/usr/lib32']:
             if os.path.isfile(os.path.join(d, lib)):
                 lib = os.path.join (d,lib)
                 break
