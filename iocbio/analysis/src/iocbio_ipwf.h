@@ -78,7 +78,7 @@ extern void iocbio_ipwf_quadratic_approximation_3_7(double a1_0, double a1_1, do
 extern void iocbio_ipwf_quadratic_approximation_1_7(double a1_0, double a1_1, double a1_2, double a1_3, double a1_4, double a1_5, double a1_6, double a1_7, double* p0, double* p1, double* p2);
 extern void iocbio_ipwf_linear_approximation_3_7(double a1_0, double a1_1, double a1_2, double a1_3, double a1_4, double a1_5, double a1_6, double a1_7, double a2_0, double a2_1, double a2_2, double a2_3, double a2_4, double a2_5, double a2_6, double a2_7, double a3_0, double a3_1, double a3_2, double a3_3, double a3_4, double a3_5, double a3_6, double a3_7, double* p0, double* p1);
 extern void iocbio_ipwf_linear_approximation_1_7(double a1_0, double a1_1, double a1_2, double a1_3, double a1_4, double a1_5, double a1_6, double a1_7, double* p0, double* p1);
-extern double iocbio_ipwf_find_real_zero_in_01_2(double a_0, double a_1, double a_2, double *slope);
+extern double iocbio_ipwf_find_real_zero_in_01_2(double a_0, double a_1, double a_2, int direction, double *slope);
 
 #ifdef __cplusplus
 }

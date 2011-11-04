@@ -26,9 +26,11 @@ void iocbio_ipwf_e11_compute_coeffs_diff0(int j, double *fm, int n, int m, doubl
   /* int((f1(x)-f1(x+y))*(f2(x)-f2(x+y)), x=0..L-y) = sum(a_k*r^k, k=0..3) where y=j+r
      f1(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i
      f2(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i */
+
   int p, i;
   int k = n - 3 - j;
   double *f = fm;
+  //printf("void iocbio_ipwf_e11_compute_coeffs_diff0(int j, double *fm, int n, int m, double* a0, double* a1, double* a2, double* a3)\n");
   double b0 = 0.0;
   double b1 = 0.0;
   double b2 = 0.0;
@@ -49,15 +51,15 @@ void iocbio_ipwf_e11_compute_coeffs_diff0(int j, double *fm, int n, int m, doubl
         f_ip1pj = F(i+1+j);
         f_i = F(i);
         f_ip1 = F(i+1);
-        b0 += 0.3333333333333333*(f_ip1pj*f_ip1pj) + 0.3333333333333333*f_ip1pj*f_ipj - 0.3333333333333333*f_ip1pj*f_i + 0.3333333333333333*(f_ip1*f_ip1) - 0.6666666666666667*f_ip1pj*f_ip1 + 0.3333333333333333*(f_ipj*f_ipj) + 0.3333333333333333*f_ip1*f_i - 0.3333333333333333*f_ip1*f_ipj + 0.3333333333333333*(f_i*f_i) - 0.6666666666666667*f_i*f_ipj;
-        b1 += (f_ip1pj*f_ip1pj) - f_ip1pj*f_i - f_ip1pj*f_ip1 - (f_ipj*f_ipj) + f_ip1*f_ipj + f_i*f_ipj;
-        b2 += -(f_ip1pj*f_ip1pj) - f_ip1pj*f_ipj - f_ip1*f_ip2pj + 2.0*f_ip1pj*f_ip1 + (f_ipj*f_ipj) + f_ip1pj*f_ip2pj - f_ip1*f_ipj;
-        b3 += -0.3333333333333333*f_i*f_ipj + 0.6666666666666667*f_ip1pj*f_ipj + 0.3333333333333333*(f_ip2pj*f_ip2pj) + 0.6666666666666667*f_ip1pj*f_i - 0.6666666666666667*f_ip1pj*f_ip1 - 0.3333333333333333*(f_ipj*f_ipj) - 0.6666666666666667*f_ip1pj*f_ip2pj + 0.3333333333333333*f_ip1*f_ip2pj + 0.3333333333333333*f_ip1*f_ipj - 0.3333333333333333*f_i*f_ip2pj;
+        b0 += 0.3333333333333333*(f_ip1pj*f_ip1pj) + 0.3333333333333333*(f_i*f_i) - 0.6666666666666667*f_ip1pj*f_ip1 + 0.3333333333333333*(f_ipj*f_ipj) - 0.3333333333333333*f_ip1*f_ipj + 0.3333333333333333*f_ip1*f_i - 0.3333333333333333*f_ip1pj*f_i - 0.6666666666666667*f_i*f_ipj + 0.3333333333333333*(f_ip1*f_ip1) + 0.3333333333333333*f_ip1pj*f_ipj;
+        b1 += (f_ip1pj*f_ip1pj) - f_ip1pj*f_ip1 - (f_ipj*f_ipj) - f_ip1pj*f_i + f_i*f_ipj + f_ip1*f_ipj;
+        b2 += -(f_ip1pj*f_ip1pj) + f_ip1pj*f_ip2pj - f_ip1*f_ip2pj + 2.0*f_ip1pj*f_ip1 + (f_ipj*f_ipj) - f_ip1*f_ipj - f_ip1pj*f_ipj;
+        b3 += -0.3333333333333333*f_i*f_ip2pj - 0.6666666666666667*f_ip1pj*f_ip2pj + 0.3333333333333333*f_ip1*f_ip2pj - 0.6666666666666667*f_ip1pj*f_ip1 - 0.3333333333333333*(f_ipj*f_ipj) + 0.6666666666666667*f_ip1pj*f_i - 0.3333333333333333*f_i*f_ipj + 0.3333333333333333*f_ip1*f_ipj + 0.6666666666666667*f_ip1pj*f_ipj + 0.3333333333333333*(f_ip2pj*f_ip2pj);
       }
-      b0 += 0.3333333333333333*f_m1mjpn*f_m2mjpn + 0.3333333333333333*(f_m2pn*f_m2pn) - 0.3333333333333333*f_m1pn*f_m2mjpn + 0.3333333333333333*(f_m2mjpn*f_m2mjpn) + 0.3333333333333333*f_m1pn*f_m2pn - 0.3333333333333333*f_m1mjpn*f_m2pn + 0.3333333333333333*(f_m1pn*f_m1pn) - 0.6666666666666667*f_m2pn*f_m2mjpn - 0.6666666666666667*f_m1pn*f_m1mjpn + 0.3333333333333333*(f_m1mjpn*f_m1mjpn);
-      b1 += -(f_m2pn*f_m2pn) + f_m2mjpn*f_m2pn + f_m1pn*f_m1mjpn - f_m1pn*f_m2mjpn + f_m1mjpn*f_m2pn - (f_m1mjpn*f_m1mjpn);
-      b2 += (f_m2pn*f_m2pn) - f_m1pn*f_m2pn - f_m1mjpn*f_m2pn - f_m1mjpn*f_m2mjpn + f_m1pn*f_m2mjpn + (f_m1mjpn*f_m1mjpn);
-      b3 += -0.3333333333333333*(f_m2pn*f_m2pn) - 0.3333333333333333*(f_m1pn*f_m1pn) + 0.3333333333333333*f_m1mjpn*f_m2pn + 0.6666666666666667*f_m1mjpn*f_m2mjpn - 0.3333333333333333*(f_m2mjpn*f_m2mjpn) + 0.3333333333333333*f_m2mjpn*f_m1pn - 0.3333333333333333*f_m1mjpn*f_m1pn + 0.6666666666666667*f_m2pn*f_m1pn - 0.3333333333333333*f_m2mjpn*f_m2pn - 0.3333333333333333*(f_m1mjpn*f_m1mjpn);
+      b0 += 0.3333333333333333*f_m2mjpn*f_m1mjpn - 0.6666666666666667*f_m2mjpn*f_m2pn + 0.3333333333333333*(f_m2mjpn*f_m2mjpn) - 0.3333333333333333*f_m1pn*f_m2mjpn + 0.3333333333333333*(f_m1mjpn*f_m1mjpn) + 0.3333333333333333*(f_m2pn*f_m2pn) - 0.6666666666666667*f_m1pn*f_m1mjpn + 0.3333333333333333*f_m2pn*f_m1pn - 0.3333333333333333*f_m2pn*f_m1mjpn + 0.3333333333333333*(f_m1pn*f_m1pn);
+      b1 += f_m1mjpn*f_m2pn + f_m1pn*f_m1mjpn - (f_m1mjpn*f_m1mjpn) + f_m2pn*f_m2mjpn - f_m1pn*f_m2mjpn - (f_m2pn*f_m2pn);
+      b2 += -f_m2mjpn*f_m1mjpn + f_m1pn*f_m2mjpn + (f_m1mjpn*f_m1mjpn) - f_m1pn*f_m2pn - f_m2pn*f_m1mjpn + (f_m2pn*f_m2pn);
+      b3 += 0.6666666666666667*f_m2mjpn*f_m1mjpn - 0.3333333333333333*f_m1pn*f_m1mjpn - 0.3333333333333333*(f_m1mjpn*f_m1mjpn) - 0.3333333333333333*f_m2pn*f_m2mjpn - 0.3333333333333333*(f_m2mjpn*f_m2mjpn) - 0.3333333333333333*(f_m1pn*f_m1pn) + 0.3333333333333333*f_m1pn*f_m2mjpn + 0.6666666666666667*f_m1pn*f_m2pn + 0.3333333333333333*f_m2pn*f_m1mjpn - 0.3333333333333333*(f_m2pn*f_m2pn);
     }
   }
   *a0 = b0;
@@ -80,6 +82,7 @@ int iocbio_ipwf_e11_find_extreme_diff0(int j0, int j1, double *fm, int n, int m,
   int start_j = (j0>0?j0:0);
   int end_j = (j1<n?j1:n-1);
   int status = -1;
+  //printf("int iocbio_ipwf_e11_find_extreme_diff0(int j0, int j1, double *fm, int n, int m, double* result)\n");
   for (j=start_j; j<end_j; ++j)
   {
     iocbio_ipwf_e11_compute_coeffs_diff0(j, fm, n, m, &a1_0, &a1_1, &a1_2, &a1_3);
@@ -111,6 +114,7 @@ int iocbio_ipwf_e11_find_zero_diff0(int j0, int j1, double *fm, int n, int m, do
   int start_j = (j0>=0?j0:0);
   int end_j = (j1<n?j1:n-1);
   int status = -1;
+  //printf("int iocbio_ipwf_e11_find_zero_diff0(int j0, int j1, double *fm, int n, int m, double* result, double* slope)\n");
   for (j=start_j; j<end_j; ++j)
   {
     iocbio_ipwf_e11_compute_coeffs_diff0(j, fm, n, m, &a1_0, &a1_1, &a1_2, &a1_3);
@@ -142,9 +146,11 @@ void iocbio_ipwf_e11_compute_coeffs_diff1(int j, double *fm, int n, int m, doubl
   /* diff(int((f1(x)-f1(x+y))*(f2(x)-f2(x+y)), x=0..L-y), y, order=1) = sum(a_k*r^k, k=0..3) where y=j+r
      f1(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i
      f2(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i */
+
   int p, i;
   int k = n - 3 - j;
   double *f = fm;
+  //printf("void iocbio_ipwf_e11_compute_coeffs_diff1(int j, double *fm, int n, int m, double* a0, double* a1, double* a2, double* a3)\n");
   double b0 = 0.0;
   double b1 = 0.0;
   double b2 = 0.0;
@@ -165,13 +171,13 @@ void iocbio_ipwf_e11_compute_coeffs_diff1(int j, double *fm, int n, int m, doubl
         f_ip1pj = F(i+1+j);
         f_i = F(i);
         f_ip1 = F(i+1);
-        b0 += (f_ip1pj*f_ip1pj) - f_ip1pj*f_i - f_ip1pj*f_ip1 - (f_ipj*f_ipj) + f_ip1*f_ipj + f_i*f_ipj;
-        b1 += -2.0*(f_ip1pj*f_ip1pj) - 2.0*f_ip1pj*f_ipj - 2.0*f_ip1*f_ip2pj + 4.0*f_ip1pj*f_ip1 + 2.0*(f_ipj*f_ipj) + 2.0*f_ip1pj*f_ip2pj - 2.0*f_ip1*f_ipj;
-        b2 += -f_i*f_ipj + 2.0*f_ip1pj*f_ipj + (f_ip2pj*f_ip2pj) + 2.0*f_ip1pj*f_i - 2.0*f_ip1pj*f_ip1 - (f_ipj*f_ipj) - 2.0*f_ip1pj*f_ip2pj + f_ip1*f_ip2pj + f_ip1*f_ipj - f_i*f_ip2pj;
+        b0 += (f_ip1pj*f_ip1pj) - f_ip1pj*f_ip1 - (f_ipj*f_ipj) - f_ip1pj*f_i + f_i*f_ipj + f_ip1*f_ipj;
+        b1 += -2.0*(f_ip1pj*f_ip1pj) + 2.0*f_ip1pj*f_ip2pj - 2.0*f_ip1*f_ip2pj + 4.0*f_ip1pj*f_ip1 + 2.0*(f_ipj*f_ipj) - 2.0*f_ip1*f_ipj - 2.0*f_ip1pj*f_ipj;
+        b2 += -f_i*f_ip2pj - 2.0*f_ip1pj*f_ip2pj + f_ip1*f_ip2pj - 2.0*f_ip1pj*f_ip1 - (f_ipj*f_ipj) + 2.0*f_ip1pj*f_i - f_i*f_ipj + f_ip1*f_ipj + 2.0*f_ip1pj*f_ipj + (f_ip2pj*f_ip2pj);
       }
-      b0 += -(f_m2pn*f_m2pn) + f_m1mjpn*f_m2pn + f_m2mjpn*f_m2pn - f_m1pn*f_m2mjpn + f_m1pn*f_m1mjpn - (f_m1mjpn*f_m1mjpn);
-      b1 += 2.0*(f_m2pn*f_m2pn) - 2.0*f_m1pn*f_m2pn + 2.0*f_m1pn*f_m2mjpn - 2.0*f_m1mjpn*f_m2mjpn - 2.0*f_m1mjpn*f_m2pn + 2.0*(f_m1mjpn*f_m1mjpn);
-      b2 += -(f_m2pn*f_m2pn) - (f_m1pn*f_m1pn) + f_m1mjpn*f_m2pn - (f_m1mjpn*f_m1mjpn) + 2.0*f_m1mjpn*f_m2mjpn - f_m2mjpn*f_m2pn - f_m1mjpn*f_m1pn + 2.0*f_m2pn*f_m1pn + f_m2mjpn*f_m1pn - (f_m2mjpn*f_m2mjpn);
+      b0 += -f_m1pn*f_m2mjpn + f_m2pn*f_m2mjpn - (f_m1mjpn*f_m1mjpn) + f_m1mjpn*f_m2pn + f_m1pn*f_m1mjpn - (f_m2pn*f_m2pn);
+      b1 += -2.0*f_m2mjpn*f_m1mjpn - 2.0*f_m2pn*f_m1mjpn + 2.0*(f_m1mjpn*f_m1mjpn) - 2.0*f_m1pn*f_m2pn + 2.0*f_m1pn*f_m2mjpn + 2.0*(f_m2pn*f_m2pn);
+      b2 += 2.0*f_m1pn*f_m2pn - f_m2pn*f_m2mjpn - (f_m2mjpn*f_m2mjpn) + f_m1pn*f_m2mjpn - (f_m1mjpn*f_m1mjpn) - (f_m2pn*f_m2pn) - f_m1pn*f_m1mjpn + 2.0*f_m2mjpn*f_m1mjpn + f_m2pn*f_m1mjpn - (f_m1pn*f_m1pn);
     }
   }
   *a0 = b0;
@@ -194,6 +200,7 @@ int iocbio_ipwf_e11_find_extreme_diff1(int j0, int j1, double *fm, int n, int m,
   int start_j = (j0>0?j0:0);
   int end_j = (j1<n?j1:n-1);
   int status = -1;
+  //printf("int iocbio_ipwf_e11_find_extreme_diff1(int j0, int j1, double *fm, int n, int m, double* result)\n");
   for (j=start_j; j<end_j; ++j)
   {
     iocbio_ipwf_e11_compute_coeffs_diff1(j, fm, n, m, &a1_0, &a1_1, &a1_2, &a1_3);
@@ -218,6 +225,7 @@ int iocbio_ipwf_e11_find_zero_diff1(int j0, int j1, double *fm, int n, int m, do
   double s;
   double p0 = 0.0;
   double p1 = 0.0;
+  //printf("int iocbio_ipwf_e11_find_zero_diff1(int j0, int j1, double *fm, int n, int m, double* result, double* slope)\n");
   double a1_0 = 0.0;
   double a1_1 = 0.0;
   double a1_2 = 0.0;
@@ -230,7 +238,7 @@ int iocbio_ipwf_e11_find_zero_diff1(int j0, int j1, double *fm, int n, int m, do
   for (j=(dj==-1?start_j-1:start_j); count>0; j += dj, --count)
   {
     iocbio_ipwf_e11_compute_coeffs_diff1(j, fm, n, m, &a1_0, &a1_1, &a1_2, &a1_3);
-    s = iocbio_ipwf_find_real_zero_in_01_2(a1_0, a1_1, a1_2, slope);
+    s = iocbio_ipwf_find_real_zero_in_01_2(a1_0, a1_1, a1_2, dj, slope);
     //printf("j,s,dj,zero=%d, %e, %d, %e\n",j,s, dj, a1_0+s*(a1_1+s*(a1_2+s*a1_3)));
     if (s>=0.0 && s<=1.0)
       {
@@ -252,14 +260,16 @@ void iocbio_ipwf_e11_compute_coeffs_diff2(int j, double *fm, int n, int m, doubl
   /* diff(int((f1(x)-f1(x+y))*(f2(x)-f2(x+y)), x=0..L-y), y, order=2) = sum(a_k*r^k, k=0..3) where y=j+r
      f1(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i
      f2(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i */
+
   int p, i;
   int k = n - 3 - j;
   double *f = fm;
+  //printf("void iocbio_ipwf_e11_compute_coeffs_diff2(int j, double *fm, int n, int m, double* a0, double* a1, double* a2, double* a3)\n");
   double b0 = 0.0;
   double b1 = 0.0;
   double b2 = 0.0;
   double b3 = 0.0;
-  double f_ipj, f_ip2pj, f_ip1pj, f_m1mjpn, f_i, f_m2mjpn, f_m2pn, f_ip1, f_m1pn;
+  double f_ip2pj, f_ipj, f_ip1pj, f_m1mjpn, f_i, f_m2mjpn, f_m2pn, f_ip1, f_m1pn;
   if (j>=0 && j<=n-2)
   {
     for(p=0; p<m; ++p, f+=n)
@@ -270,16 +280,16 @@ void iocbio_ipwf_e11_compute_coeffs_diff2(int j, double *fm, int n, int m, doubl
       f_m1pn = F(-1+n);
       for(i=0;i<=k;++i)
       {
-        f_ipj = F(i+j);
         f_ip2pj = F(i+2+j);
+        f_ipj = F(i+j);
         f_ip1pj = F(i+1+j);
         f_i = F(i);
         f_ip1 = F(i+1);
-        b0 += -2.0*(f_ip1pj*f_ip1pj) - 2.0*f_ip1pj*f_ipj - 2.0*f_ip1*f_ip2pj + 4.0*f_ip1pj*f_ip1 + 2.0*(f_ipj*f_ipj) + 2.0*f_ip1pj*f_ip2pj - 2.0*f_ip1*f_ipj;
-        b1 += -2.0*f_i*f_ipj + 4.0*f_ip1pj*f_ipj + 2.0*(f_ip2pj*f_ip2pj) + 4.0*f_ip1pj*f_i - 4.0*f_ip1pj*f_ip1 - 2.0*(f_ipj*f_ipj) - 4.0*f_ip1pj*f_ip2pj + 2.0*f_ip1*f_ip2pj + 2.0*f_ip1*f_ipj - 2.0*f_i*f_ip2pj;
+        b0 += -2.0*(f_ip1pj*f_ip1pj) + 2.0*f_ip1pj*f_ip2pj - 2.0*f_ip1*f_ip2pj + 4.0*f_ip1pj*f_ip1 + 2.0*(f_ipj*f_ipj) - 2.0*f_ip1*f_ipj - 2.0*f_ip1pj*f_ipj;
+        b1 += -2.0*f_i*f_ip2pj - 4.0*f_ip1pj*f_ip2pj + 2.0*f_ip1*f_ip2pj - 4.0*f_ip1pj*f_ip1 - 2.0*(f_ipj*f_ipj) + 4.0*f_ip1pj*f_i - 2.0*f_i*f_ipj + 2.0*f_ip1*f_ipj + 4.0*f_ip1pj*f_ipj + 2.0*(f_ip2pj*f_ip2pj);
       }
-      b0 += 2.0*(f_m2pn*f_m2pn) - 2.0*f_m1pn*f_m2pn + 2.0*f_m1pn*f_m2mjpn - 2.0*f_m1mjpn*f_m2mjpn - 2.0*f_m1mjpn*f_m2pn + 2.0*(f_m1mjpn*f_m1mjpn);
-      b1 += -2.0*(f_m2pn*f_m2pn) - 2.0*f_m2mjpn*f_m2pn + 2.0*f_m2mjpn*f_m1pn - 2.0*(f_m2mjpn*f_m2mjpn) + 4.0*f_m1mjpn*f_m2mjpn + 2.0*f_m1mjpn*f_m2pn - 2.0*(f_m1pn*f_m1pn) + 4.0*f_m2pn*f_m1pn - 2.0*f_m1mjpn*f_m1pn - 2.0*(f_m1mjpn*f_m1mjpn);
+      b0 += -2.0*f_m1pn*f_m2pn + 2.0*f_m1pn*f_m2mjpn + 2.0*(f_m1mjpn*f_m1mjpn) - 2.0*f_m2mjpn*f_m1mjpn - 2.0*f_m2pn*f_m1mjpn + 2.0*(f_m2pn*f_m2pn);
+      b1 += 4.0*f_m2mjpn*f_m1mjpn - 2.0*f_m2pn*f_m2mjpn - 2.0*(f_m1mjpn*f_m1mjpn) - 2.0*f_m1pn*f_m1mjpn - 2.0*(f_m2mjpn*f_m2mjpn) - 2.0*(f_m1pn*f_m1pn) + 2.0*f_m2pn*f_m1mjpn + 4.0*f_m1pn*f_m2pn + 2.0*f_m1pn*f_m2mjpn - 2.0*(f_m2pn*f_m2pn);
     }
   }
   *a0 = b0;
@@ -296,6 +306,7 @@ int iocbio_ipwf_e11_find_extreme_diff2(int j0, int j1, double *fm, int n, int m,
   double p0 = 0.0;
   double p1 = 0.0;
   double p2 = 0.0;
+  //printf("int iocbio_ipwf_e11_find_extreme_diff2(int j0, int j1, double *fm, int n, int m, double* result)\n");
   double a1_0 = 0.0;
   double a1_1 = 0.0;
   double a1_2 = 0.0;
@@ -353,6 +364,7 @@ int iocbio_ipwf_e11_find_zero_diff2(int j0, int j1, double *fm, int n, int m, do
   int start_j = (j0>=0?j0:0);
   int end_j = (j1<n?j1:n-1);
   int status = -1;
+  //printf("int iocbio_ipwf_e11_find_zero_diff2(int j0, int j1, double *fm, int n, int m, double* result, double* slope)\n");
   for (j=start_j; j<end_j; ++j)
   {
     iocbio_ipwf_e11_compute_coeffs_diff2(j, fm, n, m, &a1_0, &a1_1, &a1_2, &a1_3);
@@ -384,14 +396,16 @@ void iocbio_ipwf_e11_compute_coeffs_diff3(int j, double *fm, int n, int m, doubl
   /* diff(int((f1(x)-f1(x+y))*(f2(x)-f2(x+y)), x=0..L-y), y, order=3) = sum(a_k*r^k, k=0..3) where y=j+r
      f1(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i
      f2(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i */
+
   int p, i;
   int k = n - 3 - j;
   double *f = fm;
+  //printf("void iocbio_ipwf_e11_compute_coeffs_diff3(int j, double *fm, int n, int m, double* a0, double* a1, double* a2, double* a3)\n");
   double b0 = 0.0;
   double b1 = 0.0;
   double b2 = 0.0;
   double b3 = 0.0;
-  double f_ipj, f_ip2pj, f_ip1pj, f_m1mjpn, f_i, f_m2mjpn, f_m2pn, f_ip1, f_m1pn;
+  double f_ip2pj, f_ipj, f_ip1pj, f_m1mjpn, f_i, f_m2mjpn, f_m2pn, f_ip1, f_m1pn;
   if (j>=0 && j<=n-2)
   {
     for(p=0; p<m; ++p, f+=n)
@@ -402,14 +416,14 @@ void iocbio_ipwf_e11_compute_coeffs_diff3(int j, double *fm, int n, int m, doubl
       f_m1pn = F(-1+n);
       for(i=0;i<=k;++i)
       {
-        f_ipj = F(i+j);
         f_ip2pj = F(i+2+j);
+        f_ipj = F(i+j);
         f_ip1pj = F(i+1+j);
         f_i = F(i);
         f_ip1 = F(i+1);
-        b0 += -2.0*f_i*f_ipj + 4.0*f_ip1pj*f_ipj + 2.0*(f_ip2pj*f_ip2pj) + 4.0*f_ip1pj*f_i - 4.0*f_ip1pj*f_ip1 - 2.0*(f_ipj*f_ipj) - 4.0*f_ip1pj*f_ip2pj + 2.0*f_ip1*f_ip2pj + 2.0*f_ip1*f_ipj - 2.0*f_i*f_ip2pj;
+        b0 += -2.0*f_i*f_ip2pj - 4.0*f_ip1pj*f_ip2pj + 2.0*f_ip1*f_ip2pj - 4.0*f_ip1pj*f_ip1 - 2.0*(f_ipj*f_ipj) + 4.0*f_ip1pj*f_i - 2.0*f_i*f_ipj + 2.0*f_ip1*f_ipj + 4.0*f_ip1pj*f_ipj + 2.0*(f_ip2pj*f_ip2pj);
       }
-      b0 += -2.0*(f_m2pn*f_m2pn) + 2.0*f_m1mjpn*f_m2pn - 2.0*f_m2mjpn*f_m2pn - 2.0*(f_m1mjpn*f_m1mjpn) + 4.0*f_m1mjpn*f_m2mjpn + 2.0*f_m2mjpn*f_m1pn - 2.0*(f_m1pn*f_m1pn) + 4.0*f_m2pn*f_m1pn - 2.0*f_m1mjpn*f_m1pn - 2.0*(f_m2mjpn*f_m2mjpn);
+      b0 += 4.0*f_m1pn*f_m2pn - 2.0*f_m2pn*f_m2mjpn - 2.0*(f_m2mjpn*f_m2mjpn) + 2.0*f_m2pn*f_m1mjpn - 2.0*(f_m1mjpn*f_m1mjpn) - 2.0*(f_m2pn*f_m2pn) + 2.0*f_m1pn*f_m2mjpn + 4.0*f_m2mjpn*f_m1mjpn - 2.0*f_m1pn*f_m1mjpn - 2.0*(f_m1pn*f_m1pn);
     }
   }
   *a0 = b0;
@@ -426,6 +440,7 @@ int iocbio_ipwf_e11_find_extreme_diff3(int j0, int j1, double *fm, int n, int m,
   double p0 = 0.0;
   double p1 = 0.0;
   double p2 = 0.0;
+  //printf("int iocbio_ipwf_e11_find_extreme_diff3(int j0, int j1, double *fm, int n, int m, double* result)\n");
   double a1_0 = 0.0;
   double a1_1 = 0.0;
   double a1_2 = 0.0;
@@ -477,6 +492,7 @@ int iocbio_ipwf_e11_find_zero_diff3(int j0, int j1, double *fm, int n, int m, do
   double s;
   double p0 = 0.0;
   double p1 = 0.0;
+  //printf("int iocbio_ipwf_e11_find_zero_diff3(int j0, int j1, double *fm, int n, int m, double* result, double* slope)\n");
   double a1_0 = 0.0;
   double a1_1 = 0.0;
   double a1_2 = 0.0;
@@ -510,7 +526,7 @@ int iocbio_ipwf_e11_find_zero_diff3(int j0, int j1, double *fm, int n, int m, do
     if (p1!=0.0)
     {
        s = -p0/p1;
-       //printf("iocbio_ipwf_e11_find_zero_diff3: j=%d, p0=%f, p1=%f, s=%f\n",j,p0,p1, s);
+       ////printf("iocbio_ipwf_e11_find_zero_diff3: j=%d, p0=%f, p1=%f, s=%f\n",j,p0,p1, s);
        if (s>=0.0 && s<=1.0)
          {
             *result = (double) (j-1) + s;
@@ -528,6 +544,7 @@ void iocbio_ipwf_e11_compute_coeffs(int j, double *fm, int n, int m, int order, 
   /* diff(int((f1(x)-f1(x+y))*(f2(x)-f2(x+y)), x=0..L-y), y, order) = sum(a_k*r^k, k=0..3) where y=j+r
      f1(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i
      f2(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i */
+  //printf("void iocbio_ipwf_e11_compute_coeffs(int j, double *fm, int n, int m, int order, double* a0, double* a1, double* a2, double* a3)\n");
   switch (order)
   {
     case 0:  iocbio_ipwf_e11_compute_coeffs_diff0(j, fm, n, m, a0, a1, a2, a3); break;
@@ -544,6 +561,7 @@ void iocbio_ipwf_e11_compute_coeffs(int j, double *fm, int n, int m, int order, 
         
 int iocbio_ipwf_e11_find_extreme(int j0, int j1, double *fm, int n, int m, int order, double* result)
 {
+  //printf("int iocbio_ipwf_e11_find_extreme(int j0, int j1, double *fm, int n, int m, int order, double* result)\n");
   switch (order)
   {
     case 0: return iocbio_ipwf_e11_find_extreme_diff0(j0, j1, fm, n, m, result);
@@ -583,6 +601,7 @@ double iocbio_ipwf_e11_evaluate(double y, double *fm, int n, int m, int order)
   */
   int j = floor (y);
   double r = y - j;
+  //printf("double iocbio_ipwf_e11_evaluate(double y, double *fm, int n, int m, int order)\n");
   iocbio_ipwf_e11_compute_coeffs(j, fm, n, m, order, &a0, &a1, &a2, &a3);
   return a0+(a1+(a2+(a3)*r)*r)*r;
 }
@@ -596,6 +615,7 @@ double iocbio_ipwf_e11_f1_evaluate(double x, double *f, int n, int order)
 {
   int i = floor(x);
   double s = x - floor(x);
+  //printf("double iocbio_ipwf_e11_f1_evaluate(double x, double *f, int n, int order)\n");
   switch (order)
   {
     case 0: return F(i) + ((F(i+1)) - (F(i)))*s;
@@ -613,6 +633,7 @@ double iocbio_ipwf_e11_f2_evaluate(double x, double *f, int n, int order)
 {
   int i = floor(x);
   double s = x - floor(x);
+  //printf("double iocbio_ipwf_e11_f2_evaluate(double x, double *f, int n, int order)\n");
   switch (order)
   {
     case 0: return F(i) + ((F(i+1)) - (F(i)))*s;
@@ -631,9 +652,11 @@ void iocbio_ipwf_a11_compute_coeffs_diff0(int j, double *fm, int n, int m, doubl
   /* int(-f1(x)*f2(x+y), x=0..L-y) = sum(a_k*r^k, k=0..3) where y=j+r
      f1(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i
      f2(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i */
+
   int p, i;
   int k = n - 3 - j;
   double *f = fm;
+  //printf("void iocbio_ipwf_a11_compute_coeffs_diff0(int j, double *fm, int n, int m, double* a0, double* a1, double* a2, double* a3)\n");
   double b0 = 0.0;
   double b1 = 0.0;
   double b2 = 0.0;
@@ -657,12 +680,12 @@ void iocbio_ipwf_a11_compute_coeffs_diff0(int j, double *fm, int n, int m, doubl
         b0 += -0.1666666666666667*f_ip1pj*f_i - 0.3333333333333333*f_i*f_ipj - 0.1666666666666667*f_ip1*f_ipj - 0.3333333333333333*f_ip1pj*f_ip1;
         b1 += -0.5*f_ip1pj*f_i + 0.5*f_i*f_ipj + 0.5*f_ip1*f_ipj - 0.5*f_ip1pj*f_ip1;
         b2 += -0.5*f_ip1*f_ip2pj - 0.5*f_ip1*f_ipj + f_ip1pj*f_ip1;
-        b3 += -0.1666666666666667*f_i*f_ipj + 0.3333333333333333*f_ip1pj*f_i + 0.1666666666666667*f_ip1*f_ip2pj - 0.1666666666666667*f_i*f_ip2pj + 0.1666666666666667*f_ip1*f_ipj - 0.3333333333333333*f_ip1pj*f_ip1;
+        b3 += -0.1666666666666667*f_i*f_ip2pj + 0.1666666666666667*f_ip1*f_ip2pj - 0.3333333333333333*f_ip1pj*f_ip1 + 0.3333333333333333*f_ip1pj*f_i - 0.1666666666666667*f_i*f_ipj + 0.1666666666666667*f_ip1*f_ipj;
       }
-      b0 += -0.1666666666666667*f_m1pn*f_m2mjpn - 0.3333333333333333*f_m2pn*f_m2mjpn - 0.3333333333333333*f_m1pn*f_m1mjpn - 0.1666666666666667*f_m2pn*f_m1mjpn;
-      b1 += -0.5*f_m1pn*f_m2mjpn + 0.5*f_m2pn*f_m2mjpn + 0.5*f_m1pn*f_m1mjpn + 0.5*f_m2pn*f_m1mjpn;
+      b0 += -0.1666666666666667*f_m2mjpn*f_m1pn - 0.3333333333333333*f_m2mjpn*f_m2pn - 0.3333333333333333*f_m1pn*f_m1mjpn - 0.1666666666666667*f_m2pn*f_m1mjpn;
+      b1 += 0.5*f_m2pn*f_m2mjpn + 0.5*f_m2pn*f_m1mjpn - 0.5*f_m1pn*f_m2mjpn + 0.5*f_m1pn*f_m1mjpn;
       b2 += 0.5*f_m2mjpn*f_m1pn - 0.5*f_m2pn*f_m1mjpn;
-      b3 += 0.1666666666666667*f_m1pn*f_m2mjpn - 0.1666666666666667*f_m2pn*f_m2mjpn - 0.1666666666666667*f_m1pn*f_m1mjpn + 0.1666666666666667*f_m2pn*f_m1mjpn;
+      b3 += 0.1666666666666667*f_m2pn*f_m1mjpn - 0.1666666666666667*f_m2pn*f_m2mjpn - 0.1666666666666667*f_m1pn*f_m1mjpn + 0.1666666666666667*f_m1pn*f_m2mjpn;
     }
   }
   *a0 = b0;
@@ -685,6 +708,7 @@ int iocbio_ipwf_a11_find_extreme_diff0(int j0, int j1, double *fm, int n, int m,
   int start_j = (j0>0?j0:0);
   int end_j = (j1<n?j1:n-1);
   int status = -1;
+  //printf("int iocbio_ipwf_a11_find_extreme_diff0(int j0, int j1, double *fm, int n, int m, double* result)\n");
   for (j=start_j; j<end_j; ++j)
   {
     iocbio_ipwf_a11_compute_coeffs_diff0(j, fm, n, m, &a1_0, &a1_1, &a1_2, &a1_3);
@@ -716,6 +740,7 @@ int iocbio_ipwf_a11_find_zero_diff0(int j0, int j1, double *fm, int n, int m, do
   int start_j = (j0>=0?j0:0);
   int end_j = (j1<n?j1:n-1);
   int status = -1;
+  //printf("int iocbio_ipwf_a11_find_zero_diff0(int j0, int j1, double *fm, int n, int m, double* result, double* slope)\n");
   for (j=start_j; j<end_j; ++j)
   {
     iocbio_ipwf_a11_compute_coeffs_diff0(j, fm, n, m, &a1_0, &a1_1, &a1_2, &a1_3);
@@ -747,9 +772,11 @@ void iocbio_ipwf_a11_compute_coeffs_diff1(int j, double *fm, int n, int m, doubl
   /* diff(int(-f1(x)*f2(x+y), x=0..L-y), y, order=1) = sum(a_k*r^k, k=0..3) where y=j+r
      f1(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i
      f2(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i */
+
   int p, i;
   int k = n - 3 - j;
   double *f = fm;
+  //printf("void iocbio_ipwf_a11_compute_coeffs_diff1(int j, double *fm, int n, int m, double* a0, double* a1, double* a2, double* a3)\n");
   double b0 = 0.0;
   double b1 = 0.0;
   double b2 = 0.0;
@@ -772,10 +799,10 @@ void iocbio_ipwf_a11_compute_coeffs_diff1(int j, double *fm, int n, int m, doubl
         f_ip1 = F(i+1);
         b0 += -0.5*f_ip1pj*f_i + 0.5*f_i*f_ipj + 0.5*f_ip1*f_ipj - 0.5*f_ip1pj*f_ip1;
         b1 += -f_ip1*f_ip2pj - f_ip1*f_ipj + 2.0*f_ip1pj*f_ip1;
-        b2 += -0.5*f_i*f_ipj + 0.5*f_ip1*f_ip2pj + f_ip1pj*f_i - f_ip1pj*f_ip1 + 0.5*f_ip1*f_ipj - 0.5*f_i*f_ip2pj;
+        b2 += -0.5*f_i*f_ip2pj + 0.5*f_ip1*f_ip2pj - f_ip1pj*f_ip1 + f_ip1pj*f_i - 0.5*f_i*f_ipj + 0.5*f_ip1*f_ipj;
       }
-      b0 += -0.5*f_m1pn*f_m2mjpn + 0.5*f_m2pn*f_m2mjpn + 0.5*f_m1pn*f_m1mjpn + 0.5*f_m2pn*f_m1mjpn;
-      b1 += f_m2mjpn*f_m1pn - f_m2pn*f_m1mjpn;
+      b0 += 0.5*f_m1pn*f_m1mjpn + 0.5*f_m2pn*f_m1mjpn - 0.5*f_m1pn*f_m2mjpn + 0.5*f_m2pn*f_m2mjpn;
+      b1 += -f_m2pn*f_m1mjpn + f_m2mjpn*f_m1pn;
       b2 += 0.5*f_m1pn*f_m2mjpn - 0.5*f_m2pn*f_m2mjpn - 0.5*f_m1pn*f_m1mjpn + 0.5*f_m2pn*f_m1mjpn;
     }
   }
@@ -799,6 +826,7 @@ int iocbio_ipwf_a11_find_extreme_diff1(int j0, int j1, double *fm, int n, int m,
   int start_j = (j0>0?j0:0);
   int end_j = (j1<n?j1:n-1);
   int status = -1;
+  //printf("int iocbio_ipwf_a11_find_extreme_diff1(int j0, int j1, double *fm, int n, int m, double* result)\n");
   for (j=start_j; j<end_j; ++j)
   {
     iocbio_ipwf_a11_compute_coeffs_diff1(j, fm, n, m, &a1_0, &a1_1, &a1_2, &a1_3);
@@ -823,6 +851,7 @@ int iocbio_ipwf_a11_find_zero_diff1(int j0, int j1, double *fm, int n, int m, do
   double s;
   double p0 = 0.0;
   double p1 = 0.0;
+  //printf("int iocbio_ipwf_a11_find_zero_diff1(int j0, int j1, double *fm, int n, int m, double* result, double* slope)\n");
   double a1_0 = 0.0;
   double a1_1 = 0.0;
   double a1_2 = 0.0;
@@ -835,7 +864,7 @@ int iocbio_ipwf_a11_find_zero_diff1(int j0, int j1, double *fm, int n, int m, do
   for (j=(dj==-1?start_j-1:start_j); count>0; j += dj, --count)
   {
     iocbio_ipwf_a11_compute_coeffs_diff1(j, fm, n, m, &a1_0, &a1_1, &a1_2, &a1_3);
-    s = iocbio_ipwf_find_real_zero_in_01_2(a1_0, a1_1, a1_2, slope);
+    s = iocbio_ipwf_find_real_zero_in_01_2(a1_0, a1_1, a1_2, dj, slope);
     //printf("j,s,dj,zero=%d, %e, %d, %e\n",j,s, dj, a1_0+s*(a1_1+s*(a1_2+s*a1_3)));
     if (s>=0.0 && s<=1.0)
       {
@@ -857,9 +886,11 @@ void iocbio_ipwf_a11_compute_coeffs_diff2(int j, double *fm, int n, int m, doubl
   /* diff(int(-f1(x)*f2(x+y), x=0..L-y), y, order=2) = sum(a_k*r^k, k=0..3) where y=j+r
      f1(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i
      f2(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i */
+
   int p, i;
   int k = n - 3 - j;
   double *f = fm;
+  //printf("void iocbio_ipwf_a11_compute_coeffs_diff2(int j, double *fm, int n, int m, double* a0, double* a1, double* a2, double* a3)\n");
   double b0 = 0.0;
   double b1 = 0.0;
   double b2 = 0.0;
@@ -881,10 +912,10 @@ void iocbio_ipwf_a11_compute_coeffs_diff2(int j, double *fm, int n, int m, doubl
         f_i = F(i);
         f_ip1 = F(i+1);
         b0 += -f_ip1*f_ip2pj - f_ip1*f_ipj + 2.0*f_ip1pj*f_ip1;
-        b1 += -f_i*f_ipj + 2.0*f_ip1pj*f_i + f_ip1*f_ip2pj - f_i*f_ip2pj + f_ip1*f_ipj - 2.0*f_ip1pj*f_ip1;
+        b1 += -f_i*f_ip2pj + f_ip1*f_ip2pj - 2.0*f_ip1pj*f_ip1 + 2.0*f_ip1pj*f_i - f_i*f_ipj + f_ip1*f_ipj;
       }
       b0 += f_m2mjpn*f_m1pn - f_m2pn*f_m1mjpn;
-      b1 += f_m1pn*f_m2mjpn - f_m2pn*f_m2mjpn - f_m1pn*f_m1mjpn + f_m2pn*f_m1mjpn;
+      b1 += f_m2pn*f_m1mjpn - f_m2pn*f_m2mjpn - f_m1pn*f_m1mjpn + f_m1pn*f_m2mjpn;
     }
   }
   *a0 = b0;
@@ -901,6 +932,7 @@ int iocbio_ipwf_a11_find_extreme_diff2(int j0, int j1, double *fm, int n, int m,
   double p0 = 0.0;
   double p1 = 0.0;
   double p2 = 0.0;
+  //printf("int iocbio_ipwf_a11_find_extreme_diff2(int j0, int j1, double *fm, int n, int m, double* result)\n");
   double a1_0 = 0.0;
   double a1_1 = 0.0;
   double a1_2 = 0.0;
@@ -958,6 +990,7 @@ int iocbio_ipwf_a11_find_zero_diff2(int j0, int j1, double *fm, int n, int m, do
   int start_j = (j0>=0?j0:0);
   int end_j = (j1<n?j1:n-1);
   int status = -1;
+  //printf("int iocbio_ipwf_a11_find_zero_diff2(int j0, int j1, double *fm, int n, int m, double* result, double* slope)\n");
   for (j=start_j; j<end_j; ++j)
   {
     iocbio_ipwf_a11_compute_coeffs_diff2(j, fm, n, m, &a1_0, &a1_1, &a1_2, &a1_3);
@@ -989,14 +1022,16 @@ void iocbio_ipwf_a11_compute_coeffs_diff3(int j, double *fm, int n, int m, doubl
   /* diff(int(-f1(x)*f2(x+y), x=0..L-y), y, order=3) = sum(a_k*r^k, k=0..3) where y=j+r
      f1(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i
      f2(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i */
+
   int p, i;
   int k = n - 3 - j;
   double *f = fm;
+  //printf("void iocbio_ipwf_a11_compute_coeffs_diff3(int j, double *fm, int n, int m, double* a0, double* a1, double* a2, double* a3)\n");
   double b0 = 0.0;
   double b1 = 0.0;
   double b2 = 0.0;
   double b3 = 0.0;
-  double f_ipj, f_ip2pj, f_ip1pj, f_m1mjpn, f_i, f_m2mjpn, f_m2pn, f_ip1, f_m1pn;
+  double f_ip2pj, f_ipj, f_ip1pj, f_m1mjpn, f_i, f_m2mjpn, f_m2pn, f_ip1, f_m1pn;
   if (j>=0 && j<=n-2)
   {
     for(p=0; p<m; ++p, f+=n)
@@ -1007,12 +1042,12 @@ void iocbio_ipwf_a11_compute_coeffs_diff3(int j, double *fm, int n, int m, doubl
       f_m1pn = F(-1+n);
       for(i=0;i<=k;++i)
       {
-        f_ipj = F(i+j);
         f_ip2pj = F(i+2+j);
+        f_ipj = F(i+j);
         f_ip1pj = F(i+1+j);
         f_i = F(i);
         f_ip1 = F(i+1);
-        b0 += -f_i*f_ipj + f_ip1*f_ip2pj + 2.0*f_ip1pj*f_i - 2.0*f_ip1pj*f_ip1 + f_ip1*f_ipj - f_i*f_ip2pj;
+        b0 += -f_i*f_ip2pj + f_ip1*f_ip2pj - 2.0*f_ip1pj*f_ip1 + 2.0*f_ip1pj*f_i - f_i*f_ipj + f_ip1*f_ipj;
       }
       b0 += f_m1pn*f_m2mjpn - f_m2pn*f_m2mjpn - f_m1pn*f_m1mjpn + f_m2pn*f_m1mjpn;
     }
@@ -1031,6 +1066,7 @@ int iocbio_ipwf_a11_find_extreme_diff3(int j0, int j1, double *fm, int n, int m,
   double p0 = 0.0;
   double p1 = 0.0;
   double p2 = 0.0;
+  //printf("int iocbio_ipwf_a11_find_extreme_diff3(int j0, int j1, double *fm, int n, int m, double* result)\n");
   double a1_0 = 0.0;
   double a1_1 = 0.0;
   double a1_2 = 0.0;
@@ -1082,6 +1118,7 @@ int iocbio_ipwf_a11_find_zero_diff3(int j0, int j1, double *fm, int n, int m, do
   double s;
   double p0 = 0.0;
   double p1 = 0.0;
+  //printf("int iocbio_ipwf_a11_find_zero_diff3(int j0, int j1, double *fm, int n, int m, double* result, double* slope)\n");
   double a1_0 = 0.0;
   double a1_1 = 0.0;
   double a1_2 = 0.0;
@@ -1115,7 +1152,7 @@ int iocbio_ipwf_a11_find_zero_diff3(int j0, int j1, double *fm, int n, int m, do
     if (p1!=0.0)
     {
        s = -p0/p1;
-       //printf("iocbio_ipwf_a11_find_zero_diff3: j=%d, p0=%f, p1=%f, s=%f\n",j,p0,p1, s);
+       ////printf("iocbio_ipwf_a11_find_zero_diff3: j=%d, p0=%f, p1=%f, s=%f\n",j,p0,p1, s);
        if (s>=0.0 && s<=1.0)
          {
             *result = (double) (j-1) + s;
@@ -1133,6 +1170,7 @@ void iocbio_ipwf_a11_compute_coeffs(int j, double *fm, int n, int m, int order, 
   /* diff(int(-f1(x)*f2(x+y), x=0..L-y), y, order) = sum(a_k*r^k, k=0..3) where y=j+r
      f1(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i
      f2(x)=sum([0<=s<1]*(((F(i+1)) - (F(i)))*s + (F(i))), i=0..N-1) where s=x-i */
+  //printf("void iocbio_ipwf_a11_compute_coeffs(int j, double *fm, int n, int m, int order, double* a0, double* a1, double* a2, double* a3)\n");
   switch (order)
   {
     case 0:  iocbio_ipwf_a11_compute_coeffs_diff0(j, fm, n, m, a0, a1, a2, a3); break;
@@ -1149,6 +1187,7 @@ void iocbio_ipwf_a11_compute_coeffs(int j, double *fm, int n, int m, int order, 
         
 int iocbio_ipwf_a11_find_extreme(int j0, int j1, double *fm, int n, int m, int order, double* result)
 {
+  //printf("int iocbio_ipwf_a11_find_extreme(int j0, int j1, double *fm, int n, int m, int order, double* result)\n");
   switch (order)
   {
     case 0: return iocbio_ipwf_a11_find_extreme_diff0(j0, j1, fm, n, m, result);
@@ -1188,6 +1227,7 @@ double iocbio_ipwf_a11_evaluate(double y, double *fm, int n, int m, int order)
   */
   int j = floor (y);
   double r = y - j;
+  //printf("double iocbio_ipwf_a11_evaluate(double y, double *fm, int n, int m, int order)\n");
   iocbio_ipwf_a11_compute_coeffs(j, fm, n, m, order, &a0, &a1, &a2, &a3);
   return a0+(a1+(a2+(a3)*r)*r)*r;
 }
@@ -1201,6 +1241,7 @@ double iocbio_ipwf_a11_f1_evaluate(double x, double *f, int n, int order)
 {
   int i = floor(x);
   double s = x - floor(x);
+  //printf("double iocbio_ipwf_a11_f1_evaluate(double x, double *f, int n, int order)\n");
   switch (order)
   {
     case 0: return F(i) + ((F(i+1)) - (F(i)))*s;
@@ -1218,6 +1259,7 @@ double iocbio_ipwf_a11_f2_evaluate(double x, double *f, int n, int order)
 {
   int i = floor(x);
   double s = x - floor(x);
+  //printf("double iocbio_ipwf_a11_f2_evaluate(double x, double *f, int n, int order)\n");
   switch (order)
   {
     case 0: return F(i) + ((F(i+1)) - (F(i)))*s;
@@ -1434,12 +1476,12 @@ void iocbio_ipwf_linear_approximation_1_7(double a1_0, double a1_1, double a1_2,
   *p1 = 0.0000000000000000e+00*a1_0+1.0000000000000000e+00*a1_1+1.0000000000000000e+00*a1_2+9.0000000000000002e-01*a1_3+8.0000000000000004e-01*a1_4+7.1428571428571430e-01*a1_5+6.4285714285714290e-01*a1_6+5.8333333333333326e-01*a1_7;
 }
             
-double iocbio_ipwf_find_real_zero_in_01_2(double a_0, double a_1, double a_2, double *slope)
+double iocbio_ipwf_find_real_zero_in_01_2(double a_0, double a_1, double a_2, int direction, double *slope)
 {
   
 /* Code translated from http://www.netlib.org/toms/493, subroutine QUAD, with modifications. */
 #define ABS(X) ((X)<0.0?-(X):(X))
-double b, e, d, lr, sr;
+double b, e, d, lr, sr, ls, ss;
 //printf("a_0,a_1,a_2, e=%f, %f, %f\n", a_0, a_1, a_2);
 if (a_2==0.0)
   {
@@ -1484,15 +1526,14 @@ else
         }
       sr = (a_0/lr)/a_2;
       sr = FIXZERO(sr);
+      ls = a_1+2.0*a_2*lr;
+      ss = a_1+2.0*a_2*sr;
       //printf("p(lr=%f)=%f\n", lr,a_0+lr*(a_1+lr*a_2));
       //printf("p(sr=%f)=%f\n", sr,a_0+sr*(a_1+sr*a_2));
-      if (lr>=0 && lr<=1.0)
-        {
-          *slope = a_1+2.0*a_2*lr;
-          return lr;
-        }
-      *slope = a_1+2.0*a_2*sr;
-      return sr;
+      if (lr>=0.0 && lr<=1.0 && (sr<0.0 || direction <0))
+        { *slope = ls; return lr; }
+      else
+        { *slope = ss; return sr; }
     }
   }
 

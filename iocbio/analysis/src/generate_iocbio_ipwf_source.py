@@ -253,7 +253,7 @@ class Generator:
 '''
 /* Code translated from http://www.netlib.org/toms/493, subroutine QUAD, with modifications. */
 #define ABS(X) ((X)<0.0?-(X):(X))
-double b, e, d, lr, sr;
+double b, e, d, lr, sr, ls, ss;
 //printf("a_0,a_1,a_2, e=%f, %f, %f\\n", a_0, a_1, a_2);
 if (a_2==0.0)
   {
@@ -298,15 +298,14 @@ else
         }
       sr = (a_0/lr)/a_2;
       sr = FIXZERO(sr);
+      ls = a_1+2.0*a_2*lr;
+      ss = a_1+2.0*a_2*sr;
       //printf("p(lr=%f)=%f\\n", lr,a_0+lr*(a_1+lr*a_2));
       //printf("p(sr=%f)=%f\\n", sr,a_0+sr*(a_1+sr*a_2));
-      if (lr>=0 && lr<=1.0)
-        {
-          *slope = a_1+2.0*a_2*lr;
-          return lr;
-        }
-      *slope = a_1+2.0*a_2*sr;
-      return sr;
+      if (lr>=0.0 && lr<=1.0 && (sr<0.0 || direction <0))
+        { *slope = ls; return lr; }
+      else
+        { *slope = ss; return sr; }
     }
   }
 '''
@@ -314,7 +313,7 @@ else
         
         for poly_order in [2]:
             decl_coeffs = ', '.join('double a_%s' % (i) for i in range(poly_order+1))
-            cf_proto = 'double %(cfunc_prefix)sfind_real_zero_in_01_%(poly_order)s(%(decl_coeffs)s, double *slope)' % (locals ())
+            cf_proto = 'double %(cfunc_prefix)sfind_real_zero_in_01_%(poly_order)s(%(decl_coeffs)s, int direction, double *slope)' % (locals ())
             code = codes.get(poly_order, 'printf("Not implemented: %s\\n");' % (cf_proto))
             cf_source_template = '''
 %(cf_proto)s
@@ -498,9 +497,11 @@ else
 %(cf_proto)s
 {
   /* %(cf_def)s */
+
   int p, i;
   int k = n - 3 - j;
   double *f = fm;
+  //printf("%(cf_proto)s\\n");
   %(init_coeffs)s
   %(decl_vars)s
   if (j>=0 && j<=n-2)
@@ -572,6 +573,7 @@ else
   double p0 = 0.0;
   double p1 = 0.0;
   double p2 = 0.0;
+  //printf("%(cf_proto2)s\\n");
   %(init_coeffs_ref1)s
   %(init_coeffs_ref2)s
   %(init_coeffs_ref3)s
@@ -614,6 +616,7 @@ else
   int start_j = (j0>0?j0:0);
   int end_j = (j1<n?j1:n-1);
   int status = -1;
+  //printf("%(cf_proto2)s\\n");
   for (j=start_j; j<end_j; ++j)
   {
     %(cfunc_prefix)s%(name)s_compute_coeffs_diff%(order)s(j, fm, n, m, %(refcoeffs1)s);
@@ -652,6 +655,7 @@ else
   double s;
   double p0 = 0.0;
   double p1 = 0.0;
+  //printf("%(cf_proto2)s\\n");
   %(init_coeffs_ref1)s
   %(init_coeffs_ref2)s
   %(init_coeffs_ref3)s
@@ -670,7 +674,7 @@ else
     if (p1!=0.0)
     {
        s = -p0/p1;
-       //printf("%(cfunc_prefix)s%(name)s_find_zero_diff%(order)s: j=%%d, p0=%%f, p1=%%f, s=%%f\\n",j,p0,p1, s);
+       ////printf("%(cfunc_prefix)s%(name)s_find_zero_diff%(order)s: j=%%d, p0=%%f, p1=%%f, s=%%f\\n",j,p0,p1, s);
        if (s>=0.0 && s<=1.0)
          {
             *result = (double) (j-1) + s;
@@ -695,6 +699,7 @@ else
   int start_j = (j0>=0?j0:0);
   int end_j = (j1<n?j1:n-1);
   int status = -1;
+  //printf("%(cf_proto2)s\\n");
   for (j=start_j; j<end_j; ++j)
   {
     %(cfunc_prefix)s%(name)s_compute_coeffs_diff%(order)s(j, fm, n, m, %(refcoeffs1)s);
@@ -724,6 +729,7 @@ else
   double s;
   double p0 = 0.0;
   double p1 = 0.0;
+  //printf("%(cf_proto2)s\\n");
   %(init_coeffs_ref1)s
   int start_j = (j0>=0?j0:0);
   int end_j = (j1<n?j1:n-1);
@@ -733,7 +739,7 @@ else
   for (j=(dj==-1?start_j-1:start_j); count>0; j += dj, --count)
   {
     %(cfunc_prefix)s%(name)s_compute_coeffs_diff%(order)s(j, fm, n, m, %(refcoeffs1)s);
-    s = %(cfunc_prefix)sfind_real_zero_in_01_%(poly_order2)s(%(coeffs1_2)s, slope);
+    s = %(cfunc_prefix)sfind_real_zero_in_01_%(poly_order2)s(%(coeffs1_2)s, dj, slope);
     //printf("j,s,dj,zero=%%d, %%e, %%d, %%e\\n",j,s, dj, a1_0+s*(a1_1+s*(a1_2+s*a1_3)));
     if (s>=0.0 && s<=1.0)
       {
@@ -766,6 +772,7 @@ else
 %(cf_proto)s
 {
   /* %(cf_def)s */
+  //printf("%(cf_proto)s\\n");
   switch (order)
   {
     %(order_cases)s
@@ -781,6 +788,7 @@ else
         cf_source_template = '''
 %(cf_proto)s
 {
+  //printf("%(cf_proto)s\\n");
   switch (order)
   {
     %(order_cases)s
@@ -849,6 +857,7 @@ else
   */
   int j = floor (y);
   double r = y - j;
+  //printf("%(cf_proto)s\\n");
   %(cfunc_prefix)s%(name)s_compute_coeffs(j, fm, n, m, order, %(refcoeffs)s);
   return %(horner)s;
 }
@@ -892,6 +901,7 @@ else
 {
   int i = floor(x);
   double s = x - floor(x);
+  //printf("%(cf_proto)s\\n");
   switch (order)
   {
     %(cases)s
