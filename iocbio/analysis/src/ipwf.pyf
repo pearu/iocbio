@@ -58,6 +58,116 @@ python module ipwf
       double precision :: value
     end function e11_f2_evaluate
 
+    function ep11_find_extreme(j0, j1, f, n, m, order, res) result (status)
+       intent(c) ep11_find_extreme
+       fortranname iocbio_ipwf_ep11_find_extreme
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  ep11_find_extreme
+        
+    function ep11_find_zero(j0, j1, f, n, m, order, res, slope) result (status)
+       intent(c) ep11_find_zero
+       fortranname iocbio_ipwf_ep11_find_zero
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res, slope
+       integer :: status
+    end function  ep11_find_zero
+        
+    function ep11_evaluate(y, f, n, m, order) result (value)
+       intent(c) ep11_evaluate
+       fortranname iocbio_ipwf_ep11_evaluate
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision :: value
+    end function  ep11_evaluate
+        
+    function ep11_f1_evaluate (x, f, n, order) result (value)
+      intent (c) ep11_f1_evaluate
+      fortranname iocbio_ipwf_ep11_f1_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function ep11_f1_evaluate
+
+    function ep11_f2_evaluate (x, f, n, order) result (value)
+      intent (c) ep11_f2_evaluate
+      fortranname iocbio_ipwf_ep11_f2_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function ep11_f2_evaluate
+
+    function a00_find_extreme(j0, j1, f, n, m, order, res) result (status)
+       intent(c) a00_find_extreme
+       fortranname iocbio_ipwf_a00_find_extreme
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  a00_find_extreme
+        
+    function a00_find_zero(j0, j1, f, n, m, order, res, slope) result (status)
+       intent(c) a00_find_zero
+       fortranname iocbio_ipwf_a00_find_zero
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res, slope
+       integer :: status
+    end function  a00_find_zero
+        
+    function a00_evaluate(y, f, n, m, order) result (value)
+       intent(c) a00_evaluate
+       fortranname iocbio_ipwf_a00_evaluate
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision :: value
+    end function  a00_evaluate
+        
+    function a00_f1_evaluate (x, f, n, order) result (value)
+      intent (c) a00_f1_evaluate
+      fortranname iocbio_ipwf_a00_f1_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function a00_f1_evaluate
+
+    function a00_f2_evaluate (x, f, n, order) result (value)
+      intent (c) a00_f2_evaluate
+      fortranname iocbio_ipwf_a00_f2_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function a00_f2_evaluate
+
     function a11_find_extreme(j0, j1, f, n, m, order, res) result (status)
        intent(c) a11_find_extreme
        fortranname iocbio_ipwf_a11_find_extreme
@@ -112,6 +222,61 @@ python module ipwf
       integer intent(c), optional :: order = 0
       double precision :: value
     end function a11_f2_evaluate
+
+    function ap11_find_extreme(j0, j1, f, n, m, order, res) result (status)
+       intent(c) ap11_find_extreme
+       fortranname iocbio_ipwf_ap11_find_extreme
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res
+       integer :: status
+    end function  ap11_find_extreme
+        
+    function ap11_find_zero(j0, j1, f, n, m, order, res, slope) result (status)
+       intent(c) ap11_find_zero
+       fortranname iocbio_ipwf_ap11_find_zero
+       integer intent(in, c) :: j0, j1
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision, intent(out) :: res, slope
+       integer :: status
+    end function  ap11_find_zero
+        
+    function ap11_evaluate(y, f, n, m, order) result (value)
+       intent(c) ap11_evaluate
+       fortranname iocbio_ipwf_ap11_evaluate
+       double precision intent(in, c) :: y
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       integer intent(c), optional :: order = 0
+       double precision :: value
+    end function  ap11_evaluate
+        
+    function ap11_f1_evaluate (x, f, n, order) result (value)
+      intent (c) ap11_f1_evaluate
+      fortranname iocbio_ipwf_ap11_f1_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function ap11_f1_evaluate
+
+    function ap11_f2_evaluate (x, f, n, order) result (value)
+      intent (c) ap11_f2_evaluate
+      fortranname iocbio_ipwf_ap11_f2_evaluate
+      double precision intent(in, c) :: x
+      double precision dimension (n), intent(in,c):: f
+      integer, depend(f), intent(c,hide) :: n = shape (f,0)
+      integer intent(c), optional :: order = 0
+      double precision :: value
+    end function ap11_f2_evaluate
 
   end interface
 end python module

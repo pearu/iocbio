@@ -8,8 +8,8 @@ Generate code for evaluating correlation functions.
 import re
 import os
 import sys
-
-from sympycore import Symbol, Calculus, PolynomialRing, Expr, heads
+from collections import defaultdict
+from sympycore import Symbol, Calculus, PolynomialRing, Expr, heads, mpq
 
 
 indexed_str = 'direct'
@@ -123,6 +123,11 @@ class Generator:
                     if index.data < 0:
                         return Calculus(0)
                 return Symbol(Indexed(expr.data.name, index, expr.data.indexed_subs))
+        elif extension=='periodic':
+            def indexed_subs(expr, *subs_args):
+                assert isinstance (expr, Calculus) and expr.head is heads.SYMBOL,`expr.pair`
+                index = expr.data.index.subs(*subs_args)
+                return Symbol(Indexed(expr.data.name, index, expr.data.indexed_subs))
         else:
             raise NotImplementedError (`extension`)
         self.extension = extension
@@ -161,8 +166,39 @@ class Generator:
         """
         for k,v in self.namespace.iteritems():
             exec k+' = v'
+        if extension=='periodic':
+            integrand1 = eval(str_replace(integrand,[
+                        ('f1(0)','f[0]'),
+                        ('f2(0)','f[0]'),
+                        ('f1(L)','f[N-1]'),
+                        ('f2(L)','f[N-1]'),
+                        ('f(x)','pwf1(f,i,s)'),
+                        ('f(x+y)','pwf1(f,i+j,s+r)'),
+                        ('f1(x)','pwf1(f,i,s)'),
+                        ('f1(x+y)','pwf1(f,i+j,s+r)'),
+                        ('f2(x)','pwf2(f,i,s)'),
+                        ('f2(x+y)','pwf2(f,i+j,s+r)'),
+                        ('x','(R.Number(i)+s)')])
+                              )
+            integrand3 = eval(str_replace(integrand,[
+                        ('f1(0)','f[0]'),
+                        ('f2(0)','f[0]'),
+                        ('f1(L)','f[N-1]'),
+                        ('f2(L)','f[N-1]'),
+                        ('f(x)','pwf1(f,i,s)'),
+                        ('f(x+y)','pwf1(f,i+j+1,s+r-1)'),
+                        ('f1(x)','pwf1(f,i,s)'),
+                        ('f1(x+y)','pwf1(f,i+j+1,s+r-1)'),
+                        ('f2(x)','pwf2(f,i,s)'),
+                        ('f2(x+y)','pwf2(f,i+j+1,s+r-1)'),
+                        ('x','(R.Number(i)+s)')]))
 
-        if extension=='cutoff':
+            integral1 = integrand1.variable_integrate(s, 0, 1-r)
+            integral3 = integrand3.variable_integrate(s, 1-r, 1)
+
+            integral_i1 = (integral1 + integral3).expand()
+            integral_r = R({})
+        elif extension=='cutoff':
             integrand1 = eval(str_replace(integrand,[
                         ('f1(0)','f[0]'),
                         ('f2(0)','f[0]'),
@@ -217,9 +253,9 @@ class Generator:
 
             integral_i1 = (integral1 + integral3).expand()
             integral_r = (integral2).expand()
-        elif extension=='periodic' or 1:
+        else:
             raise NotImplementedError(`extension`)
-
+        
         integral_i = R({})
         for e,c in integral_i1.data.iteritems():
             if isinstance(c, Expr):
@@ -230,16 +266,114 @@ class Generator:
                     data = [c]
             else:
                 data = [c]
+            
             for c in data:
                 if 'i' in str(c):
                     integral_i += R({e:c})
                 else:
                     integral_r += R({e:c*(N-2-j)})
 
+        if extension=='periodic':
+            assert str(integral_r)=='0',`integral_r`
+
         return integral_i, integral_r
 
+    def collect_Rexpr(self, expr):
+        R = self.namespace['R']
+        new_expr = R ({})
+        for e, c in expr.data.iteritems():
+            if isinstance(c, Expr):
+                c = c.head.to_ADD(type(c), c.data, c)
+                if c.head is heads.ADD:
+                    data = c.data
+                else:
+                    data = [c]
+            else:
+                data = [c]
+            for c in self.collect_ADD(data):
+                new_expr += R ({e:c})
+        return new_expr
+
+    def collect_ADD (self, lst):
+        if len (lst)<=1:
+            return lst
+        bases_count = defaultdict (int)
+        new_lst = []
+        for c in lst:
+            if c.head is heads.TERM_COEFF:
+                coeff = c.data[1]
+                c = c.data[0]
+                if c.head is heads.BASE_EXP_DICT:
+                    bases, exps = zip(*c.data.iteritems())
+                    assert set (exps)==set ([1]),`exps`
+                elif c.head is heads.POW:
+                    bases = (c.data[0],)*c.data[1]
+                    exps = (1,)*c.data[1]
+                else:
+                    raise NotImplementedError (`c.pair`)
+            elif c.head is heads.BASE_EXP_DICT:
+                coeff = 1
+                bases, exps = zip(*c.data.iteritems())
+                assert set (exps)==set ([1]),`exps`
+            elif c.head is heads.POW:
+                coeff = 1
+                bases = (c.data[0],)*c.data[1]
+                exps = (1,)*c.data[1]
+            else:
+                raise NotImplementedError (`c.pair`)
+            bases = sorted (bases)
+            for b in set(bases):
+                bases_count[b] += 1
+            new_lst.append ((coeff, bases))
+        count_bases = sorted ([(v,k) for k,v in bases_count.iteritems ()], reverse=1)
+        max_count, common_base = count_bases[0]
+        if max_count==len (new_lst):
+            return self.collect_subexprs (common_base, new_lst)
+        else:
+            lst0 = new_lst
+            terms = []
+            for max_count, common_base in count_bases:
+                lst1 = []
+                lst2 = []
+                for coeff, bases in lst0:
+                    if common_base in bases:
+                        lst1.append((coeff, bases))
+                    else:
+                        lst2.append ((coeff, bases))
+                if lst1:
+                    terms.extend(self.collect_subexprs (common_base, lst1))
+                lst0 = lst2
+            return terms
+        return lst
+
+    def collect_subexprs(self, common_base, lst):
+        coeffs_count = defaultdict (int)
+        coeff_bases = defaultdict(list)
+        for coeff, bases in lst:
+            i = bases.index (common_base)
+            assert i!=-1 and i in [0,1]
+            i = int(not i)
+            abscoeff = abs(coeff)
+            if isinstance (abscoeff, mpq):
+                abscoeff = abscoeff / abscoeff[0]
+            coeffs_count[abscoeff] += 1
+            signcoeff = coeff/abscoeff
+            coeff_bases[abscoeff].append((signcoeff, bases[i]))
+        terms = []
+        for (count, abscoeff) in sorted ([(v,k) for k,v in coeffs_count.iteritems ()], reverse=1):
+            coeff_bases0 = coeff_bases[abscoeff]
+            terms.append((abscoeff, sum ([base*signcoeff for (signcoeff, base) in coeff_bases0])))
+        terms2 = []
+        for coeff, term in sorted (terms, reverse=1):
+            if coeff==1:
+                terms2.append(term)
+            else:
+                terms2.append(Calculus (heads.TERM_COEFF, (term, coeff)))
+        print terms2
+        return [common_base * Calculus (heads.ADD, terms2)]        
+
     def show_convolution(self, integrand='f(x)*f(x+y)'):
-        poly_i, poly_r = self.integrate(integrand)
+        poly_i, poly_r = self.integrate(integrand, self.extension)
 
         for k in sorted(set(poly_i.data.keys() + poly_r.data.keys())):
             expr_i = poly_i.data.get(k, 0)
@@ -448,15 +582,17 @@ else
     def generate_source(self,
                         name = 'mcf1',
                         integrand = '(f(x)-f(0))*(2*f(x+y)-f(x)-f(0))',
-                        extension='cutoff',
                         max_diff_order=3):
         global indexed_str, indexed_map
+        extension = self.extension
         cfunc_prefix = self.cfunc_prefix
         #self.show_convolution(integrand)
-        poly_i, poly_r = self.integrate(integrand)
+        poly_i, poly_r = self.integrate(integrand, self.extension)
         exps = sorted(set(poly_i.data.keys() + poly_r.data.keys()))
         poly_order = max([e[0] for e in exps])
-        if name in ['a00', 'e00']:
+        if name in ['e11']:
+            poly_i1 = self.collect_Rexpr(poly_i)
+            poly_r1 = self.collect_Rexpr(poly_r)
             indexed_str = 'latex'
             print 'name=',name
             if name[0]=='a':
@@ -465,8 +601,14 @@ else
                 print '\\dn_f(y)=',
             print '+'.join(['%s_%s(\\flo{y}) %s%s' % (name[0],e[0], ('\\rem{y}' if e[0] else ''), ('^%s' % (e[0]) if e[0]>1 else '')) for e in exps])
             for e in exps:
-                print '%s_%s(\\flo{y})=' % (name[0],e[0]), ('\sum_{i=0}^{N-3-j}%s'%(poly_i.data[e])).replace ('(','').replace (')','').replace ('**','^').replace ('*','').replace (' ',''),
-                print '\\\\\n+',('%s'%(poly_r.data[e])).replace ('(','').replace (')','').replace ('**','^').replace ('*','').replace (' ','')
+                if extension=='cutoff':
+                    print '%s_%s(\\flo{y})=' % (name[0],e[0]), ('\sum_{i=0}^{N-3-j}%s'%(poly_i1.data[e])).replace ('**','^').replace ('*','').replace (' ',''), #.replace ('(','').replace (')','')
+                else:
+                    print '%s_%s(\\flo{y})=' % (name[0],e[0]), ('\sum_{i=0}^{N-1}%s'%(poly_i1.data[e])).replace ('**','^').replace ('*','').replace (' ',''), #replace ('(','').replace (')','')
+                if e in poly_r1.data:
+                    print '\\\\\n+',('%s'%(poly_r1.data[e])).replace ('(','').replace (')','').replace ('**','^').replace ('*','').replace (' ','')
+                else:
+                    print
 
             print '-'*10
         coeffs = ', '.join('a%s' % (i) for i in range(poly_order+1))
@@ -488,7 +630,8 @@ else
         set_coeffs = '\n  '.join('*a%s = b%s;' % (i, i) for i in range(poly_order+1))
         set_coeffs0 = '\n      '.join('*a%s = 0.0;' % (i,) for i in range(poly_order+1))
 
-        cf_source_template = '''
+        if extension=='cutoff':
+            cf_source_template = '''
 #ifdef F
 #undef F
 #endif
@@ -520,14 +663,48 @@ else
   %(set_coeffs)s
 }
         '''
+        elif extension=='periodic':
+            cf_source_template = '''
+#ifdef F
+#undef F
+#endif
+#define F(I) ((I)<0?(f[(I)+n]):((I)>=n?f[(I)-n]:f[(I)]))
 
+%(cf_proto)s
+{
+  /* %(cf_def)s */
+
+  int p, i;
+  int k = n - 1;
+  double *f = fm;
+  //printf("%(cf_proto)s\\n");
+  %(init_coeffs)s
+  %(decl_vars)s
+  if (j>=0 && j<=n-2)
+  {
+    for(p=0; p<m; ++p, f+=n)
+    {
+      %(init_vars)s
+      for(i=0;i<=k;++i)
+      {
+        %(init_vars_i)s
+        %(update_loop_coeffs)s
+      }
+      %(update_nonloop_coeffs)s
+    }
+  }
+  %(set_coeffs)s
+}
+        '''
+        else:
+            raise NotImplementedError (`extension`)
         start_offset, end_offset = self.offsets
         order_cases = []
         order_cases_extreme = []
         order_cases_zero = []
         for order in range(poly_order+1):
-            poly_i_diff = poly_i.variable_diff(self.namespace['r'], order)
-            poly_r_diff = poly_r.variable_diff(self.namespace['r'], order)
+            poly_i_diff = self.collect_Rexpr(poly_i.variable_diff(self.namespace['r'], order))
+            poly_r_diff = self.collect_Rexpr(poly_r.variable_diff(self.namespace['r'], order))
             diff_exps = sorted(set(poly_i_diff.data.keys() + poly_r_diff.data.keys()))
             indexed_map.clear()
             indexed_str = 'variable'
@@ -542,10 +719,18 @@ else
 
             cf_proto = 'void %(cfunc_prefix)s%(name)s_compute_coeffs_diff%(order)s(int j, double *fm, int n, int m, %(decl_coeffs)s)' % (locals())
 
-            if order:
-                cf_def = 'diff(int(%s, x=0..L-y), y, order=%s) = sum(a_k*r^k, k=0..%s) where y=j+r' % (integrand, order, poly_order)
+            if extension=='cutoff':
+                if order:
+                    cf_def = 'diff(int(%s, x=0..L-y), y, order=%s) = sum(a_k*r^k, k=0..%s) where y=j+r' % (integrand, order, poly_order)
+                else:
+                    cf_def = 'int(%s, x=0..L-y) = sum(a_k*r^k, k=0..%s) where y=j+r' % (integrand, poly_order)
+            elif extension=='periodic':
+                if order:
+                    cf_def = 'diff(int(%s, x=0..L), y, order=%s) = sum(a_k*r^k, k=0..%s) where y=j+r' % (integrand, order, poly_order)
+                else:
+                    cf_def = 'int(%s, x=0..L) = sum(a_k*r^k, k=0..%s) where y=j+r' % (integrand, poly_order)
             else:
-                cf_def = 'int(%s, x=0..L-y) = sum(a_k*r^k, k=0..%s) where y=j+r' % (integrand, poly_order)
+                raise NotImplementedError (`extension`)
             cf_def += '\n     f1(x)=sum([0<=s<1]*(%s), i=0..N-1) where s=x-i' % (eval('pwf1(f,i,s)', self.namespace).evalf())
             cf_def += '\n     f2(x)=sum([0<=s<1]*(%s), i=0..N-1) where s=x-i' % (eval('pwf2(f,i,s)', self.namespace).evalf())
 
@@ -990,9 +1175,12 @@ end python module
     source_file.write(source_header)
     pyf_file.write(pyf_header)
 
-    for name, (pwf, integrand) in dict(
+    for name, (pwf, integrand, extension) in dict(
         #a00 = ('constant', 'f1(x)*f2(x+y)'),
-        a11 = ('linear', '-f1(x)*f2(x+y)'),
+        a11 = ('linear', '-f1(x)*f2(x+y)', 'cutoff'),
+        ap11 = ('linear', '-f1(x)*f2(x+y)', 'periodic'),
+        a00 = ('constant', '-f1(x)*f2(x+y)', 'cutoff'),
+        #ap00 = ('constant', '-f1(x)*f2(x+y)', 'periodic'),
         #a22 = ('qint', 'f1(x)*f2(x+y)'),
         #a33 = ('cint', 'f1(x)*f2(x+y)'),
         #b00 = ('constant','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)-f2(L))'),
@@ -1004,7 +1192,9 @@ end python module
         #c22 = ('qint','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)+f(x)/2+3*f[0]/2-9*f2(L)/4)'),
         #c33 = ('cint','(f1(x)-(f1(0)+f1(L))/2)*(f2(x+y)+f(x)/2+3*f[0]/2-9*f2(L)/4)'),
         #e00 = ('constant', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))'),
-        e11 = ('linear', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))'),
+        e11 = ('linear', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))', 'cutoff'),
+        ep11 = ('linear', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))', 'periodic'),
+        #ep00 = ('constant', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))', 'periodic'),
         #e11_nd = ('linear', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))'),
         #e00_nd = ('constant', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))'),
         #e22 = ('qint', '(f1(x)-f1(x+y))*(f2(x)-f2(x+y))'),
@@ -1018,9 +1208,11 @@ end python module
         #    continue
         #if name not in ['a11','a22','a33']:
         #    continue
-        g = Generator(pwf, form = ('normalized_derivative' if name.endswith('_nd') else ''))
+        g = Generator(pwf, form = ('normalized_derivative' if name.endswith('_nd') else ''),
+                      extension=extension)
         for proto, source, interface in g.generate_source(name,
-                                                          integrand=integrand):
+                                                          integrand=integrand,
+                                                          ):
             source_file.write(source)
             header_file.write('extern %s;\n' % (proto))
             if interface:

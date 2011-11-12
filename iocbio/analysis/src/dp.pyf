@@ -32,17 +32,32 @@ python module dp
        double precision intent(c,out), depend(n), dimension (n) :: extreme_positions, extreme_values, average_positions, average_values
      end subroutine trend_spline
 
-     function fperiod (f, n, m, initial_period, detrend, method) result (period)
-       fortranname iocbio_fperiod
-       intent (c) fperiod
+     function fperiod_cached(f, n, m, initial_period, detrend, method, cache) result (period)
+       fortranname iocbio_fperiod_cached
+       intent (c) fperiod_cached
        double precision dimension (m, n), intent(in,c):: f
+       double precision dimension (m, n), intent(in,c,cache):: cache
        integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
        integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
        double precision intent(c,in), optional :: initial_period = 0.0
        integer, intent(c,in), optional :: detrend = 0
        double precision :: period
        integer, intent(c,in), optional :: method = 0 ! 0:e11, 1:a11
-     end function fperiod
+     end function fperiod_cached
+
+     !function fperiod (f, n, m, initial_period, detrend, method) result (period)
+     !  fortranname iocbio_fperiod
+     !  intent (c) fperiod
+     !  double precision dimension (m, n), intent(in,c):: f
+     !  integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+     !  integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+     !  double precision intent(c,in), optional :: initial_period = 0.0
+     !  integer, intent(c,in), optional :: detrend = 0
+     !  double precision :: period
+     !  integer, intent(c,in), optional :: method = 0 ! 0:e11, 1:a11
+     !end function fperiod
+
+
 
      subroutine objective(y, k, f, n, m, order, method, r)
        fortranname iocbio_objective

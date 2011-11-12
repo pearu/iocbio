@@ -21,6 +21,7 @@
 #define ABS(X) ((X)<0?-(X):(X))
 #define MAX(X, Y) ((X)<(Y)?(Y):(X))
 #define MIN(X, Y) ((X)>(Y)?(Y):(X))
+#define IFLOOR(X) ((int)floor(X))
 
 /* Evaluate objective function.
  */
@@ -37,8 +38,17 @@ void iocbio_objective(double *y, int k, double *f, int n, int m, int order, int 
     case 1:
       evaluate = iocbio_ipwf_a11_evaluate;
       break;
+    case 2:
+      evaluate = iocbio_ipwf_ep11_evaluate;
+      break;
+    case 3:
+      evaluate = iocbio_ipwf_ap11_evaluate;
+      break;
+    case 5:
+      evaluate = iocbio_ipwf_a00_evaluate;
+      break;
     default:
-      printf("iocbio_objective: method value not in [0, 1], got %d\n", method);
+      printf("iocbio_objective: method value not in [0, 1, 2, 3, 5], got %d\n", method);
       return;
     }
   for (j=0; j<k; ++j)
@@ -103,7 +113,7 @@ double iocbio_fperiod_cached(double *f, int n, int m, double initial_period, int
      inclusive) minimum point of objective function that defines the
      fundamental period of f.
    */
-  int start_j = floor(initial_period);
+  int start_j = IFLOOR(initial_period);
   int end_j = start_j + 1;
   double extreme = 0.0;
   double slope = 0.0;
@@ -123,8 +133,20 @@ double iocbio_fperiod_cached(double *f, int n, int m, double initial_period, int
       find_zero = iocbio_ipwf_a11_find_zero;
       evaluate = iocbio_ipwf_a11_evaluate;
       break;
+    case 2:
+      find_zero = iocbio_ipwf_ep11_find_zero;
+      evaluate = iocbio_ipwf_ep11_evaluate;
+      break;
+    case 3:
+      find_zero = iocbio_ipwf_ap11_find_zero;
+      evaluate = iocbio_ipwf_ap11_evaluate;
+      break;
+    case 5:
+      find_zero = iocbio_ipwf_a00_find_zero;
+      evaluate = iocbio_ipwf_a00_evaluate;
+      break;
     default:
-      printf("iocbio_fperiod_cached: method value not in [0, 1], got %d\n", method);
+      printf("iocbio_fperiod_cached: method value not in [0, 1, 2, 3, 5], got %d\n", method);
       return -1.0;
     }
   //printf("iocbio_fperiod_cached[%d](n=%d, m=%d, initial_period=%f, detrend=%d, method=%d)\n", iocbio_fperiod_cached_call_level, n, m, initial_period, detrend, method);
@@ -145,16 +167,16 @@ double iocbio_fperiod_cached(double *f, int n, int m, double initial_period, int
 	  if (convexity<0) /* extreme is maximum point, finding the next extreme.. */
 	    {
 	      /* First try if the extreme is in the same interval by approaching it from right */
-	      status = find_zero(ceil(extreme), floor(extreme), f2, n, m, 1, &extreme, &convexity);
+	      status = find_zero(IFLOOR(extreme)+1, IFLOOR(extreme), f2, n, m, 1, &extreme, &convexity);
 	      if (status==0 && convexity>0) /* extreme is minimum point */
 		return extreme;
 	      /* Ok, continuing the search to the right */
-	      status = find_zero(ceil(extreme), n, f2, n, m, 1, &extreme, &convexity);
+	      status = find_zero(IFLOOR(extreme)+1, n, f2, n, m, 1, &extreme, &convexity);
 	      if (status==0 && convexity>0) /* extreme is minimum point */
 		return extreme;
 	    }
 	}
-      //printf("iocbio_fperiod_cached: status=%d, initial_period=%f, extreme=%f, convexity=%f\n", status, initial_period, extreme, convexity);
+      //printf("iocbio_fperiod_cached: status=%d, initial_period=%f, extreme=%f(%f), convexity=%f\n", status, initial_period, extreme, IFLOOR(extreme), convexity);
       //printf("iocbio_fperiod_cached: objective function has no non-zero minimum.\n");
       return -2.0;
     }
@@ -172,14 +194,14 @@ double iocbio_fperiod_cached(double *f, int n, int m, double initial_period, int
       if (convexity<0.0) /* extreme is maximum point */
 	{
 	  /* First try if the extreme is in the same interval by approaching it from right */
-	  status = find_zero(ceil(extreme), floor(extreme), f2, n, m, 1, &extreme, &convexity);
+	  status = find_zero(IFLOOR(extreme)+1, IFLOOR(extreme), f2, n, m, 1, &extreme, &convexity);
 	  if (status==0 && convexity>0) /* extreme is minimum point */
 	    return extreme;
 	}
     }
   /* Decide in which direction to search for the minimum point */
   slope = evaluate(initial_period, f2, n, m, 1);
-  if (slope<0.0) /* the minimum point is to the right of ceil(initial_period) */
+  if (slope<0.0) /* the minimum point is to the right of floor(initial_period)+1 */
     {
       status = find_zero(end_j, n, f2, n, m, 1, &extreme, &convexity);
       if (status==0 && convexity>0.0)  /* extreme is minimum point */
@@ -192,11 +214,11 @@ double iocbio_fperiod_cached(double *f, int n, int m, double initial_period, int
 	  if (status==0 && convexity<0.0) /* skipping maximum point */
 	    {
 	      /* Check the case where minimum and maximum (extreme found from right) is in the same interval */
-	      status = find_zero(floor(extreme), ceil(extreme), f2, n, m, 1, &extreme, &convexity);
+	      status = find_zero(IFLOOR(extreme), IFLOOR(extreme)+1, f2, n, m, 1, &extreme, &convexity);
 	      if (status==0 && convexity>0.0)
 		return extreme;
 	      /* Continue the search to the left */
-	      status = find_zero(floor(extreme), 0, f2, n, m, 1, &extreme, &convexity);
+	      status = find_zero(IFLOOR(extreme), 0, f2, n, m, 1, &extreme, &convexity);
 	      if (status==0 && convexity>0.0)
 		return extreme;
 	    }
@@ -207,7 +229,7 @@ double iocbio_fperiod_cached(double *f, int n, int m, double initial_period, int
       status = find_zero(start_j, 0, f2, n, m, 1, &extreme, &convexity);
       if (status==0 && convexity>0.0) /* extreme is minimum point */
 	{
-	  if (floor(extreme)!=0.0) /* note that the interval [0,1] cannot contain two minimum points */
+	  if (IFLOOR(extreme)!=0) /* note that the interval [0,1] cannot contain two minimum points */
 	    return extreme;
 	  /* Doing full scan */
 	  return iocbio_fperiod_cached(f2, n, m, 0.0, 0, method, cache);
