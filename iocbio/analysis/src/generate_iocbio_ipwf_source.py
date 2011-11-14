@@ -306,8 +306,6 @@ class Generator:
                     new_expr += R ({e:term})
                 else:
                     new_expr += R ({e:Calculus (heads.TERM_COEFF, (term, coeff))})
-        if self.verbose:
-            print new_expr.pair
         return new_expr
 
     def collect_ADD (self, lst):
@@ -387,7 +385,19 @@ class Generator:
             for coeff, term in sorted (terms, reverse=1):
                 terms2.append(term)
             if len (terms2)==1:
-                return [common_base * terms2[0] * coeff]
+                if terms2[0].head is heads.TERM_COEFF_DICT:
+                    lst = []
+                    for t, c in terms2[0].data.iteritems ():
+                        lst.append ((c,t))
+                    lst.sort (reverse=1)
+                    lst2 = []
+                    for c,t in lst:
+                        if c==1:
+                            lst2.append (t)
+                        else:
+                            lst2.append (Calculus (heads.TERM_COEFF, (t,c)))
+                    return [common_base*Calculus(heads.ADD, lst2) *coeff]
+                return [(common_base * terms2[0]) * coeff]
             return [(common_base*Calculus (heads.ADD, terms2)) * coeff]
 
         terms2 = []
@@ -396,6 +406,7 @@ class Generator:
                 terms2.append(term)
             else:
                 terms2.append(Calculus(heads.TERM_COEFF, (term, coeff)))
+
         return [common_base * Calculus(heads.ADD, terms2)]        
 
     def show_convolution(self, integrand='f(x)*f(x+y)'):
@@ -617,8 +628,16 @@ else
         exps = sorted(set(poly_i.data.keys() + poly_r.data.keys()))
         poly_order = max([e[0] for e in exps])
         self.verbose = False
+
         if name in ['e11']:
+            def tolatex (string):
+                string = str (string).replace ('**','^').replace ('*','').replace (' ','')
+                return re.sub(r'(\(f_{(?P<index>.*?)}\))', r'f_{\g<index>}', string)
+                return string
+
+            self.verbose = True
             poly_i1 = self.collect_Rexpr(poly_i)
+            self.verbose = False
             poly_r1 = self.collect_Rexpr(poly_r)
             indexed_str = 'latex'
             print 'name=',name
@@ -629,11 +648,11 @@ else
             print '+'.join(['%s_%s(\\flo{y}) %s%s' % (name[0],e[0], ('\\rem{y}' if e[0] else ''), ('^%s' % (e[0]) if e[0]>1 else '')) for e in exps])
             for e in exps:
                 if extension=='cutoff':
-                    print '%s_%s(\\flo{y})=' % (name[0],e[0]), ('\sum_{i=0}^{N-3-j}%s'%(poly_i1.data[e])).replace ('**','^').replace ('*','').replace (' ',''), #.replace ('(','').replace (')','')
+                    print '%s_%s(\\flo{y})=' % (name[0],e[0]), ('\sum_{i=0}^{N-3-j}%s'%(tolatex(poly_i1.data[e]))),
                 else:
-                    print '%s_%s(\\flo{y})=' % (name[0],e[0]), ('\sum_{i=0}^{N-1}%s'%(poly_i1.data[e])).replace ('**','^').replace ('*','').replace (' ',''), #replace ('(','').replace (')','')
+                    print '%s_%s(\\flo{y})=' % (name[0],e[0]), ('\sum_{i=0}^{N-1}%s'%(tolatex(poly_i1.data[e])))
                 if e in poly_r1.data:
-                    print '\\\\\n+',('%s'%(poly_r1.data[e])).replace ('(','').replace (')','').replace ('**','^').replace ('*','').replace (' ','')
+                    print '\\\\\n+',('%s'%(tolatex(poly_r1.data[e])))
                 else:
                     print
 
@@ -731,13 +750,8 @@ else
         order_cases_extreme = []
         order_cases_zero = []
         for order in range(poly_order+1):
-            self.verbose = name=='e11' and order==0
-            if self.verbose:
-                print name, order
+            self.verbose = False #name=='e11' and order==0
             poly_i_diff = self.collect_Rexpr(poly_i.variable_diff(self.namespace['r'], order))
-            if self.verbose:
-                print poly_i_diff
-                
             poly_r_diff = self.collect_Rexpr(poly_r.variable_diff(self.namespace['r'], order))
             diff_exps = sorted(set(poly_i_diff.data.keys() + poly_r_diff.data.keys()))
             indexed_map.clear()
@@ -772,9 +786,9 @@ else
                         l2.append('b%s += %s*(%s);' % (e[0], coeff, term))
                     else:
                         l2.append('b%s += %s;' % (e[0], expr2))
-
             update_loop_coeffs = '\n        '.join(l1)
             update_nonloop_coeffs = '\n      '.join(l2)
+
             indexed_str = 'macro'
 
             decl_vars = 'double ' + ', '.join(indexed_map) + ';'
