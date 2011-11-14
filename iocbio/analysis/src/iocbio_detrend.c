@@ -50,7 +50,7 @@
 	}
 #define ISMAX(index) (f[fstride*((index)-(1+smoothness))]<=f[fstride*((index)+smoothness)]) && (f[fstride*((index)-smoothness)]>=f[fstride*((index)+(1+smoothness))])
 #define ISMIN(index) (f[fstride*((index)-(1+smoothness))]>=f[fstride*((index)+smoothness)]) && (f[fstride*((index)-smoothness)]<=f[fstride*((index)+(1+smoothness))])
-#define ISEXTREME(index) (ISMAX(index)?1:(ISMIN(index)?-1:0))
+#define ISEXTREME(index) (ISMIN(index)?-1:(ISMAX(index)?1:0))
 
 /*
   iocbio_detrend function subtracts trend from an array of values
@@ -171,12 +171,16 @@ void iocbio_detrend1(double *f, int n, int fstride, double period, double *r, in
       else
 	count = 1;
       flag = new_flag;
-      
-      v = 0.0;
-      for (j=-smoothness;j<1+smoothness; ++j)
-	v += f[fstride*(i+j)];
-      v /= (1+2*smoothness);
 
+      if (smoothness)
+	{
+	  v = 0.0;
+	  for (j=-smoothness;j<1+smoothness; ++j)
+	    v += f[fstride*(i+j)];
+	  v /= (1+2*smoothness);
+	}
+      else
+	v = f[fstride*i];
       if (count>1)
 	{
 	  extreme_point = (extreme_point*(count-1)+i)/count;

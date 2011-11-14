@@ -70,6 +70,7 @@ class Generator:
           instance of IndexGenerator, i will be Symbol and s will be
           instance of PolynomialRing['s', 'r'].
         """
+        self.verbose = False
         self.cfunc_prefix = 'iocbio_ipwf_'
         self.form = form
         offsets = 0,0
@@ -290,8 +291,23 @@ class Generator:
                     data = [c]
             else:
                 data = [c]
+            coeff_terms = defaultdict(int)
             for c in self.collect_ADD(data):
-                new_expr += R ({e:c})
+                if c.head is heads.TERM_COEFF:
+                    term, coeff = c.data
+                    if coeff<0:
+                        coeff_terms[-coeff] -= term
+                    else:
+                        coeff_terms[coeff] += term
+                else:
+                    coeff_terms[1] += c
+            for coeff, term in coeff_terms.iteritems ():
+                if coeff==1:
+                    new_expr += R ({e:term})
+                else:
+                    new_expr += R ({e:Calculus (heads.TERM_COEFF, (term, coeff))})
+        if self.verbose:
+            print new_expr.pair
         return new_expr
 
     def collect_ADD (self, lst):
@@ -360,17 +376,27 @@ class Generator:
             signcoeff = coeff/abscoeff
             coeff_bases[abscoeff].append((signcoeff, bases[i]))
         terms = []
+        coeffs = set ()
         for (count, abscoeff) in sorted ([(v,k) for k,v in coeffs_count.iteritems ()], reverse=1):
             coeff_bases0 = coeff_bases[abscoeff]
             terms.append((abscoeff, sum ([base*signcoeff for (signcoeff, base) in coeff_bases0])))
+            coeffs.add(abscoeff)
+        if len (coeffs)==1:
+            coeff = list (coeffs)[0]
+            terms2 = []
+            for coeff, term in sorted (terms, reverse=1):
+                terms2.append(term)
+            if len (terms2)==1:
+                return [common_base * terms2[0] * coeff]
+            return [(common_base*Calculus (heads.ADD, terms2)) * coeff]
+
         terms2 = []
         for coeff, term in sorted (terms, reverse=1):
             if coeff==1:
                 terms2.append(term)
             else:
-                terms2.append(Calculus (heads.TERM_COEFF, (term, coeff)))
-        print terms2
-        return [common_base * Calculus (heads.ADD, terms2)]        
+                terms2.append(Calculus(heads.TERM_COEFF, (term, coeff)))
+        return [common_base * Calculus(heads.ADD, terms2)]        
 
     def show_convolution(self, integrand='f(x)*f(x+y)'):
         poly_i, poly_r = self.integrate(integrand, self.extension)
@@ -590,6 +616,7 @@ else
         poly_i, poly_r = self.integrate(integrand, self.extension)
         exps = sorted(set(poly_i.data.keys() + poly_r.data.keys()))
         poly_order = max([e[0] for e in exps])
+        self.verbose = False
         if name in ['e11']:
             poly_i1 = self.collect_Rexpr(poly_i)
             poly_r1 = self.collect_Rexpr(poly_r)
@@ -611,6 +638,7 @@ else
                     print
 
             print '-'*10
+        #self.verbose = False
         coeffs = ', '.join('a%s' % (i) for i in range(poly_order+1))
         coeffs1 = ', '.join('a1_%s' % (i) for i in range(poly_order+1))
         coeffs2 = ', '.join('a2_%s' % (i) for i in range(poly_order+1))
@@ -703,14 +731,50 @@ else
         order_cases_extreme = []
         order_cases_zero = []
         for order in range(poly_order+1):
+            self.verbose = name=='e11' and order==0
+            if self.verbose:
+                print name, order
             poly_i_diff = self.collect_Rexpr(poly_i.variable_diff(self.namespace['r'], order))
+            if self.verbose:
+                print poly_i_diff
+                
             poly_r_diff = self.collect_Rexpr(poly_r.variable_diff(self.namespace['r'], order))
             diff_exps = sorted(set(poly_i_diff.data.keys() + poly_r_diff.data.keys()))
             indexed_map.clear()
             indexed_str = 'variable'
-            update_nonloop_coeffs = '\n      '.join('b%s += %s;' % (e[0], poly_r_diff.data.get(e, Calculus(0)).evalf(16)) for e in diff_exps)
-            #update_loop_coeffs_macro = '\n        '.join('b%s += %s;' % (e[0], poly_i_diff.data.get(e, Calculus(0)).evalf()) for e in diff_exps)
-            update_loop_coeffs = '\n        '.join('b%s += %s;' % (e[0], poly_i_diff.data.get(e, Calculus(0)).evalf(16)) for e in diff_exps)
+            #update_nonloop_coeffs = '\n      '.join('b%s += %s;' % (e[0], poly_r_diff.data.get(e, Calculus(0)).evalf(16)) for e in diff_exps)
+            #update_loop_coeffs = '\n        '.join('b%s += %s;' % (e[0], poly_i_diff.data.get(e, Calculus(0)).evalf(16)) for e in diff_exps)
+            l1 = []
+            l2 = []
+            for e in diff_exps:
+                expr1 = poly_i_diff.data.get (e, None)
+                
+                if expr1 is not None:
+                    if expr1.head is heads.TERM_COEFF:
+                        term, coeff = expr1.data
+                        if isinstance (coeff, mpq):
+                            if coeff<0:
+                                coeff = '-FRAC_%s_%s' % (-coeff)
+                            else:
+                                coeff = 'FRAC_%s_%s' % (coeff)
+                        l1.append('b%s += %s*(%s);' % (e[0], coeff, term))
+                    else:
+                        l1.append('b%s += %s;' % (e[0], expr1))
+                expr2 = poly_r_diff.data.get (e, None)
+                if expr2 is not None:
+                    if expr2.head is heads.TERM_COEFF:
+                        term, coeff = expr2.data
+                        if isinstance (coeff, mpq):
+                            if coeff<0:
+                                coeff = '-FRAC_%s_%s' % (-coeff)
+                            else:
+                                coeff = 'FRAC_%s_%s' % (coeff)
+                        l2.append('b%s += %s*(%s);' % (e[0], coeff, term))
+                    else:
+                        l2.append('b%s += %s;' % (e[0], expr2))
+
+            update_loop_coeffs = '\n        '.join(l1)
+            update_nonloop_coeffs = '\n      '.join(l2)
             indexed_str = 'macro'
 
             decl_vars = 'double ' + ', '.join(indexed_map) + ';'
@@ -1159,6 +1223,9 @@ extern "C" {
 #define FLOATMIN -1.7976931348623157e+308
 #define FLOATMAX 1.7976931348623157e+308
 #define FIXZERO(X) ((-EPSNEG<(X)) && ((X)<EPSPOS)?0.0:(X))
+#define FRAC_1_3 3.333333333333333e-1
+#define FRAC_1_2 5.0e-1
+#define FRAC_1_6 1.6666666666666666e-1
     ''' % (locals())
     source_footer = '''
 '''

@@ -45,17 +45,17 @@ python module dp
        integer, intent(c,in), optional :: method = 0 ! 0:e11, 1:a11
      end function fperiod_cached
 
-     !function fperiod (f, n, m, initial_period, detrend, method) result (period)
-     !  fortranname iocbio_fperiod
-     !  intent (c) fperiod
-     !  double precision dimension (m, n), intent(in,c):: f
-     !  integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
-     !  integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
-     !  double precision intent(c,in), optional :: initial_period = 0.0
-     !  integer, intent(c,in), optional :: detrend = 0
-     !  double precision :: period
-     !  integer, intent(c,in), optional :: method = 0 ! 0:e11, 1:a11
-     !end function fperiod
+     function fperiod (f, n, m, initial_period, detrend, method) result (period)
+       fortranname iocbio_fperiod
+       intent (c) fperiod
+       double precision dimension (m, n), intent(in,c):: f
+       integer, depend(f), intent(c,hide) :: n = (shape(f,1)==1?shape (f,0):shape(f,1))
+       integer, depend(f), intent(c,hide) :: m = (shape(f,1)==1?1:shape(f,0))
+       double precision intent(c,in), optional :: initial_period = 0.0
+       integer, intent(c,in), optional :: detrend = 0
+       double precision :: period
+       integer, intent(c,in), optional :: method = 0 ! 0:e11, 1:a11
+     end function fperiod
 
 
 
