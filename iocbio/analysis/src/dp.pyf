@@ -57,8 +57,6 @@ python module dp
        integer, intent(c,in), optional :: method = 0 ! 0:e11, 1:a11
      end function fperiod
 
-
-
      subroutine objective(y, k, f, n, m, order, method, r)
        fortranname iocbio_objective
        intent(c) objective
