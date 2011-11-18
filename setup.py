@@ -17,8 +17,8 @@ See http://code.google.com/p/iocbio/ for more information.
 CLASSIFIERS = ''
 PLATFORMS = ['Linux', 'Windows']
 MAJOR               = 1
-MINOR               = 2
-MICRO               = 2
+MINOR               = 3
+MICRO               = 0
 ISRELEASED          = 'RELEASE' in sys.argv
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 if ISRELEASED:

@@ -4,6 +4,6 @@
 """
 
 __autodoc__ = ['io', 'utils', 'ops', 'microscope', 'optparse_gui', 'utils', 'scanner',
-               'strathkelvin', 'timeunit']
+               'strathkelvin', 'timeunit', 'fperiod']
 
 

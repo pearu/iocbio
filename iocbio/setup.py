@@ -18,7 +18,8 @@ def configuration(parent_package='',top_path=None):
     config.add_subpackage('scanner')
     config.add_subpackage('strathkelvin')
     config.add_subpackage('chaco')
-    config.add_subpackage('analysis')
+    config.add_subpackage('fperiod')
+    #config.add_subpackage('analysis')
     # eof add.
 
     config.make_svn_version_py()
