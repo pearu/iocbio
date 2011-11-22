@@ -548,9 +548,18 @@ class TIFFpage(object):
                 runlen *= self.samples_per_pixel
 
             if self.bits_per_sample in (8, 16, 32, 64):
-                if self.bits_per_sample*runlen % 8:
+                if (self.bits_per_sample*runlen) % 8:
                     raise ValueError("data and sample size mismatch")
-                unpack = lambda data: numpy.fromstring(data, typecode)
+                def unpack(data):
+                    while 1:
+                        try:
+                            r = numpy.fromstring(data, typecode)
+                        except ValueError, msg:
+                            if str(msg)=='string size must be a multiple of element size':
+                                data += '\0'
+                                continue
+                        break
+                    return r
             else:
                 unpack = lambda data: unpackints(data, typecode,
                                                  self.bits_per_sample, runlen)
@@ -560,7 +569,9 @@ class TIFFpage(object):
             index = 0
             for offset, bytecount in zip(strip_offsets, strip_byte_counts):
                 fhandle.seek(offset, 0)
-                data = unpack(decompress(fhandle.read(bytecount)))
+                zdata = fhandle.read(bytecount)
+                dzdata = decompress (zdata)
+                data = unpack(dzdata)
                 sz = min(len(result), data.size)
                 result[index:index+sz] = data[:sz]
                 index += sz
