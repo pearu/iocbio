@@ -20,7 +20,7 @@
 #include "iocbio_detrend.h"
 
 /* Auxiliary macros */
-#define UPDATE_DETREND1_ARRAY(GT, FORCE, N)	\
+#define UPDATE_DETREND1_ARRAY(GT, FORCE, N) \
       if (FORCE || prev_extreme_point GT 0)\
 	{\
 	  average_point = 0.5*(extreme_point+prev_extreme_point);\

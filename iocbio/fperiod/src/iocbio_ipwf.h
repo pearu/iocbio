@@ -1,5 +1,5 @@
 
-/* This file is generated using iocbio/fperiod/src/generate_iocbio_ipwf_source.py.
+/* This file is generated using generate_iocbio_ipwf_source.py.
 
   Author: Pearu Peterson
   Created: Oct 2011

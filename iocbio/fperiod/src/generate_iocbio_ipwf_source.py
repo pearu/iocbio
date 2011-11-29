@@ -679,13 +679,13 @@ else
 
         if extension=='cutoff':
             cf_source_template = '''
+%(cf_proto)s
+{
 #ifdef F
 #undef F
 #endif
 #define F(I) ((I)<0?((1-(I))*f[0]+(I)*f[1]):((I)>=n?(((I)-n+2)*f[n-1]-((I)-n+1)*f[n-2]):f[(I)]))
 
-%(cf_proto)s
-{
   /* %(cf_def)s */
 
   int p, i;
@@ -712,13 +712,13 @@ else
         '''
         elif extension=='periodic':
             cf_source_template = '''
+
+%(cf_proto)s
+{
 #ifdef F
 #undef F
 #endif
 #define F(I) ((I)<0?(f[(I)+n]):((I)>=n?f[(I)-n]:f[(I)]))
-
-%(cf_proto)s
-{
   /* %(cf_def)s */
 
   int p, i;
@@ -1155,13 +1155,13 @@ else
                 cases.append('case %s: return %s;' % (order, horner))
             cases = '\n    '.join (cases)
             cf_source_template = '''
+
+%(cf_proto)s
+{
 #ifdef F
 #undef F
 #endif
 #define F(I) ((I)<0?((1-(I))*f[0]+(I)*f[1]):((I)>=n?(((I)-n+2)*f[n-1]-((I)-n+1)*f[n-2]):f[(I)]))
-
-%(cf_proto)s
-{
   int i = floor(x);
   double s = x - floor(x);
   //printf("%(cf_proto)s\\n");

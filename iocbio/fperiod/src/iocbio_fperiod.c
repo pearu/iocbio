@@ -23,12 +23,17 @@
 #define MIN(X, Y) ((X)>(Y)?(Y):(X))
 #define IFLOOR(X) ((int)floor(X))
 
-/* Evaluate objective function.
+#define ENABLE_METHOD
+
+/** Evaluate objective function.
  */
 
 void iocbio_objective(double *y, int k, double *f, int n, int m, int order, int method, double *r)
 {
   int j;
+#ifndef ENABLE_METHOD
+  double (*evaluate)(double, double*, int, int, int) = iocbio_ipwf_e11_evaluate;
+#else
   double (*evaluate)(double, double*, int, int, int) = NULL;
   switch (method)
     {
@@ -51,11 +56,12 @@ void iocbio_objective(double *y, int k, double *f, int n, int m, int order, int 
       printf("iocbio_objective: method value not in [0, 1, 2, 3, 5], got %d\n", method);
       return;
     }
+#endif
   for (j=0; j<k; ++j)
     r[j] = evaluate(y[j], f, n, m, order);
 }
 
-/*
+/**
   Estimate fundamental period of sequences.
 
   Parameters
@@ -72,7 +78,7 @@ void iocbio_objective(double *y, int k, double *f, int n, int m, int order, int 
   detrend : {0,1}
     When true then detrend sequences before finding the fundamental period.
   method : {0,1}
-    Specify objective function. 
+    Specify objective function. [NOT AVAILABLE IN LIBFPERIOD] 
        0: F(f)=int_0^{L-y} (f(x+y)-f(x))^2 dx
        1: F(f)=-int_0^{L-y} f(x+y)*f(x) dx
 
@@ -94,7 +100,7 @@ double iocbio_fperiod(double *f, int n, int m, double initial_period, int detren
   double fperiod;
   if (detrend)
     {
-      cache = malloc(sizeof(double)*n*m);
+      cache = (double*)malloc(sizeof(double)*n*m);
       if (cache==NULL)
 	{
 	  printf("iocbio_fperiod: memory allocation error\n");
@@ -106,6 +112,14 @@ double iocbio_fperiod(double *f, int n, int m, double initial_period, int detren
     free(cache);
   return fperiod;
 }
+
+/**
+
+   iocbio_fperiod_cached is same as iocbio_fperiod but with extra
+   cache argument. The size of the cache must be n*m when detrend!=0,
+   otherwise cache is not referenced.
+
+*/
 
 double iocbio_fperiod_cached(double *f, int n, int m, double initial_period, int detrend, int method, double *cache)
 {
@@ -120,6 +134,10 @@ double iocbio_fperiod_cached(double *f, int n, int m, double initial_period, int
   double convexity = 0.0;
   double* f2 = (detrend?cache:f);
   int status;
+#ifndef ENABLE_METHOD
+  int (*find_zero)(int, int, double*, int, int, int, double*, double*) = iocbio_ipwf_e11_find_zero;
+  double (*evaluate)(double, double*, int, int, int) = iocbio_ipwf_e11_evaluate;
+#else
   int (*find_zero)(int, int, double*, int, int, int, double*, double*) = NULL;
   double (*evaluate)(double, double*, int, int, int) = NULL;
 
@@ -150,6 +168,7 @@ double iocbio_fperiod_cached(double *f, int n, int m, double initial_period, int
       return -1.0;
     }
   //printf("iocbio_fperiod_cached[%d](n=%d, m=%d, initial_period=%f, detrend=%d, method=%d)\n", iocbio_fperiod_cached_call_level, n, m, initial_period, detrend, method);
+#endif
   if (detrend)
     iocbio_detrend(f, n, m, initial_period, cache);
   start_j = MAX(0, start_j);
