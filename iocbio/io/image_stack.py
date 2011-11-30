@@ -104,7 +104,7 @@ class ImageStack(object):
     """
     
     @classmethod
-    def load(cls, path, options=None):
+    def load(cls, path, options=None, file_prefix=None):
         """
         Load microscope images from path to ImageStack object.
 
@@ -124,7 +124,7 @@ class ImageStack(object):
         --------
         :class:`iocbio.io.image_stack.ImageStack`
         """
-        images, pathinfo = io.load_image_stack(path, options=options)
+        images, pathinfo = io.load_image_stack(path, options=options, file_prefix=file_prefix)
         stack = cls (images, pathinfo=pathinfo, options=options)
         return stack
     
