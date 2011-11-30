@@ -1,6 +1,17 @@
 /*
   Header file for libfperiod.c. See the C source file for documentation.
 
+  This file is part of the IOCBio project but can be used as a
+  standalone software program. We ask to acknowledge the use of the
+  software in scientific articles by citing the following paper:
+
+    Pearu Peterson, Mari Kalda, Marko Vendelin.
+    Real-time Determination of Sarcomere Length of a Single Cardiomyocyte during Contraction.
+    <Journal information to be updated>.
+
+  See http://iocbio.googlecode.com/ for more information.
+
+  License: BSD, see the footer of libfperiod.c.
   Author: Pearu Peterson
   Created: November 2011
  */
