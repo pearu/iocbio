@@ -1,5 +1,5 @@
 /*
-  Header file for imageinterp.c.
+  Header file for imageinterp.c. See the source for documentation.
 
   Author: Pearu Peterson
   Created: May 2011
@@ -13,9 +13,12 @@ extern "C" {
 #endif
 
 extern void imageinterp_get_roi(int image_width, int image_height, double *image,
-				int i0, int j0, int i1, int j1, double width,
-				int roi_width, int roi_height, double *roi
-				);
+			 double di_size, double dj_size,
+			 double i0, double j0, double i1, double j1, double width,
+			 int roi_width, int roi_height, double *roi,
+			 int interpolation
+			 )
+
 #ifdef __cplusplus
 }
 #endif
