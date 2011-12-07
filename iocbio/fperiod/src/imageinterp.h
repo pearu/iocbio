@@ -13,11 +13,11 @@ extern "C" {
 #endif
 
 extern void imageinterp_get_roi(int image_width, int image_height, double *image,
-			 double di_size, double dj_size,
-			 double i0, double j0, double i1, double j1, double width,
-			 int roi_width, int roi_height, double *roi,
-			 int interpolation
-			 )
+				double di_size, double dj_size,
+				double i0, double j0, double i1, double j1, double width,
+				int roi_width, int roi_height, double *roi,
+				int interpolation
+				);
 
 #ifdef __cplusplus
 }
