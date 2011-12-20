@@ -127,7 +127,10 @@ def get_tag_from_configuration(path, tagname, _cache={}):
             return info
         return info.get(tagname)
     if not os.path.isfile(path):
-        return
+        path = os.path.join(path, 'configuration.txt')
+        if not os.path.isfile(path):
+            print 'get_tag_from_configuration: file %r does not exist' % (path)
+            return
     info = {}
     f = open(path,'r')
     is_string = False

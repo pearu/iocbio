@@ -363,7 +363,9 @@ def read_csv(filename):
         for t,d in zip(titles, row[:-1]):
             dct[t].append(eval(d))
     csvfile.seek(0)
-    print len(csvfile.readlines())
+    for t in dct:
+        dct[t] = numpy.array(dct[t])
+    #print len(csvfile.readlines())
     return dct
 
 def get_rics_info(path, options=None):
