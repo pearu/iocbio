@@ -26,13 +26,13 @@ void iocbio_ipwf_e11_compute_coeffs_diff1(int j, double *fm, int n, int m, doubl
       f_m2mjpn = F(-2-j+n);
       f_m2pn = F(-2+n);
       f_m1pn = F(-1+n);
-      f_i = F(0);
-      f_ipj = F(j);
-      f_ip1pj = F(j+1);
+      f_i = f[0];
+      f_ipj = f[j];
+      f_ip1pj = f[j+1];
       for(i=0;i<=k;++i)
       {
-        f_ip1 = F(i+1);
-        f_ip2pj = F(i+2+j);
+        f_ip1 = f[i+1];
+        f_ip2pj = f[i+2+j];
         b0 += (f_ip1pj - f_ip1 - f_i)*f_ip1pj + f_ipj*(f_ip1 + f_i - f_ipj);
         b1 += ((f_ipj*f_ipj) - (f_ip2pj + f_ipj)*f_ip1) + (2*f_ip1 + (f_ip2pj - f_ipj - f_ip1pj))*f_ip1pj;
         b2 += 2*(f_i + f_ipj - f_ip1 - f_ip2pj)*f_ip1pj + f_ip2pj*(f_ip1 + f_ip2pj - f_i) + f_ipj*(f_ip1 - f_i - f_ipj);
