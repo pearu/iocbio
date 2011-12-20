@@ -80,7 +80,8 @@ if __name__=='__main__':
     import sys
     import glob
     dirname = os.path.dirname(__file__)
-    source_files = ['iocbio_fperiod.c', 'iocbio_detrend.c', 'iocbio_ipwf.c']
+    source_files = ['iocbio_fperiod.c', 'iocbio_detrend.c', 'iocbio_ipwf.c', 'iocbio_ipwf_manual.c',
+                    ]
 
     c_file = open(os.path.join(dirname, 'libfperiod.c'), 'w')
     h_file = open(os.path.join(dirname, 'libfperiod.h'), 'w')

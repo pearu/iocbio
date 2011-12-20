@@ -203,7 +203,7 @@ static PyObject *py_imageinterp_get_roi_corners(PyObject *self, PyObject *args)
 }
 
 static PyMethodDef module_methods[] = {
-  {"get_roi", py_imageinterp_get_roi, METH_VARARGS, "get_roi(image, (di, dj), (i0, i1), (j0, j1), w, interpolation) -> roi"},
+  {"get_roi", py_imageinterp_get_roi, METH_VARARGS, "get_roi(image, (di, dj), (i0, i1), (j0, j1), w, interpolation) -> roi, (rdi,rdj)"},
   {"get_roi_corners", py_imageinterp_get_roi_corners, METH_VARARGS, "get_roi_corners((w,h), (di,dj), (i0, i1), (j0, j1), w) -> (ll,lr,ur,ul)"},
   {NULL}  /* Sentinel */
 };

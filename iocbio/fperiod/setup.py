@@ -14,10 +14,13 @@ def configuration(parent_package='',top_path=None):
             join('src','iocbio_ipwf.c'),
             ],
                          #define_macros = [('F2PY_REPORT_ATEXIT','1')]
+                         depends = [join('src','iocbio_ipwf_manual.c')]
                          )
 
     config.add_extension('ipwf', sources = [
             join('src','ipwf.pyf'),
             join('src','iocbio_ipwf.c'),
-            ])
+            ],
+                         depends = [join('src','iocbio_ipwf_manual.c')]
+                         )
     return config

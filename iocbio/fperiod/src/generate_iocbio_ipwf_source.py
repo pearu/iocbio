@@ -795,7 +795,8 @@ else
             init_vars = '\n      '.join(['%s = %s;' % (v,e) for v,e in indexed_map.iteritems() if 'i' not in v])
             init_vars_i = '\n        '.join(['%s = %s;' % (v,e) for v,e in indexed_map.iteritems() if 'i' in v])
 
-            cf_proto = 'void %(cfunc_prefix)s%(name)s_compute_coeffs_diff%(order)s(int j, double *fm, int n, int m, %(decl_coeffs)s)' % (locals())
+            cf_name = '%(name)s_compute_coeffs_diff%(order)s' % (locals())
+            cf_proto = 'void %(cfunc_prefix)s%(cf_name)s(int j, double *fm, int n, int m, %(decl_coeffs)s)' % (locals())
 
             if extension=='cutoff':
                 if order:
@@ -819,9 +820,10 @@ else
             cf_source = re.sub(r'(f_(?P<index>[\w\d]+)[*]{2,2}2)', r'(f_\g<index>*f_\g<index>)', cf_source)
             cf_source = re.sub(r'(\(f\[(?P<index>[^\]]+)\]\)[*]{2,2}(?P<exp>\d+))', r'pow(f[\g<index>], \g<exp>)', cf_source)
             cf_source = re.sub(r'(?P<numer>\d+)[/](?P<denom>\d+)', r'\g<numer>.0/\g<denom>.0', cf_source)
-            yield cf_proto, cf_source, ''
+            yield cf_name, cf_proto, cf_source, ''
 
-            cf_proto2 = 'int %(cfunc_prefix)s%(name)s_find_extreme_diff%(order)s(int j0, int j1, double *fm, int n, int m, double* result)' % (locals())
+            cf_name2 = '%(name)s_find_extreme_diff%(order)s' % (locals ())
+            cf_proto2 = 'int %(cfunc_prefix)s%(cf_name2)s(int j0, int j1, double *fm, int n, int m, double* result)' % (locals())
             poly_order2 = poly_order-order
             coeffs1_2 = ','.join(coeffs1.split(',')[:poly_order2+1])
             coeffs2_2 = ','.join(coeffs2.split(',')[:poly_order2+1])
@@ -900,11 +902,12 @@ else
             '''
             
             if poly_order2<2:
-                yield cf_proto2, cf_source_template2_3 %(locals ()), ''
+                yield cf_name2, cf_proto2, cf_source_template2_3 %(locals ()), ''
             else:
-                yield cf_proto2, cf_source_template2_1 %(locals ()), ''
+                yield cf_name2, cf_proto2, cf_source_template2_1 %(locals ()), ''
 
-            cf_proto2 = 'int %(cfunc_prefix)s%(name)s_find_zero_diff%(order)s(int j0, int j1, double *fm, int n, int m, double* result, double* slope)' % (locals())
+            cf_name2 = '%(name)s_find_zero_diff%(order)s' % (locals())
+            cf_proto2 = 'int %(cfunc_prefix)s%(cf_name2)s(int j0, int j1, double *fm, int n, int m, double* result, double* slope)' % (locals())
             poly_order2 = poly_order-order
             coeffs1_2 = ','.join(coeffs1.split(',')[:poly_order2+1])
             coeffs2_2 = ','.join(coeffs2.split(',')[:poly_order2+1])
@@ -1016,17 +1019,17 @@ else
             '''
 
             if poly_order2==2 and order==1:
-                yield cf_proto2, cf_source_template2_d %(locals ()), ''
+                yield cf_name2, cf_proto2, cf_source_template2_d %(locals ()), ''
             elif 0:
                 pass
             elif poly_order2<1:
-                yield cf_proto2, cf_source_template2_3 %(locals ()), ''
+                yield cf_name2, cf_proto2, cf_source_template2_3 %(locals ()), ''
             else:
-                yield cf_proto2, cf_source_template2_1 %(locals ()), ''
+                yield cf_name2, cf_proto2, cf_source_template2_1 %(locals ()), ''
 
             
-
-        cf_proto = 'void %(cfunc_prefix)s%(name)s_compute_coeffs(int j, double *fm, int n, int m, int order, %(decl_coeffs)s)' % (locals())
+        cf_name = '%(name)s_compute_coeffs' % (locals ())
+        cf_proto = 'void %(cfunc_prefix)s%(cf_name)s(int j, double *fm, int n, int m, int order, %(decl_coeffs)s)' % (locals())
         order_cases = '\n    '.join(order_cases)
         cf_def = 'diff(int(%s, x=0..L-y), y, order) = sum(a_k*r^k, k=0..%s) where y=j+r' % (integrand, poly_order)
         cf_def += '\n     f1(x)=sum([0<=s<1]*(%s), i=0..N-1) where s=x-i' % (eval('pwf1(f,i,s)', self.namespace).evalf())
@@ -1044,9 +1047,10 @@ else
   }
 }
         '''
-        yield cf_proto, cf_source_template % (locals()), ''
+        yield cf_name, cf_proto, cf_source_template % (locals()), ''
 
-        cf_proto = 'int %(cfunc_prefix)s%(name)s_find_extreme(int j0, int j1, double *fm, int n, int m, int order, double* result)' % (locals())
+        cf_name = '%(name)s_find_extreme' % (locals ())
+        cf_proto = 'int %(cfunc_prefix)s%(cf_name)s(int j0, int j1, double *fm, int n, int m, int order, double* result)' % (locals())
         order_cases = '\n    '.join(order_cases_extreme)
         cf_source_template = '''
 %(cf_proto)s
@@ -1074,9 +1078,10 @@ else
        integer :: status
     end function  %(name)s_find_extreme
         '''
-        yield cf_proto, cf_source_template % (locals()), pyf_template % (locals ())
+        yield cf_name, cf_proto, cf_source_template % (locals()), pyf_template % (locals ())
 
-        cf_proto = 'int %(cfunc_prefix)s%(name)s_find_zero(int j0, int j1, double *fm, int n, int m, int order, double* result, double* slope)' % (locals())
+        cf_name = '%(name)s_find_zero' % (locals ())
+        cf_proto = 'int %(cfunc_prefix)s%(cf_name)s(int j0, int j1, double *fm, int n, int m, int order, double* result, double* slope)' % (locals())
         order_cases = '\n    '.join(order_cases_zero)
         cf_source_template = '''
 %(cf_proto)s
@@ -1104,12 +1109,23 @@ else
        integer :: status
     end function  %(name)s_find_zero
         '''
-        yield cf_proto, cf_source_template % (locals()), pyf_template % (locals ())
+        yield cf_name, cf_proto, cf_source_template % (locals()), pyf_template % (locals ())
 
-        cf_proto = 'double %(cfunc_prefix)s%(name)s_evaluate(double y, double *fm, int n, int m, int order)' % (locals())
-        horner = 'a%s' % (poly_order)
-        for e in reversed(range(poly_order)):
-            horner = 'a%s+(%s)*r' % (e, horner)
+        cf_name = '%(name)s_evaluate' % (locals ())
+        cf_proto = 'double %(cfunc_prefix)s%(cf_name)s(double y, double *fm, int n, int m, int order)' % (locals())
+
+        if 0:
+            horner = 'a%s' % (poly_order)            
+            for e in reversed(range(poly_order)):
+                horner = 'a%s+(%s)*r' % (e, horner)
+
+        horner_cases = []
+        for i in range(poly_order+1):
+            horner = 'a%s' % (poly_order-i)  
+            for e in reversed(range(poly_order-i)):
+                horner = 'a%s+(%s)*r' % (e, horner)
+            horner_cases.append('case %s: return %s;' % (i, horner))
+        horner_cases = '\n    '.join(horner_cases)
         cf_source_template = '''
 %(cf_proto)s
 {
@@ -1122,7 +1138,11 @@ else
   double r = y - j;
   //printf("%(cf_proto)s\\n");
   %(cfunc_prefix)s%(name)s_compute_coeffs(j, fm, n, m, order, %(refcoeffs)s);
-  return %(horner)s;
+  switch (order)
+  {
+    %(horner_cases)s
+    default: return 0.0;
+  }
 }
         '''
         pyf_template = '''
@@ -1137,12 +1157,13 @@ else
        double precision :: value
     end function  %(name)s_evaluate
         '''
-        yield cf_proto, cf_source_template % (locals()), pyf_template % (locals())
+        yield cf_name, cf_proto, cf_source_template % (locals()), pyf_template % (locals())
 
 
 
         for k in [1,2]:
-            cf_proto = 'double %(cfunc_prefix)s%(name)s_f%(k)s_evaluate(double x, double *f, int n, int order)' % (locals ())
+            cf_name = '%(name)s_f%(k)s_evaluate' % (locals ())
+            cf_proto = 'double %(cfunc_prefix)s%(cf_name)s(double x, double *f, int n, int order)' % (locals ())
             cases = []
             for order in range(3):
                 f_expr = eval('pwf%s(f,i,s)'%(k), self.namespace).variable_diff(self.namespace['s'], order).evalf ();
@@ -1184,19 +1205,24 @@ else
     end function %(name)s_f%(k)s_evaluate
 '''
 
-            yield cf_proto, cf_source_template % (locals()), pyf_template % (locals())
+            yield cf_name, cf_proto, cf_source_template % (locals()), pyf_template % (locals())
         
 def generate():
+    manual_functions = ['e11_compute_coeffs_diff1']
+
     this_file = __file__
     source_name = os.path.join(os.path.dirname(this_file), 'iocbio_ipwf.c')
+    skipped_source_name = os.path.join(os.path.dirname(this_file), 'iocbio_ipwf_skipped.c')
     header_name = os.path.join(os.path.dirname(this_file), 'iocbio_ipwf.h')
     pyf_name = os.path.join(os.path.dirname(this_file), 'ipwf.pyf')
 
     print 'Creating files:'
     print '\t', header_name
     print '\t', source_name
+    print '\t', skipped_source_name
     print '\t', pyf_name
     source_file = open(source_name, 'w')
+    skipped_source_file = open(skipped_source_name, 'w')
     header_file = open(header_name, 'w')
     pyf_file = open(pyf_name, 'w')
 
@@ -1240,6 +1266,8 @@ extern "C" {
 #define FRAC_1_3 3.333333333333333e-1
 #define FRAC_1_2 5.0e-1
 #define FRAC_1_6 1.6666666666666666e-1
+
+#include "iocbio_ipwf_manual.c"
     ''' % (locals())
     source_footer = '''
 '''
@@ -1290,11 +1318,16 @@ end python module
         #if name not in ['a11','a22','a33']:
         #    continue
         g = Generator(pwf, form = ('normalized_derivative' if name.endswith('_nd') else ''),
-                      extension=extension)
-        for proto, source, interface in g.generate_source(name,
-                                                          integrand=integrand,
-                                                          ):
-            source_file.write(source)
+                      extension=extension,
+                      )
+        for cname, proto, source, interface in g.generate_source(name,
+                                                                 integrand=integrand,
+                                                                 ):
+            if cname in manual_functions:
+                source_file.write('\n/* %s%s implemented in "iocbio_ipwf_manual.c", see "iocbio_ipwf_skipped.c" for generated code. */\n' % (g.cfunc_prefix, cname))
+                skipped_source_file.write(source)
+            else:
+                source_file.write(source)
             header_file.write('extern %s;\n' % (proto))
             if interface:
                 pyf_file.write(interface)
@@ -1316,6 +1349,7 @@ end python module
     pyf_file.write(pyf_footer)
 
     source_file.close()
+    skipped_source_file.close()
     header_file.close()
     pyf_file.close()
 
