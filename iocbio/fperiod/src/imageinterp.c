@@ -6,6 +6,7 @@
  */
 
 #include <math.h>
+#include <string.h>
 
 /*
   imageinterp_get_roi function returns a subimage (roi) of an image
@@ -19,7 +20,7 @@
   image : double*
     Specify pointer to image array that uses row-storage order.
   image_di_size, image_dj_size : double
-    Specify pixel sizes of image.
+    Specify image pixel sizes in image units.
   i0, j0, i1, j1 : double
     Specify roi center line.
   width : double
@@ -60,6 +61,7 @@ void imageinterp_get_roi(int image_width, int image_height, double *image,
 			 int interpolation
 			 )
 {
+#define GET_IMAGE_PTR(I, J) (image + (J)*image_width + (I))
 #define GET_IMAGE(I, J) (((I)>=0 && (I)<image_width && (J)>=0 && (J)<image_height) ? (*(image + (J)*image_width + (I))) : 0.0)
 #define GET_ROI(I, J) (*(roi + (J)*roi_width + (I)))
   int ri, rj;
@@ -78,41 +80,173 @@ void imageinterp_get_roi(int image_width, int image_height, double *image,
   double rmi, rmj;
   double bm1, b0, b1, b2;
 
-  for (rj=0; rj<roi_height; ++rj)
-    {
-      s = (double)rj * ds;
-      is = (1.0-s)*(i0 - di) + s*(i0 + di);
-      js = (1.0-s)*(j0 - dj) + s*(j0 + dj);
-      for (ri=0; ri<roi_width; ++ri)
-	{
-	  t = (double)ri * dt;
-	  i = (1.0-t)*is + t*(is+i1-i0);
-	  j = (1.0-t)*js + t*(js+j1-j0);
-	  ii = floor(i);
-	  ji = floor(j);
-	  rmi = i-ii;
-	  rmj = j-ji;
-	  ii1 = ii+1;
-	  ji1 = ji+1;
-	  switch (interpolation)
-	    {
-	    case 1: /* bilinear interpolation */
-	      v = (GET_IMAGE(ii,ji)*(1.0-rmi)+GET_IMAGE(ii1,ji)*rmi)*(1.0-rmj)
-		+(GET_IMAGE(ii,ji1)*(1.0-rmi)+GET_IMAGE(ii1,ji1)*rmi)*rmj;
-	      break;
-	    case 2: /* bicubic interpolation */
-	      bm1 = CINT(rmi, GET_IMAGE(ii-1, ji-1), GET_IMAGE(ii, ji-1), GET_IMAGE(ii+1, ji-1), GET_IMAGE(ii+2, ji-1));
-	      b0 = CINT(rmi, GET_IMAGE(ii-1, ji), GET_IMAGE(ii, ji), GET_IMAGE(ii+1, ji), GET_IMAGE(ii+2, ji));
-	      b1 = CINT(rmi, GET_IMAGE(ii-1, ji+1), GET_IMAGE(ii, ji+1), GET_IMAGE(ii+1, ji+1), GET_IMAGE(ii+2, ji+1));
-	      b2 = CINT(rmi, GET_IMAGE(ii-1, ji+2), GET_IMAGE(ii, ji+2), GET_IMAGE(ii+1, ji+2), GET_IMAGE(ii+2, ji+2));
-	      v = CINT(rmj, bm1, b0, b1, b2);
-	      break;
-	    case 0:
-	    default: /* nearest-neighbor interpolation */
-	      v = GET_IMAGE(ii, ji);
-	    }
+  //printf("imageinterp_get_roi: i0,j0,i1,j1,rw,rh=%f,%f,%f,%f,%d,%d\n",i0,j0,i1,j1,roi_width, roi_height);
 
-	  GET_ROI(ri, rj) = v;
+  if (j0==j1 && roi_width == i1-i0+1)
+    {
+      v = width*0.5/dj_size;
+      if (fabs(v-round(v))<1e-12 && round(2*v+1)==roi_height)
+	{
+	  ji = round(j0 - v);
+	  for (rj=0; rj<roi_height; ++rj, ++ji)
+	    {
+	      if (ji<0 || ji>=image_height)
+		memset(&GET_ROI(0, rj), 0, sizeof(double)*roi_width);
+	      else if (i1<image_width)
+		memcpy(&GET_ROI(0, rj), GET_IMAGE_PTR((int)i0, ji), sizeof(double)*roi_width);
+	      else
+		for (ii=i0; ii<=i1; ++ii)
+		  GET_ROI(ii-(int)i0, rj) = GET_IMAGE(ii, ji);
+	    }
+	}
+      else
+	{
+	  for (rj=0; rj<roi_height; ++rj)
+	    {
+	      s = (double)rj * ds;
+	      j = (1.0-s)*(j0 - dj) + s*(j0 + dj);
+	      //j = j0 + (2*rj/(roi_height-1)-1)*width*0.5/dj_size;
+	      ji = floor(j);
+	      rmj = j-ji;
+	      ji1 = ji+1;
+	      for (ri=0; ri<roi_width; ++ri)
+		{
+		  t = (double)ri * dt;
+		  i = i0 + t*(i1-i0);
+		  ii = floor(i);
+		  rmi = i-ii;
+		  ii1 = ii+1;
+		  switch (interpolation)
+		    {
+		    case 1: /* bilinear interpolation */
+		      v = (GET_IMAGE(ii,ji)*(1.0-rmi)+GET_IMAGE(ii1,ji)*rmi)*(1.0-rmj)
+			+(GET_IMAGE(ii,ji1)*(1.0-rmi)+GET_IMAGE(ii1,ji1)*rmi)*rmj;
+		      break;
+		    case 2: /* bicubic interpolation */
+		      bm1 = CINT(rmi, GET_IMAGE(ii-1, ji-1), GET_IMAGE(ii, ji-1), GET_IMAGE(ii+1, ji-1), GET_IMAGE(ii+2, ji-1));
+		      b0 = CINT(rmi, GET_IMAGE(ii-1, ji), GET_IMAGE(ii, ji), GET_IMAGE(ii+1, ji), GET_IMAGE(ii+2, ji));
+		      b1 = CINT(rmi, GET_IMAGE(ii-1, ji+1), GET_IMAGE(ii, ji+1), GET_IMAGE(ii+1, ji+1), GET_IMAGE(ii+2, ji+1));
+		      b2 = CINT(rmi, GET_IMAGE(ii-1, ji+2), GET_IMAGE(ii, ji+2), GET_IMAGE(ii+1, ji+2), GET_IMAGE(ii+2, ji+2));
+		      v = CINT(rmj, bm1, b0, b1, b2);
+		      break;
+		    case 0:
+		    default: /* nearest-neighbor interpolation */
+		      v = GET_IMAGE(ii, ji);
+		    }
+		  GET_ROI(ri, rj) = v;
+		}
+	    }
+	}      
+    }
+  else if (j0==j1)
+    {
+      for (rj=0; rj<roi_height; ++rj)
+	{
+	  s = (double)rj * ds;
+	  j = (1.0-s)*(j0 - dj) + s*(j0 + dj);
+	  ji = floor(j);
+	  rmj = j-ji;
+	  ji1 = ji+1;
+	  if (rmj==0.0)
+	    {
+	      for (ri=0; ri<roi_width; ++ri)
+		{
+		  t = (double)ri * dt;
+		  i = i0 + t*(i1-i0);
+		  ii = floor(i);
+		  rmi = i-ii;
+		  ii1 = ii+1;
+		  if (rmi==0.0)
+		    {
+		      v = GET_IMAGE(ii, ji);
+		    }
+		  else
+		    {
+		      switch (interpolation)
+			{
+			case 1: /* bilinear interpolation */
+			  v = GET_IMAGE(ii,ji)*(1.0-rmi)+GET_IMAGE(ii1,ji)*rmi;
+			  break;
+			case 2: /* bicubic interpolation */
+			  v = CINT(rmi, GET_IMAGE(ii-1, ji), GET_IMAGE(ii, ji), GET_IMAGE(ii+1, ji), GET_IMAGE(ii+2, ji));
+			  break;
+			case 0:
+			default: /* nearest-neighbor interpolation */
+			  v = GET_IMAGE(ii, ji);
+			}
+		    }
+		  GET_ROI(ri, rj) = v;
+		}
+	    }
+	  else
+	    {
+	      for (ri=0; ri<roi_width; ++ri)
+		{
+		  t = (double)ri * dt;
+		  i = i0 + t*(i1-i0);
+		  ii = floor(i);
+		  rmi = i-ii;
+		  ii1 = ii+1;
+		  switch (interpolation)
+		    {
+		    case 1: /* bilinear interpolation */
+		      v = (GET_IMAGE(ii,ji)*(1.0-rmi)+GET_IMAGE(ii1,ji)*rmi)*(1.0-rmj)
+			+(GET_IMAGE(ii,ji1)*(1.0-rmi)+GET_IMAGE(ii1,ji1)*rmi)*rmj;
+		      break;
+		    case 2: /* bicubic interpolation */
+		      bm1 = CINT(rmi, GET_IMAGE(ii-1, ji-1), GET_IMAGE(ii, ji-1), GET_IMAGE(ii+1, ji-1), GET_IMAGE(ii+2, ji-1));
+		      b0 = CINT(rmi, GET_IMAGE(ii-1, ji), GET_IMAGE(ii, ji), GET_IMAGE(ii+1, ji), GET_IMAGE(ii+2, ji));
+		      b1 = CINT(rmi, GET_IMAGE(ii-1, ji+1), GET_IMAGE(ii, ji+1), GET_IMAGE(ii+1, ji+1), GET_IMAGE(ii+2, ji+1));
+		      b2 = CINT(rmi, GET_IMAGE(ii-1, ji+2), GET_IMAGE(ii, ji+2), GET_IMAGE(ii+1, ji+2), GET_IMAGE(ii+2, ji+2));
+		      v = CINT(rmj, bm1, b0, b1, b2);
+		      break;
+		    case 0:
+		    default: /* nearest-neighbor interpolation */
+		      v = GET_IMAGE(ii, ji);
+		    }
+		  GET_ROI(ri, rj) = v;
+		}
+	    }
+	}
+    }
+  else
+    {
+      for (rj=0; rj<roi_height; ++rj)
+	{
+	  s = (double)rj * ds;
+	  is = (1.0-s)*(i0 - di) + s*(i0 + di);
+	  js = (1.0-s)*(j0 - dj) + s*(j0 + dj);
+	  for (ri=0; ri<roi_width; ++ri)
+	    {
+	      t = (double)ri * dt;
+	      i = (1.0-t)*is + t*(is+i1-i0);
+	      j = (1.0-t)*js + t*(js+j1-j0);
+	      ii = floor(i);
+	      ji = floor(j);
+	      rmi = i-ii;
+	      rmj = j-ji;
+	      ii1 = ii+1;
+	      ji1 = ji+1;
+	      switch (interpolation)
+		{
+		case 1: /* bilinear interpolation */
+		  v = (GET_IMAGE(ii,ji)*(1.0-rmi)+GET_IMAGE(ii1,ji)*rmi)*(1.0-rmj)
+		    +(GET_IMAGE(ii,ji1)*(1.0-rmi)+GET_IMAGE(ii1,ji1)*rmi)*rmj;
+		  break;
+		case 2: /* bicubic interpolation */
+		  bm1 = CINT(rmi, GET_IMAGE(ii-1, ji-1), GET_IMAGE(ii, ji-1), GET_IMAGE(ii+1, ji-1), GET_IMAGE(ii+2, ji-1));
+		  b0 = CINT(rmi, GET_IMAGE(ii-1, ji), GET_IMAGE(ii, ji), GET_IMAGE(ii+1, ji), GET_IMAGE(ii+2, ji));
+		  b1 = CINT(rmi, GET_IMAGE(ii-1, ji+1), GET_IMAGE(ii, ji+1), GET_IMAGE(ii+1, ji+1), GET_IMAGE(ii+2, ji+1));
+		  b2 = CINT(rmi, GET_IMAGE(ii-1, ji+2), GET_IMAGE(ii, ji+2), GET_IMAGE(ii+1, ji+2), GET_IMAGE(ii+2, ji+2));
+		  v = CINT(rmj, bm1, b0, b1, b2);
+		  break;
+		case 0:
+		default: /* nearest-neighbor interpolation */
+		  v = GET_IMAGE(ii, ji);
+		}
+	      
+	      GET_ROI(ri, rj) = v;
+	    }
 	}
     }
 }
@@ -169,8 +303,15 @@ static PyObject *py_imageinterp_get_roi(PyObject *self, PyObject *args)
       return NULL;
     }
   l = hypot((i1-i0)*di_size, (j1-j0)*dj_size);
-  roi_width = (int)(hypot(i1-i0, j1-j0)+1);
-  roi_height = ceil((double)roi_width * w / (l+1.0));
+  if (j1==j0 && 1)
+    {
+      roi_width = i1-i0+1;
+    }
+  else
+    {
+      roi_width = (int)(hypot(i1-i0, j1-j0)+1);
+    }
+  roi_height = ceil((double)roi_width * w / (l+1.0)) + 1;
   roi_di_size = l / roi_width;
   roi_dj_size = w / roi_height;
   roi_dims[0] = roi_height;
