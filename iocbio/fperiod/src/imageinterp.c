@@ -6,6 +6,7 @@
  */
 
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
 /*
@@ -85,9 +86,9 @@ void imageinterp_get_roi(int image_width, int image_height, double *image,
   if (j0==j1 && roi_width == i1-i0+1)
     {
       v = width*0.5/dj_size;
-      if (fabs(v-round(v))<1e-12 && round(2*v+1)==roi_height)
+      if (fabs(v-nearbyint(v))<1e-12 && nearbyint(2*v+1)==roi_height)
 	{
-	  ji = round(j0 - v);
+	  ji = nearbyint(j0 - v);
 	  for (rj=0; rj<roi_height; ++rj, ++ji)
 	    {
 	      if (ji<0 || ji>=image_height)
@@ -101,6 +102,7 @@ void imageinterp_get_roi(int image_width, int image_height, double *image,
 	}
       else
 	{
+	  printf("imageinterp_get_roi: non optimal loop, v=%e\n",v);
 	  for (rj=0; rj<roi_height; ++rj)
 	    {
 	      s = (double)rj * ds;
@@ -140,6 +142,7 @@ void imageinterp_get_roi(int image_width, int image_height, double *image,
     }
   else if (j0==j1)
     {
+      printf("imageinterp_get_roi: non optimal loop 2\n");
       for (rj=0; rj<roi_height; ++rj)
 	{
 	  s = (double)rj * ds;
@@ -211,6 +214,7 @@ void imageinterp_get_roi(int image_width, int image_height, double *image,
     }
   else
     {
+      printf("imageinterp_get_roi: non optimal loop 3\n");
       for (rj=0; rj<roi_height; ++rj)
 	{
 	  s = (double)rj * ds;
