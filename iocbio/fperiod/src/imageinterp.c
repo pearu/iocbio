@@ -102,7 +102,7 @@ void imageinterp_get_roi(int image_width, int image_height, double *image,
 	}
       else
 	{
-	  printf("imageinterp_get_roi: non optimal loop, v=%e\n",v);
+	  //printf("imageinterp_get_roi: non optimal loop, v=%e\n",v);
 	  for (rj=0; rj<roi_height; ++rj)
 	    {
 	      s = (double)rj * ds;
@@ -142,7 +142,7 @@ void imageinterp_get_roi(int image_width, int image_height, double *image,
     }
   else if (j0==j1)
     {
-      printf("imageinterp_get_roi: non optimal loop 2\n");
+      //printf("imageinterp_get_roi: non optimal loop 2\n");
       for (rj=0; rj<roi_height; ++rj)
 	{
 	  s = (double)rj * ds;
@@ -214,7 +214,7 @@ void imageinterp_get_roi(int image_width, int image_height, double *image,
     }
   else
     {
-      printf("imageinterp_get_roi: non optimal loop 3\n");
+      //printf("imageinterp_get_roi: non optimal loop 3\n");
       for (rj=0; rj<roi_height; ++rj)
 	{
 	  s = (double)rj * ds;
