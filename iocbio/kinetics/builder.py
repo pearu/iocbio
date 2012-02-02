@@ -10,9 +10,14 @@ from collections import defaultdict
 import pprint
 pp = pprint.pprint
 def pp (item):
-    if isinstance (item, dict):
-        item = dict (item)
-    print pprint.pformat (item)
+    if isinstance(item, dict):
+        item = dict(item)
+    print pprint.pformat(item)
+
+def pf (item):
+    if isinstance(item, dict):
+        item = dict(item)
+    return pprint.pformat(item)
 
 class Flush:
     def __str__ (self):
@@ -580,7 +585,7 @@ class IsotopeModel:
 
     def get_pool_name(self, specie):
         """
-        Return the name of a pool where specie belongs.
+        Return the name of a pool where a species belongs.
         """
         l = []
         for i in specie.index.split('_'):

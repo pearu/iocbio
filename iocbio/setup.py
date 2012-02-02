@@ -19,6 +19,7 @@ def configuration(parent_package='',top_path=None):
     config.add_subpackage('strathkelvin')
     config.add_subpackage('chaco')
     config.add_subpackage('fperiod')
+    config.add_subpackage('kinetics')
     #config.add_subpackage('analysis')
     # eof add.
 

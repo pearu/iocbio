@@ -2,74 +2,37 @@
 # Author: Pearu Peterson
 # Created: February 2011
 
+import os
 import sys
-from isotope import IsotopeModel, StrContext, symbol, Terms, number
 import itertools
 import subprocess
-import os
-import pprint
 
-from tools import perform_latex_substitution
-
-from tools import drop_to_ipython as dti
-
-def pp(item):
-    print pprint.pformat(item)
-
-from steady_flux_analyzer import SteadyFluxAnalyzer
+from builder import IsotopeModel, StrContext, symbol, Terms, number, pp, pf
+from steadystate import SteadyFluxAnalyzer
 
 full_system_str = '''
-
-ADPms : ADPm <=> ADPs
-Pms   : Pm <=> Ps
-Wos   : Wo <=> Ws
-ASs   : ADPs + Ps <=> ATPs + Ws
-ATPsm : ATPs => ATPm
-
-ATPoe : ATPo => ATPe
-Peo   : Pe <=> Po
-Weo   : We <=> Wo
-ASe   : ATPe + We <=> ADPe + Pe
-ADPeo : ADPe <=> ADPo
-
-AKi  : ADPi + ADPi <=> ATPi
-AKo  : ATPo <=> ADPo + ADPo
-
-CKi   : ATPi <=> ADPi + CPi
-CKo   : CPo + ADPo <=> ATPo 
-
-ADPim : ADPi <=> ADPm
-ADPoi : ADPo <=> ADPi 
-
-ATPmi : ATPm <=> ATPi
-ATPio : ATPi <=> ATPo
-
-Cio   : CPi <=> CPo
-Pom   : Po => Pm
+C + A | {1:1}
+C + B | {2:1}
+B + D | {2:1}
+C + D | {2:1}
+AB_CD : A + B <=> C + D
+C_AD  : C     <=> A + D
 '''
 
 make_indices = lambda repeat: map(''.join,itertools.product('01', repeat=repeat)) if repeat else ['']
 
-n = 3
-T1indices = make_indices(n)
-T2indices = make_indices(n)
-W_indices = make_indices(1)
-ADP_indices = make_indices(n)
-CP_indices = make_indices(n)
-P_indices = make_indices(n+1)
-
-ATP_indices = []
-for t1 in T1indices:
-    for t2 in T2indices:
-        ATP_indices.append (t1+'_'+t2)
+Aindices = make_indices(1)
+Bindices = make_indices(2)
+Cindices = make_indices(2)
+Dindices = make_indices(1)
 
 class Model (IsotopeModel):
     use_sum = 0
-    use_mass = 1
-    replace_total_sum_with_one = 0
+    use_mass = 0
+    replace_total_sum_with_one = 1
 
     import_dir = 'generated'
-    model_name = 'model_%s' % (len(ADP_indices))
+    model_name = 'model_A' 
 
     if use_mass:
         model_name += '_mass'
@@ -78,47 +41,14 @@ class Model (IsotopeModel):
     if replace_total_sum_with_one:
         model_name += '_repl1'
 
-    #water_labeling = {'0':0.7, '1':0.3}
-    water_labeling = {'0':0.0, '1':1.0}
+    A_labeling = {'0':0.5, '1':0.5}
 
-    print 'Water labeling : ', water_labeling
+    print 'A labeling : ', A_labeling
 
-    m_species = dict(ATPm = ATP_indices,
-                     ADPm = ADP_indices,
-                     Pm   = P_indices,
-                     )
-
-    i_species = dict(ATPi = ATP_indices,
-                     ADPi = ADP_indices,
-                     CPi  = CP_indices,
-                     )
-
-    c_species = dict(ATPo = ATP_indices,
-                     Wo    = W_indices,
-                     ADPo = ADP_indices,
-                     Po   = P_indices,
-                     CPo  = CP_indices,
-                     )
-    
-    e_species = dict(ATPe = ATP_indices,
-                     We = W_indices,
-                     ADPe = ADP_indices,
-                     Pe = P_indices,
-                     )
-    
-    s_species = dict(ATPs = ATP_indices,
-                     Ws = W_indices,
-                     ADPs = ADP_indices,
-                     Ps = P_indices,
-                     )
-
-    index_dic = dict()
-    index_dic.update(m_species)
-    index_dic.update(i_species)
-    index_dic.update(c_species)
-    index_dic.update(e_species)
-    index_dic.update(s_species)
-    
+    index_dic = dict(A = make_indices(1),
+                     B = make_indices(2),
+                     C = make_indices(2),
+                     D = make_indices(1))
 
     system_str = full_system_str
 
@@ -127,69 +57,20 @@ class Model (IsotopeModel):
     mat = a.label_matrix(a.stoichiometry, a.species, a.reactions)
     print mat.__str__(max_nrows=20, max_ncols=21)
     reactions = flux_analyzer.reactions_info.values()
-
-    #dti(flux_analyzer)
+    reaction_info = flux_analyzer.species_info
+    metabolite_lengths = reaction_info.pop('metabolite_lengths')
+    reaction_pairs = reaction_info
+    #print reaction_pairs, metabolite_lengths
 
     species = {}
     for sp in flux_analyzer.species:
         species[sp] = index_dic[sp]
 
-    latex_name_map = dict(ATPo=r'\ATPoname{}',
-                          ATPm=r'\ATPmname{}',
-                          ATPe=r'\ATPename{}',
-                          ATPs=r'\ATPsname{}',
-                          ATPi=r'\ATPiname{}',
-                          ADPo=r'\ADPoname{}',
-                          ADPe=r'\ADPename{}',
-                          ADPs=r'\ADPsname{}',
-                          ADPm=r'\ADPmname{}',
-                          ADPi=r'\ADPiname{}',
-                          Wo = r'\Woname{}',
-                          Ws = r'\Wsname{}',
-                          We = r'\Wename{}',
-                          Po = r'\Poname{}',
-                          Pe = r'\Pename{}',
-                          Ps = r'\Psname{}',
-                          Pm = r'\Pmname{}',
-                          CPo = r'\CPoname{}',
-                          CPi = r'\CPiname{}',
+    latex_name_map = dict(A=r'\Aname{}',
+                          B=r'\Bname{}',
+                          C=r'\Cname{}',
+                          D=r'\Dname{}',
                           )
-
-    latex_name_map2 = latex_name_map.copy()
-
-    for r in reactions:
-        n = r['forward']
-        if n[:2]=='AK':
-            n1 = 'AdK' + n[2:]
-        else:
-            n1 = n
-        st = n1[0]
-        end = n1[1:]
-        latex_name_map[n] = '\\overset{\\nu_{%s}}{\\textsc{\\tiny %s}}' % (st, end)
-        n = r['reverse']
-        if n:
-            if n[:2]=='AK':
-                n1 = 'AdK' + n[2:]
-            else:
-                n1 = n
-            st = n1[0]
-            end = n1[1:]
-            latex_name_map[n] = '\\overset{\\nu_{%s}}{\\textsc{\\tiny %s}}' % (st, end)
-       
-    for r in reactions:
-        n = r['forward']
-        n2 = r['reverse']
-        
-        if n[:2]=='AK':
-            n1 = 'AdK' + n[2:]
-        else:
-            n1 = n
-        end = n1[1:]
-        
-        if n2:
-            latex_name_map2[n] = '\\overset{\\nu_f,\\nu_r}{\\textsc{\\tiny %s}}' % (end)
-        else:
-            latex_name_map2[n] = '\\overset{\\nu_f}{\\textsc{\\tiny %s}}' % (end)
 
     c_name_map = {}
     for k in latex_name_map.keys():
@@ -200,59 +81,83 @@ class Model (IsotopeModel):
             return False
         if s1==s2:
             return True
-        parts1 = s1.index.split('_')
-        parts2 = s2.index.split('_')
-        for p1, p2 in zip (parts1, parts2):
-            if p1.count ('1')!=p2.count ('1'):
-                return False
-        return True
-
-    transport_reactions = []
-    for a, b in [('ATPi', 'ATPo'), ('ATPm', 'ATPi'),
-                 ('ADPo', 'ADPi'), ('ADPi', 'ADPm'), ('ADPm', 'ADPs'), ('ADPe', 'ADPo'),
-                 ('Pm', 'Ps'), ('Pe', 'Po'),
-                 ('Wo', 'Ws'), ('We', 'Wo'),
-                 ('CPi', 'CPo'),        
-                 ]:
-        transport_reactions.append('%s->%s' % (a,b))
-        transport_reactions.append('%s<-%s' % (a,b))
-        
-    for a, b in [('Po', 'Pm'), ('ATPo', 'ATPe'), ('ATPs', 'ATPm'),]:
-        transport_reactions.append('%s->%s' % (a,b))
+        #parts1 = s1.index.split('_')
+        #parts2 = s2.index.split('_')
+        #for p1, p2 in zip (parts1, parts2):
+        #    if p1.count ('1') != p2.count ('1'):
+        #        return False
+        pp((s1, s2))
+        return False
 
     def check_reaction(self, reaction_pattern, rindices, pindices):
-        if reaction_pattern in self.transport_reactions:
+        #print reaction_pattern, rindices, pindices
+
+        met_lists = reaction_pattern.split('->')
+        if len(met_lists) < 2:
+            met_lists = reaction_pattern.split('<-')
+        assert len(met_lists) == 2, `met_lists`
+    
+        str_reactants = met_lists[0]
+        str_products = met_lists[1]
+        if '+' in str_reactants:
+            reactants = str_reactants.split('+')
+        else:
+            reactants = str_reactants
+            
+        if '+' in str_products:
+            products = str_products.split('+')
+        else:
+            products = str_products
+
+        assert len(reactants) == len(rindices), `(reactants, rindices)`
+        assert len(products) == len(pindices), `(products, pindices)`
+
+        for rindex, rpat in enumerate(rindices):
+            reactant = reactants[rindex]
+            rlen = self.metabolite_lengths[reactant]
+            assert rlen == len(rpat), `rlen, rpat`
+
+        for pindex, ppat in enumerate(pindices):
+            product = products[pindex]
+            plen = self.metabolite_lengths[product]
+            assert plen == len(ppat), `plen, ppat`
+
+        if len(products) == 1 and len(reactants) == 1 and reactants[0] == products[0]:
             return rindices == pindices
-        if reaction_pattern in ['CPo+ADPo->ATPo', 'CPo+ADPo<-ATPo']:
-            atp, = pindices
-            cp, adp = rindices
-            t1, t2 = atp.split('_')
-            return t1 == adp and t2 == cp
-        if reaction_pattern in ['ATPi->ADPi+CPi', 'ATPi<-ADPi+CPi']:
-            atp, = rindices
-            adp, cp = pindices
-            t1, t2 = atp.split('_')
-            return t1 == adp and t2 == cp
-        if reaction_pattern in ['ADPi+ADPi->ATPi','ADPi+ADPi<-ATPi']:
-            adp, adp2 = rindices
-            atp, = pindices
-            t1, t2 = atp.split('_')
-            return t1 == adp and t2 == adp2
-        if reaction_pattern in ['ATPo->ADPo+ADPo','ATPo<-ADPo+ADPo']:
-            atp, = rindices
-            adp, adp2 = pindices
-            t1, t2 = atp.split('_')
-            return t1 == adp and t2 == adp2
-        if reaction_pattern in ['ATPe+We->ADPe+Pe', 'ATPe+We<-ADPe+Pe']:
-            atp, w = rindices
-            adp, p = pindices
-            t1, t2 = atp.split ('_')
-            return t1==adp and (t2+w).count('1')==p.count ('1')
-        if reaction_pattern in ['ADPs+Ps->ATPs+Ws', 'ADPs+Ps<-ATPs+Ws']:
-            atp, w = pindices
-            adp, p = rindices
-            t1, t2 = atp.split ('_')
-            return t1==adp and (t2+w).count('1')==p.count ('1')
+
+        rlcount = 0
+        for ri in rindices:
+            for i in ri:
+                if i == '1':
+                    rlcount += 1
+        plcount = 0
+        for pi in pindices:
+            for i in pi:
+                if i == '1':
+                    plcount += 1
+
+        if rlcount != plcount: return False
+
+        if reaction_pattern in ['A+B->C+D', 'A+B<-C+D', 'C->A+D', 'C<-A+D']:               
+
+            rxn_ok = True
+            for rindex, reactant in enumerate(reactants):
+                rpat = rindices[rindex]
+                len_r = self.metabolite_lengths[reactant]
+                r_mappings = self.reaction_pairs[reactant]
+                for r_mapping in r_mappings:
+                    assert len(r_mapping.keys()) == 1, `r_mapping`
+                    p_key, atom_dic = r_mapping.items()[0]
+                    for pindex, product in enumerate(products):
+                        if product == p_key:
+                            ppat = pindices[pindex]
+                            #print reactant, p_key, atom_dic, rpat, ppat
+                            for ra, pa in atom_dic.items():
+                                if rpat[ra - 1] != ppat[pa -1]:
+                                    rxn_ok = False
+            #print 'rxn_ok: ', rxn_ok
+            return rxn_ok
+
         return IsotopeModel.check_reaction(self, reaction_pattern, rindices, pindices)
 
     def write_pyf(self, stream=sys.stdout, package_name='c_package'):
@@ -346,8 +251,8 @@ end python module %s\n\n''' % (package_name)
             for k in sorted (c_eqns):
                 #print k, is_unlabeled (k)
                 it_key = StrContext.map(k)
-                if it_key.startswith ('Wo'):
-                    value = self.water_labeling[it_key[-1]]
+                if it_key.startswith ('A'):
+                    value = self.A_labeling[it_key[-1]]
                     stream.write('double %s = %s ;\n' %(it_key, value))
                 elif use_sum and is_unlabeled (k):
                     count = -1
@@ -388,7 +293,7 @@ end python module %s\n\n''' % (package_name)
             # Assign the pools to their input list.
             pool_set = set()
             for k in sorted(eqns):
-                if k.split('_')[0] == 'Wo':
+                if k.split('_')[0] == 'A':
                     continue
                 pool_set.add(StrContext.map(k).split('_')[0])
             pool_list = []
@@ -404,7 +309,7 @@ end python module %s\n\n''' % (package_name)
             for k in sorted (c_eqns):
                 if use_sum and is_unlabeled (k):
                     continue
-                if k.startswith ('Wo'):# k.split('_')[0] == 'Wo':
+                if k.startswith ('A'):# k.split('_')[0] == 'Wo':
                     continue
                 expr = c_eqns[k]
                 replacements = [('/2', '/2.0'), ('/3', '/3.0'), ('/4', '/4.0')]
@@ -494,126 +399,7 @@ end python module %s\n\n''' % (package_name)
                 s += eq
         s +=  r'\end{align*}' + '\n'
         return s
-
-    def write_latex_files(self):
-
-        file_names = dict(tex='{0.import_dir}/{0.model_name}.tex'.format(model),
-                          sty='{0.import_dir}/{0.model_name}.sty'.format(model),)
-   
-        print 'Writing',file_names['sty']
-        f = open (file_names['sty'], 'w')
-        self.latex_defs(f)
-        f.close()
-
-        print 'Writing', file_names['tex']
-        f = open (file_names['tex'], 'w')
-        self.latex_repr(f)
-        f.close()
-        
-
-    def latex_defs(self, stream=sys.stdout):
-                
-        defs = r'''   
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{a4wide}
-
-\allowdisplaybreaks
-
-\newcommand{\SZ}{\scriptsize}
-\newcommand{\ATPname}{\textsc{\SZ T}}
-\newcommand{\ATPoname}{\textsc{\SZ T}_\textsc{o}}
-\newcommand{\ATPiname}{\textsc{\SZ T}_\textsc{i}}
-\newcommand{\ATPmname}{\textsc{\SZ T}_\textsc{m}}
-\newcommand{\ATPsname}{\textsc{\SZ T}_\textsc{s}}
-\newcommand{\ATPename}{\textsc{\SZ T}_\textsc{e}}
-
-\newcommand{\ADPname}{\textsc{\SZ D}}
-\newcommand{\ADPoname}{\textsc{\SZ D}_\textsc{o}}
-\newcommand{\ADPmname}{\textsc{\SZ D}_\textsc{m}}
-\newcommand{\ADPiname}{\textsc{\SZ D}_\textsc{i}}
-\newcommand{\ADPsname}{\textsc{\SZ D}_\textsc{s}}
-\newcommand{\ADPename}{\textsc{\SZ D}_\textsc{e}}
-
-\newcommand{\Pname}{\textsc{\SZ P}}
-\newcommand{\Poname}{\textsc{\SZ P}_\textsc{o}}
-\newcommand{\Pmname}{\textsc{\SZ P}_\textsc{m}}
-\newcommand{\Psname}{\textsc{\SZ P}_\textsc{s}}
-\newcommand{\Pename}{\textsc{\SZ P}_\textsc{e}}
-
-\newcommand{\Wname}{\textsc{\SZ W}}
-\newcommand{\Woname}{\textsc{\SZ W}_\textsc{o}}
-\newcommand{\Wsname}{\textsc{\SZ W}_\textsc{s}}
-\newcommand{\Wename}{\textsc{\SZ W}_\textsc{e}}
-
-\newcommand{\CPname}{\textsc{\SZ C}}
-\newcommand{\CPoname}{\textsc{\SZ C}_\textsc{o}}
-\newcommand{\CPiname}{\textsc{\SZ C}_\textsc{i}}
-
-\newcommand{\Obar}[1]{\raisebox{0.2ex}{$\scriptstyle\overset{#1}{}$}}
-\newcommand{\Obarr}[2]{\raisebox{-0.35ex}{$\scriptstyle\overset{#1}{\overset{#2}{}}$}}
-\newcommand{\Obarrr}[3]{\raisebox{-0.9ex}{$\scriptstyle\overset{#1}{\overset{#2}{\overset{#3}{}}}$}}
-\newcommand{\Obarrrr}[4]{\raisebox{-1.5ex}{$\scriptstyle\overset{#1}{\overset{#2}{\overset{#3}{\overset{#4}{}}}}$}}
-'''
-        with StrContext ('latex', self.latex_name_map):
-            stream.write(defs)
-            
-    def latex_repr(self, stream=sys.stdout):
-        
-        pool_relations = self.pool_relations
-        reactions = self.reactions
-        it_eqns = self.isotopomer_equations
-        eqns = self.mass_isotopomer_equations
-        
-        with StrContext ('latex', self.latex_name_map):
-            for r in reactions:
-                n = r['forward']
-                #print r['name'], n, self.latex_name_map[n]
-
-            kt = self.make_kinetic_terms()
-            stream.write(kt)
-            
-            stream.write(r'\subsection{Kinetic equations for isotopomers}\label{sec:isotopomer_balances}'+'\n')
-            for k in sorted(it_eqns):
-                expr = it_eqns[k]. normal(). collect()
-                rate = StrContext.map(k)
-                if not rate.startswith('\Woname'):
-                    stream.write('$\\displaystyle\\frac{d%s}{dt}=%s$\n\n' %(rate, expr))
-                else:
-                    #print 'Skipping :', rate
-                    pass
-                
-            stream.write(r'\subsection{Pool definitions}\label{sec:pool_relations}'+'\n')
-            symbols = set()
-            for expr in eqns.itervalues():
-                symbols = symbols.union(expr.symbols)
-
-            stream.write(r'\begin{align*}')
-            for poolname in sorted(self.pools):
-                terms = Terms(*self.pools[poolname])
-                symbols.discard(poolname)
-                stream.write(r'%s &= %s' %(poolname, terms))
-                if not poolname == sorted(self.pools)[-1]:
-                    stream.write(r'\\')
-            stream.write(r'\end{align*}')
-            #stream.write(r'\subsection*{Notations}'+'\n')
-
-            d={}
-            for terms, name in pool_relations:
-                if name in symbols:
-                    d[name] = Terms(*terms)
-            for name in sorted(d):
-                stream.write('$%s=%s$\n\n' %(name, d[name]))
-
-            stream.write(r'\subsection{Kinetic equations for mass isotopomers}\label{sec:mass_isotopomer_balances}'+'\n')
-            for k in sorted (eqns):
-                expr = eqns[k]
-                rate = StrContext.map(k)
-                if not rate.startswith('\Woname'):
-                    stream.write('$\\displaystyle\\frac{d%s}{dt}=%s$\n\n' %(rate, expr))
-                else:
-                    #print 'Skipping :', rate
-                    pass
+       
                 
     def compile_ccode(self, debug=False, stage=None):
         build_dir = self.import_dir
@@ -641,7 +427,7 @@ end python module %s\n\n''' % (package_name)
         else:
             self.write_pyf(package_name=mn)
 
-        cv_string = pprint.pformat(self.c_variables)
+        cv_string = pf(self.c_variables)
         if not debug:
             print 'Writing',file_names['c_variables']
             f = open(file_names['c_variables'], 'w')
@@ -676,6 +462,5 @@ model = Model()
 
 if __name__ == '__main__':
 
-    model.write_latex_files()
     model.compile_ccode(debug=False, stage=2)
 

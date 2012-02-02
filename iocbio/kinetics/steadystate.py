@@ -1,16 +1,32 @@
-# Author: Pearu Peterson
-# Created: April 2011
+""" Provides methods to import chemical kinetic models.
 
+This module provides tools for reading chemical kinetic models.
+It currently supports a string based format in addition to SBML.
+
+obj2num currently depends on the routine from_float inside mpmath.libmp.
+
+Example
+-------
+
+"""
 from __future__ import division
-import cPickle as pickle
+
+__all__ = ['load_stoic_from_sbml',
+           'load_stoic_from_text',
+           'obj2num',
+           'SteadyFluxAnalyzer',
+           ]
+
+import re
 import os
-import random
 import time
+import random
+import cPickle as pickle
+
+from lxml import etree
 from collections import defaultdict
 
 from sympycore.matrices import Matrix
-from IO import load_stoic_from_sbml, load_stoic_from_text
-from utils import objsize
 
 class SteadyFluxAnalyzer(object):
     """ Base class for analyzing the steady state of a metabolic network.
@@ -111,6 +127,8 @@ class SteadyFluxAnalyzer(object):
     def species(self): return self.source_data[1]
     @property
     def reactions(self): return self.source_data[2]
+    @property
+    def species_info(self): return self.source_data[3]
     @property
     def reactions_info(self): return self.source_data[4]
     @property
@@ -326,15 +344,18 @@ class SteadyFluxAnalyzer(object):
             force = True
         if self.compute_kernel_GJE_data is None or force:
             if dependent_candidates is None:
-                leading_cols_candidates, trailing_cols_candidates = self.get_splitted_reactions()
+                lcc, tcc = self.get_splitted_reactions()
             else:
-                leading_cols_candidates = [self.reactions.index (r) for r in dependent_candidates]
-                trailing_cols_candidates = [self.reactions.index (r) for r in self.reactions if r not in dependent_candidates]
+                lcc = [self.reactions.index(r) for r in dependent_candidates]
+                tcc = [self.reactions.index(r) for r in self.reactions if r not in dependent_candidates]
             start = time.time ()
-            result = self.stoichiometry.get_gauss_jordan_elimination_operations(leading_cols=leading_cols_candidates,
-                                                                                trailing_cols = trailing_cols_candidates,
-                                                                                leading_row_selection=leading_row_selection,
-                                                                                leading_column_selection=leading_column_selection)
+            
+            gje_fn = self.stoichiometry.get_gauss_jordan_elimination_operations
+            result = gje_fn(leading_cols=lcc,
+                            trailing_cols = tcc,
+                            leading_row_selection=leading_row_selection,
+                            leading_column_selection=leading_column_selection)
+            
             end = time.time()
             self.compute_kernel_GJE_data = result
             self.compute_kernel_GJE_elapsed = end - start
@@ -407,6 +428,7 @@ class SteadyFluxAnalyzer(object):
         indep_vars = [r for r in reactions if r in self.independent_variables]
         n = len (indep_vars)
         rows = get_rc_map(gj.data)
+        
         def indep_index (r):
             try: return indep_vars.index (r)
             except ValueError: pass
@@ -686,33 +708,417 @@ class SteadyFluxAnalyzer(object):
             pylab.ion()
         pylab.savefig(figure_name) 
 
-    def show_timings(self):
-        for a in dir (self):
-            if a.endswith ('_elapsed'):
-                print '%s took %s seconds' % (a[:-8], getattr (self, a))
+def obj2num(s, precision=53):
+    """ Converts an object into a number while avoiding numerical noise.
 
-    def show_statistics(self, *methods):
-        shown = []
-        print 'system size: ', self.shape
-        print 'rank:', self.rank
-        for method in methods:
-            assert method in ['GJE', 'SVD'],`method`
-            for mthprefix in ['compute_kernel_', 'get_kernel_', 'get_relation_']:
-                mthname = mthprefix + method
-                mth = getattr(self, mthname)
-                mth()
-                elapsed = getattr (self, mthname+'_elapsed')
-                print '  %s took %.3f seconds' % (mthname, elapsed)
-                shown.append(mthname)
+    If the object is a string, this string is evaluated.
+    If the original object or result of this evaluation is an integer,
+    this integer is returned. Otherwise, an mpf object is returned from
+    the from_float routine within mpmath.libmp.  
 
-        for a in dir (self):
-            if a.endswith ('_elapsed'):
-                mthname = a[:-8]
-                if mthname not in shown:
-                    print '%s took %s seconds' % (mthname, getattr (self, a))
-            elif a.endswith ('_data'):
-                mthname = a[:-5]
-                print '%s consumed %s bytes of memory' % (mthname, objsize(getattr (self, a)))
+    Parameters
+    ----------
+    s : object
+      Usually a string that evaluates to a numerical object.
+      
+    precision : int
+      Parameter passed to from_float to specify the precision required
+      in the conversion.  Defaults to 53 as recommended by from_float.
+    """
+    from mpmath.libmp import from_float
+    
+    if isinstance(s, str):
+        f = eval(s)
+    else:
+        f = s
+    #################################################################    
+    #return float(f) # will induce numerical errors in some routines.
+    #################################################################
+    i = int(f)
+    if i==f:
+        return i
+    return from_float(f, prec=prec)
 
-        if self.compute_kernel_GJE_data is not None:
-            print 'compute_kernel_GJE performed %s row operations' % (len(self.compute_kernel_GJE_data[1]))
+
+def load_stoic_from_sbml(file_name, split_bidirectional_fluxes=False):
+    """ Return stoichiometry information of a network described in a SBML file.
+
+    Parameters
+    ----------
+    file_name : str
+      Path to SMBL file.
+
+    split_bidirectional_fluxes : bool
+      When True the bidirectional fluxes are split into two unidirectional fluxes.
+      For example, the system ``A<=>B`` is treated as ``A=>B and B=>A``.
+
+    Returns
+    -------
+    matrix : dict
+      A stoichiometry matrix defined as mapping {(species, reaction): stoichiometry}.
+    species : list
+      A list of species names.
+    reactions : list
+      A list of reaction names.
+    species_info : dict
+    reactions_info : dict
+    """
+    from lxml import etree
+    for ext in ['', '.xml', '.xml.gz', '.gz']:
+        if os.path.isfile(file_name+ext):
+            file_name = file_name+ext
+            break
+    tree = etree.parse(file_name)
+    root = tree.getroot()
+    assert root.tag.endswith ('sbml'), `root.tag`
+    version = int(root.attrib['version'])
+    level = int(root.attrib['level'])
+    if level in [2,3]:
+        default_stoichiometry = '1'
+    else:
+        default_stoichiometry = None
+    compartments = {}
+    species = []
+    modifiers = []
+    species_all = []
+    reactions = []
+    species_reactions = defaultdict (lambda:[])
+    reactions_species = defaultdict (lambda:[])
+    reactions_info = defaultdict(lambda:dict(modifiers=[],reactants=[],products=[],
+                                            boundary_specie_stoichiometry={},annotation=[],
+                                            compartments = set()))
+    species_info = defaultdict(lambda:dict())
+    matrix = {}
+    for model in root:
+        for item in model:
+            if item.tag.endswith('listOfCompartments'):
+                for compartment in item:
+                    compartments[compartment.attrib['id']] = compartment.attrib
+            elif item.tag.endswith('listOfSpecies'):
+                for specie in item:
+                    species_all.append(specie.attrib['id'])
+                    species_info[specie.attrib['id']]['compartment'] = specie.attrib['compartment']
+                    species_info[specie.attrib['id']]['name'] = specie.attrib.get('name', specie.attrib['id'])
+            elif item.tag.endswith('listOfReactions'):
+                for reaction in item:
+
+                    reversible =eval(reaction.attrib.get('reversible', 'False').title())
+                    reaction_id = reaction.attrib['id']
+                    name = reaction.attrib.get('name', reaction_id)
+                    assert reaction_id not in reactions,`reaction_id`
+                    reactions.append(reaction_id)
+                    reaction_index = len(reactions)-1
+                    reactions_info[reaction_id]['name'] = name
+
+                    if split_bidirectional_fluxes and reversible:
+                        reaction_id2 = '%s_r' % (reaction_id)
+                        assert reaction_id2 not in reactions,`reaction_id2`
+                        reactions.append(reaction_id2)
+                        reaction_index2 = len(reactions)-1
+                        reactions_info[reaction_id2]['name'] = name+'_r'
+                        reactions_info[reaction_id]['reversible'] = False
+                        reactions_info[reaction_id2]['reversible'] = False
+                    else:
+                        reaction_id2 = reaction_index2 = None
+                        reactions_info[reaction_id]['reversible'] = reversible
+
+                    for part in reaction:
+                        if part.tag.endswith ('listOfReactants'):
+                            for reactant in part:
+                                assert reactant.tag.endswith('speciesReference'), `reactant.tag`
+                                specie_id = reactant.attrib['species']
+                                stoichiometry = -obj2num(reactant.attrib.get('stoichiometry', default_stoichiometry))
+                                reactions_info[reaction_id]['reactants'].append(specie_id)
+                                try:
+                                    specie_index = species.index(specie_id)
+                                except ValueError:
+                                    species.append(specie_id)
+                                    specie_index = len(species)-1
+                                assert stoichiometry,`stoichiometry`
+                                matrix[specie_index, reaction_index] = stoichiometry
+                                species_reactions[specie_index].append(reaction_index)
+                                reactions_species[reaction_index].append(specie_index)                                
+                                reactions_info[reaction_id]['compartments'].add(species_info[specie_id]['compartment'])
+                                if reaction_index2 is not None:
+                                    reactions_info[reaction_id2]['reactants'].append(specie_id)
+                                    matrix[specie_index, reaction_index2] = -stoichiometry
+                                    species_reactions[specie_index].append(reaction_index2)
+                                    reactions_species[reaction_index2].append(specie_index)                                
+                                    reactions_info[reaction_id2]['compartments'].add(species_info[specie_id]['compartment'])
+                        elif part.tag.endswith ('listOfProducts'):
+                            for product in part:
+                                assert product.tag.endswith('speciesReference'), `product.tag`
+                                specie_id = product.attrib['species']
+                                stoichiometry = obj2num(product.attrib.get('stoichiometry', default_stoichiometry))
+                                reactions_info[reaction_id]['products'].append(specie_id)
+                                try:
+                                    specie_index = species.index(specie_id)
+                                except ValueError:
+                                    species.append(specie_id)
+                                    specie_index = len(species)-1
+                                assert stoichiometry,`stoichiometry`
+                                matrix[specie_index, reaction_index] = stoichiometry
+                                species_reactions[specie_index].append(reaction_index)
+                                reactions_species[reaction_index].append(specie_index)
+                                reactions_info[reaction_id]['compartments'].add(species_info[specie_id]['compartment'])
+                                if reaction_index2 is not None:
+                                    reactions_info[reaction_id2]['products'].append(specie_id)
+                                    matrix[specie_index, reaction_index2] = -stoichiometry
+                                    species_reactions[specie_index].append(reaction_index2)
+                                    reactions_species[reaction_index2].append(specie_index)
+                                    reactions_info[reaction_id2]['compartments'].add(species_info[specie_id]['compartment'])
+                        elif part.tag.endswith ('listOfModifiers'):
+                            for modifier in part:
+                                assert modifier.tag.endswith('modifierSpeciesReference'), `modifier.tag`
+                                specie_id = product.attrib['species']
+                                reactions_info[reaction_id]['modifiers'].append(specie_id)
+                                reactions_info[reaction_id]['compartments'].add(species_info[specie_id]['compartment'])
+                            continue
+                        elif part.tag.endswith ('annotation'):
+                            reactions_info[reaction_id]['annotation'].append(part.text)
+                            continue
+                        elif re.match(r'.*(kineticLaw|notes)\Z', part.tag):                            
+                            continue
+                        else:
+                            print 'get_stoichiometry:warning:unprocessed reaction element: %r' % (part.tag)
+                            continue
+
+
+            elif re.match (r'.*(annotation|notes|listOfSpeciesTypes|listOfUnitDefinitions)\Z', item.tag):
+                pass
+            else:
+                print 'get_stoichiometry:warning:unprocessed model element: %r' % (item.tag)
+
+    return matrix, species, reactions, species_info, reactions_info
+    
+
+def load_stoic_from_text(text, split_bidirectional_fluxes=False):
+    """ Parse stoichiometry matrix from a string.
+
+    Parameters
+    ----------
+    text : str
+      A multiline string where each line contains a chemical reaction
+      description. The description must be given in the following
+      form: ``<sum of reactants> (=> | <=) <sum of producats>``. For example,
+      ``A + 2*B => C``. Lines starting with ``#`` are ignored.
+
+    split_bidirectional_fluxes : bool
+      When True the bidirectional fluxes are split into two unidirectional fluxes.
+      For example, the system ``A<=>B`` is treated as ``A=>B and B=>A``.
+
+    Returns
+    -------
+    matrix_data : dict
+      A dictionary representing a stoichiometry matrix.
+
+    species : list
+      A list of row names.
+
+    reactions : list
+      A list of column names.
+
+    species_info : dict
+    reactions_info : dict
+    """
+    #TODO: fill up species_info and reactions_info dictionaries
+
+    def _split_sum (line):
+        for part in line.split('+'):
+            part = part.strip()
+            coeff = ''
+            while part and part[0].isdigit():
+                coeff += part[0]
+                part = part[1:].lstrip()
+            if not coeff:
+                coeff = '1'
+            if not part:
+                continue
+            c = eval(coeff)
+            assert type(c) == type(int())
+            yield part, c
+
+    matrix = {}
+    reactions = []
+    species = []
+    reactions_info = defaultdict(lambda:dict(modifiers=[],reactants=[],products=[],
+                                            boundary_specie_stoichiometry={},annotation=[],
+                                            compartments = set()))
+    species_info = defaultdict(lambda:list())
+    info = defaultdict(lambda:list())
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith ('#'): continue
+
+        if '|' in line:
+            pair_name, mapping = line.split('|',1)
+            pair_name = pair_name.strip()
+            mapping = mapping.strip()
+            assert '|' not in mapping, `mapping`
+            if mapping == str(): continue
+            info['rxn_pairs'].append((pair_name, mapping))
+            continue
+        
+        if ':' in line:
+            reaction_name, line = line.split (':',1)
+            reaction_name = reaction_name.strip()
+            line = line.strip()
+            assert ':' not in line, `line`
+            assert '=' in line, `line`
+            if line == str(): continue
+        else:
+            reaction_name = None
+
+        reaction_string = line
+        info['rxns'].append((reaction_name, reaction_string))
+
+    for pair_name, str_mapping in info['rxn_pairs']:
+        mapping = eval(str_mapping)
+        assert type(mapping) == type(dict()), `mapping`
+        mets = pair_name.split('+')
+        metA, metB = mets
+        metA = metA.strip()
+        metB = metB.strip()
+        reverse_mapping = dict()
+        for k, v in mapping.items():
+            reverse_mapping[v] = k
+        species_info[metA].append({metB:mapping})
+        species_info[metB].append({metA:reverse_mapping})
+
+    species_info = dict(species_info)
+    length_dic = dict()
+    for met, mappings in species_info.items():
+        largest = 0
+        for mapping in mappings:
+            for atom_dic in mapping.values():
+                atom = atom_dic.keys()[0]
+                assert len(atom_dic.keys()) == 1, `atom_dic`
+                if atom > largest:
+                    largest = atom
+        length_dic[met] = largest
+    species_info['metabolite_lengths'] = length_dic
+    #print species_info
+    
+    for reaction_name, reaction_string in info['rxns']:
+        reversible = False
+        left, right = reaction_string.split ('=')
+        direction = '='
+        if right.startswith('>'):
+            right = right[1:].strip()
+            direction = '>'
+            if left.endswith ('<'):
+                left = left[:-1].strip()
+                reversible = True
+        elif left.endswith ('>'):
+            left = left[:-1].strip()
+            direction = '>'
+        elif left.endswith ('<'):
+            left = left[:-1].strip()
+            direction = '<'
+        elif right.startswith ('<'):
+            right = right[1:].strip()
+            direction = '<'
+
+        left_specie_coeff = list(_split_sum(left))
+        right_specie_coeff = list(_split_sum(right))
+        left_specie_names = [n for n,c in left_specie_coeff if n]
+        right_specie_names = [n for n,c in right_specie_coeff if n]
+
+        fname = ['R']
+        rname = ['R']
+        name0 = ''.join(left_specie_names)
+        name1 = ''.join(right_specie_names)
+        if name0:
+            rname.append (name0)
+        if name1:
+            fname.append (name1)
+            rname.append (name1)
+        if name0:
+            fname.append (name0)
+
+        if direction=='<':
+            if not reaction_name:
+                reaction_name = '_'.join(fname)
+                reaction_name2 = '_'.join(rname)
+            else:
+                reaction_name2 = 'r'+reaction_name
+                if split_bidirectional_fluxes:
+                    reaction_name = 'f'+reaction_name
+        else:
+            if not reaction_name:
+                reaction_name2 = '_'.join(fname)
+                reaction_name = '_'.join(rname)
+            else:
+                reaction_name2 = 'r'+reaction_name
+                if split_bidirectional_fluxes:
+                    reaction_name = 'f'+reaction_name
+
+        reactions.append (reaction_name)
+        reaction_index = reactions.index (reaction_name)
+        if split_bidirectional_fluxes and reversible:
+            reactions.append (reaction_name2)
+            reaction_index2 = reactions.index (reaction_name2)
+        else:
+            reaction_index2 = None
+
+        def matrix_add (i,j,c):
+            v = matrix.get ((i,j))
+            if v is None:
+                matrix[i, j] = c
+            else:
+                matrix[i, j] = v + c
+
+        for specie, coeff in left_specie_coeff:
+            if specie not in species:
+                species.append (specie)
+            specie_index = species.index (specie)
+            if direction=='<':
+                if reaction_index2 is not None:
+                    matrix_add(specie_index, reaction_index2, -coeff)
+                matrix_add(specie_index, reaction_index, coeff)
+            else:
+                if reaction_index2 is not None:
+                    matrix_add(specie_index, reaction_index2, coeff)
+                matrix_add(specie_index, reaction_index, -coeff)
+            
+        for specie, coeff in right_specie_coeff:
+            if specie not in species:
+                species.append (specie)
+            specie_index = species.index (specie)
+            if direction=='<':
+                if reaction_index2 is not None:
+                    matrix_add(specie_index, reaction_index2, coeff)
+                matrix_add(specie_index, reaction_index, -coeff)
+            else:
+                if reaction_index2 is not None:
+                    matrix_add(specie_index, reaction_index2, -coeff)
+                matrix_add(specie_index, reaction_index, coeff)
+
+        if split_bidirectional_fluxes:
+            reactions_info[reaction_name]['reversible'] = False
+            reactions_info[reaction_name]['reactants'] = left_specie_names
+            reactions_info[reaction_name]['products'] = right_specie_names
+            reactions_info[reaction_name]['forward'] = reaction_name
+            reactions_info[reaction_name]['reverse'] = None
+
+            if reversible:
+                reactions_info[reaction_name2]['reversible'] = False
+                reactions_info[reaction_name2]['reactants'] = right_specie_names
+                reactions_info[reaction_name2]['products'] = left_specie_names
+                reactions_info[reaction_name2]['forward'] = reaction_name2
+                reactions_info[reaction_name2]['reverse'] = None
+            # TODO: set  reactions_info[reaction_name]['name']
+        else:
+            reactions_info[reaction_name]['reversible'] = reversible
+            reactions_info[reaction_name]['reactants'] = left_specie_names
+            reactions_info[reaction_name]['products'] = right_specie_names
+            if reversible:
+                reactions_info[reaction_name]['forward'] = 'f'+reaction_name
+                reactions_info[reaction_name]['reverse'] = 'r'+reaction_name
+            else:
+                reactions_info[reaction_name]['forward'] = 'f'+reaction_name
+                reactions_info[reaction_name]['reverse'] = None
+
+            reactions_info[reaction_name]['name'] = reaction_string
+
+    return matrix, species, reactions, species_info, reactions_info
