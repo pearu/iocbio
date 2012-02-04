@@ -991,10 +991,9 @@ def load_stoic_from_text(text, split_bidirectional_fluxes=False):
         largest = 0
         for mapping in mappings:
             for atom_dic in mapping.values():
-                atom = atom_dic.keys()[0]
-                assert len(atom_dic.keys()) == 1, `atom_dic`
-                if atom > largest:
-                    largest = atom
+                for atom in atom_dic.keys():
+                    if atom > largest:
+                        largest = atom
         length_dic[met] = largest
     species_info['metabolite_lengths'] = length_dic
     #print species_info

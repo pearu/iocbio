@@ -15,6 +15,8 @@ from scipy import integrate as scipy_integrate
 
 from sympycore import Symbol as sympycore_Symbol
 
+from utils import get_solution
+
 from builder import pp, pf
 
 def make_argument_parser():
@@ -92,7 +94,7 @@ def make_argument_parser():
 class IsotopologueSolver(object):
 
     def __init__(self):
-        from oxygen_isotope_model import model
+        from small_model import model
         
         import_string = 'import {0.import_dir}.{0.model_name} as c_package'.format(model)
         print import_string
@@ -199,8 +201,8 @@ class IsotopologueSolver(object):
         #print out.sum()
         return out
 
-    def solve(self, solution_name=None, integrator_params=None, initial_time_step=0.1, end_time=None,
-              x_max=600, verbose=True, very_verbose=False, write_output_to_file=True): 
+    def solve(self, solution_name=None, integrator_params=None, initial_time_step=10, end_time=None,
+              x_max=6000, verbose=True, very_verbose=False, write_output_to_file=True): 
 
         if end_time is None:
             end_time = x_max
@@ -224,17 +226,29 @@ class IsotopologueSolver(object):
         sof = self.solver_output_file = open('{0.import_dir}/{0.model_name}_VODE_output'.format(self.model), 'a')
         iil = self.data['input_list']
 
-        int_params = dict(method='bdf', 
-                         rtol=1e-12, 
-                         atol=1e-12, 
-                         #order=3, 
-                         nsteps=2000000, 
-                         #max_step=0.1, 
-                         #min_step=1e-8,
-                         with_jacobian=False)
-
+        if 0:
+            int_params = dict(method='bdf', 
+                              rtol=1e-12, 
+                              atol=1e-12, 
+                              #order=3, 
+                              nsteps=2000000, 
+                              #max_step=0.1, 
+                              #min_step=1e-8,
+                              with_jacobian=False)
+        else:
+            int_params = dict(method='adams', 
+                              rtol=1e-12, 
+                              atol=1e-12, 
+                              #order=3, 
+                              nsteps=2000000, 
+                              #max_step=0.1, 
+                              #min_step=1e-8,
+                              with_jacobian=False)
+            
         if integrator_params:
             int_params.update(integrator_params) 
+
+        print 'Integrator parameters:', int_params
 
         # Create SciPy VODE integrator object.
         integrator_object = scipy_integrate.ode(self.VODE_equations, jac=None)
@@ -274,16 +288,16 @@ class IsotopologueSolver(object):
                     break
                 solve_time = integrator_object.t
 
-                if solve_time > 10:
-                    initial_time_step = 0.2
-                if solve_time > 20:
-                    initial_time_step = 0.5
-                if solve_time > 40:
-                    initial_time_step = 1
-                if solve_time > 80:
-                    initial_time_step = 2
-                if solve_time > 120:
-                    initial_time_step = 4
+                #if solve_time > 10:
+                #    initial_time_step = 0.2
+                #if solve_time > 20:
+                #    initial_time_step = 0.5
+                #if solve_time > 40:
+                #    initial_time_step = 1
+                #if solve_time > 80:
+                #    initial_time_step = 2
+                #if solve_time > 120:
+                #    initial_time_step = 4
 
 
                 cpu_now = time.time()
@@ -412,27 +426,42 @@ class IsotopologueSolver(object):
         return flux_dic
    
 
-def make_input_dic():
-    
-    indep_flux_dic = dict(AB_CD=1,
-                          C_AD=1,
-                          )
-    ef_dic = dict(AB_CD=0.1, C_AD=0.1)
+def make_input_dic(it_solver):
 
-    pool_dic = dict(A=1, B=1, C=1, D=1)
-    
-    solution_name = 'test'
-    
+    if it_solver.model.system_name == 'bi_loop':
+        indep_flux_dic = dict(AB_C=1.1)
+        ef_dic = dict(AB_C=0.1, C_DE=0.2, B_D=0.3, A_E=0.4)
+        pool_dic = dict(A=1, B=1, C=1, D=1, E=1)
+    elif it_solver.model.system_name == 'stable_loop':
+        indep_flux_dic = dict(AB_C=1.1)
+        ef_dic = dict(AB_C=0.1, C_DE=0.2, B_D=0.3, A_E=0.4)
+        pool_dic = dict(A=1, B=1, C=1, D=1, E=1)
+
+
     input_dic = dict(pool_dic=pool_dic,
                      exchange_flux_dic=ef_dic,
                      independent_flux_dic=indep_flux_dic,
-                     solution_name=solution_name)
+                     solution_name='test')
 
     return input_dic
 
 if __name__ == '__main__':
 
     it_solver = IsotopologueSolver()
-    input_dic = make_input_dic()
+    input_dic = make_input_dic(it_solver)
     it_solver.set_data(**input_dic)
-    it_solver.solve(solution_name=input_dic['solution_name'], x_max=1000000)
+    sn = input_dic['solution_name']
+    it_solver.solve(solution_name=sn)
+
+    s_list, sp_list, time_list, fd = get_solution(it_solver.model, sn)
+
+    print len(s_list), len(sp_list), len(time_list)
+    pp(fd)
+
+    import matplotlib
+    import matplotlib.pyplot as plt
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(time_list, s_list, 'o')
+    plt.show()

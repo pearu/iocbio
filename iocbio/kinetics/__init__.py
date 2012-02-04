@@ -9,8 +9,7 @@ The :mod:`iocbio.kinetics` provides the following modules:
   steadystate
   builder
   solver
-  small_model
   
 """
 
-__autodoc__ = ['steadystate', 'builder', 'solver', 'small_model']
+__autodoc__ = ['steadystate', 'builder', 'solver']

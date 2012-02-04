@@ -1,5 +1,3 @@
-
-
 from __future__ import division
 import sys
 import re
@@ -8,22 +6,22 @@ from fractions import Fraction
 from collections import defaultdict
 
 import pprint
-pp = pprint.pprint
-def pp (item):
+
+def pp(item):
     if isinstance(item, dict):
         item = dict(item)
     print pprint.pformat(item)
 
-def pf (item):
+def pf(item):
     if isinstance(item, dict):
         item = dict(item)
     return pprint.pformat(item)
 
 class Flush:
     def __str__ (self):
-        sys.stdout.flush ()
+        sys.stdout.flush()
         return ''
-flush = Flush ()
+flush = Flush()
 
 class StrContext:
     context = 'str'
@@ -359,7 +357,7 @@ class Terms(object):
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return sorted(self.data)==sorted(other.data)
+            return sorted(self.data) == sorted(other.data)
         return False
 
     def __ne__(self, other):
@@ -371,7 +369,7 @@ class Terms(object):
     def append(self, term):
         if isinstance(term, Terms):
             self.data.extend(term.data)
-        elif isinstance(term, number) and term==number(0):
+        elif isinstance(term, number) and term == number(0):
             pass
         else:
             self.data.append(term)
@@ -444,7 +442,7 @@ class Terms(object):
                 break
             for k, l in factor_map.items():
                 if len(l)==mxlen:
-                    common_terms[k] = l.copy ()
+                    common_terms[k] = l.copy()
                     for k1 in factor_map:
                         if k!=k1:
                             for i in l:
@@ -566,6 +564,7 @@ class IsotopeModel:
         self._kinetic_terms = None
         self._relations = None
         self._pool_relations = None
+        self._total_one_relations = None
         self._pool_relations_quad = None
 
     def check_reaction(self, reaction_pattern, rindices, pindices):
@@ -633,7 +632,7 @@ class IsotopeModel:
                 for products in all_products:
                     for p in products:
                         equations[p].append('+%s' % (rate), number(1, len(all_products)), *reactants)
-        #pp (equations)
+        #pp(equations)
 
         for v in equations.itervalues():
             v.set_parent(self)
@@ -646,7 +645,10 @@ class IsotopeModel:
     def isotopomer_equations(self):
         eqns0 = self.kinetic_equations
         eqns0 = self.collect(eqns0)
-        return self.collect(eqns0)
+        eqns0 = self.collect(eqns0)
+        if self.replace_total_sum_with_one:
+            eqns0 = self.subs(eqns0, self.total_one_relations)
+        return eqns0
         
     @property
     def mass_isotopomer_equations(self):
@@ -671,6 +673,26 @@ class IsotopeModel:
         return  self.collect(eqns)
 
     @property
+    def total_one_relations(self):
+        if self._total_one_relations is not None:
+            return self._total_one_relations
+        #pp(self.species)
+        pools = defaultdict (set)
+        relations = []
+        for s, indices in self.species.iteritems():
+            if not self.replace_total_sum_with_one:
+                break
+            if s is None:
+                continue
+            l = []
+            for i in indices:
+                si = symbol_latex(s, i)
+                l.append(si)
+            relations.append((l,number(1)))
+        self._total_one_relations = relations        
+        return relations
+
+    @property
     def pool_relations(self):
         if self._pool_relations is not None:
             return self._pool_relations
@@ -681,7 +703,7 @@ class IsotopeModel:
             for s in species:
                 d[symbol(s.prefix,'')].add(s)
             n = len(species) - len(poolname)/100.
-            relations.append((n,species, poolname))
+            relations.append((n, species, poolname))
         for prefix in d:
             species = list(d[prefix])
             n = len(species) - len(prefix)/100.
@@ -756,7 +778,6 @@ class IsotopeModel:
             for i in indices:
                 si = symbol_latex(s, i)
                 pools[self.get_pool_name (si)].add(si)
-
         for poolname in pools:
             species = pools[poolname]
             for si in species:
@@ -841,15 +862,15 @@ class Example(IsotopeModel):
 
     def check_reaction(self, reaction_pattern, rindices, pindices):
         if reaction_pattern in ['T+B->C','T+B<-C']:
-            return ''.join(rindices).count('1')==''.join(pindices).count('1')
+            return ''.join(rindices).count('1') == ''.join(pindices).count('1')
         if reaction_pattern in ['A->B+B']:
-            return ''.join(rindices).count('1')==''.join(pindices).count('1')
+            return ''.join(rindices).count('1') == ''.join(pindices).count('1')
         return IsotopeModel.check_reaction(self, reaction_pattern, rindices, pindices)
 
     def check_equivalence(self, s1, s2):
         if s1.prefix==s2.prefix:
             if s1.prefix in 'ABCDCT':
-                return s1.index.count('1')==s2.index.count('1')
+                return s1.index.count('1') == s2.index.count('1')
         return False
 
 if __name__ == '__main__':

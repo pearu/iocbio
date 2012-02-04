@@ -10,29 +10,50 @@ import subprocess
 from builder import IsotopeModel, StrContext, symbol, Terms, number, pp, pf
 from steadystate import SteadyFluxAnalyzer
 
-full_system_str = '''
+system_name = 'bi_loop'
+
+if system_name == 'bi_loop':
+    full_system_str = '''
+C + A | {1:1}
+C + B | {2:1}
+
+D + B | {1:1}
+
+C + D | {2:1}
+C + E | {1:1}
+A + E | {1:1}
+
+A_E   : A     <=> E
+AB_C  : A + B <=> C
+C_DE  : C     <=> D + E
+B_D   : D     <=> B
+'''
+elif system_name == 'stable_loop':
+    full_system_str = '''
 C + A | {1:1}
 C + B | {2:1}
 B + D | {2:1}
 C + D | {2:1}
+A + D | {1:1}
+
 AB_CD : A + B <=> C + D
 C_AD  : C     <=> A + D
+A_D   : A     <=> D
 '''
 
 make_indices = lambda repeat: map(''.join,itertools.product('01', repeat=repeat)) if repeat else ['']
 
-Aindices = make_indices(1)
-Bindices = make_indices(2)
-Cindices = make_indices(2)
-Dindices = make_indices(1)
-
 class Model (IsotopeModel):
     use_sum = 0
     use_mass = 0
-    replace_total_sum_with_one = 1
+    replace_total_sum_with_one = 0
+
+    A_labeling = {'0':0, '1':1}
+    system_name = system_name
+    system_str = full_system_str
 
     import_dir = 'generated'
-    model_name = 'model_A' 
+    model_name = 'model_' + system_name 
 
     if use_mass:
         model_name += '_mass'
@@ -41,16 +62,9 @@ class Model (IsotopeModel):
     if replace_total_sum_with_one:
         model_name += '_repl1'
 
-    A_labeling = {'0':0.5, '1':0.5}
-
     print 'A labeling : ', A_labeling
-
-    index_dic = dict(A = make_indices(1),
-                     B = make_indices(2),
-                     C = make_indices(2),
-                     D = make_indices(1))
-
-    system_str = full_system_str
+    print 'System name: ', system_name    
+    print 'Model name : ', model_name
 
     a = flux_analyzer = SteadyFluxAnalyzer(system_str, split_bidirectional_fluxes=False)    
     print 'Steady-state system:'
@@ -60,7 +74,13 @@ class Model (IsotopeModel):
     reaction_info = flux_analyzer.species_info
     metabolite_lengths = reaction_info.pop('metabolite_lengths')
     reaction_pairs = reaction_info
-    #print reaction_pairs, metabolite_lengths
+
+    index_dic = {}
+    for met, length in metabolite_lengths.items():
+        index_dic[met] = make_indices(length)
+
+    #pp((reaction_pairs, metabolite_lengths))
+    #pp((a.species, index_dic))
 
     species = {}
     for sp in flux_analyzer.species:
@@ -70,6 +90,9 @@ class Model (IsotopeModel):
                           B=r'\Bname{}',
                           C=r'\Cname{}',
                           D=r'\Dname{}',
+                          E=r'\Ename{}',
+                          Ain=r'\Ainname{}',
+                          Eout=r'\Eoutname{}',
                           )
 
     c_name_map = {}
@@ -87,6 +110,7 @@ class Model (IsotopeModel):
         #    if p1.count ('1') != p2.count ('1'):
         #        return False
         pp((s1, s2))
+        #return True
         return False
 
     def check_reaction(self, reaction_pattern, rindices, pindices):
@@ -102,12 +126,12 @@ class Model (IsotopeModel):
         if '+' in str_reactants:
             reactants = str_reactants.split('+')
         else:
-            reactants = str_reactants
+            reactants = [str_reactants]
             
         if '+' in str_products:
             products = str_products.split('+')
         else:
-            products = str_products
+            products = [str_products]
 
         assert len(reactants) == len(rindices), `(reactants, rindices)`
         assert len(products) == len(pindices), `(products, pindices)`
@@ -138,23 +162,22 @@ class Model (IsotopeModel):
 
         if rlcount != plcount: return False
 
-        if reaction_pattern in ['A+B->C+D', 'A+B<-C+D', 'C->A+D', 'C<-A+D']:               
-
-            rxn_ok = True
-            for rindex, reactant in enumerate(reactants):
-                rpat = rindices[rindex]
-                len_r = self.metabolite_lengths[reactant]
-                r_mappings = self.reaction_pairs[reactant]
-                for r_mapping in r_mappings:
-                    assert len(r_mapping.keys()) == 1, `r_mapping`
-                    p_key, atom_dic = r_mapping.items()[0]
-                    for pindex, product in enumerate(products):
-                        if product == p_key:
-                            ppat = pindices[pindex]
-                            #print reactant, p_key, atom_dic, rpat, ppat
-                            for ra, pa in atom_dic.items():
-                                if rpat[ra - 1] != ppat[pa -1]:
-                                    rxn_ok = False
+        rxn_ok = True
+        for rindex, reactant in enumerate(reactants):
+            rpat = rindices[rindex]
+            len_r = self.metabolite_lengths[reactant]
+            r_mappings = self.reaction_pairs[reactant]
+            for r_mapping in r_mappings:
+                assert len(r_mapping.keys()) == 1, `r_mapping`
+                p_key, atom_dic = r_mapping.items()[0]
+                for pindex, product in enumerate(products):
+                    if product == p_key:
+                        ppat = pindices[pindex]
+                        #print reactant, p_key, atom_dic, rpat, ppat
+                        for ra, pa in atom_dic.items():
+                            if rpat[ra - 1] != ppat[pa -1]:
+                                #print 'rxn_ok: ', False
+                                return False
             #print 'rxn_ok: ', rxn_ok
             return rxn_ok
 
@@ -202,9 +225,9 @@ end python module %s\n\n''' % (package_name)
     def write_ccode(self, stream=sys.stdout):
         use_sum = self.use_sum
         use_mass = self.use_mass
-        pool_relations = self.pool_relations
         it_eqns = self.isotopomer_equations
-        eqns = self.mass_isotopomer_equations
+        #pp(it_eqns)
+        eqns = it_eqns #self.mass_isotopomer_equations
         reactions = self.reactions
 
         c_variables = dict(input_list=None,
@@ -292,10 +315,10 @@ end python module %s\n\n''' % (package_name)
 
             # Assign the pools to their input list.
             pool_set = set()
-            for k in sorted(eqns):
-                if k.split('_')[0] == 'A':
+            for met in self.metabolite_lengths.keys():
+                if met == 'A':
                     continue
-                pool_set.add(StrContext.map(k).split('_')[0])
+                pool_set.add(StrContext.map(met))
             pool_list = []
             for index, pool in enumerate(pool_set):
                 stream.write('double pool_%s = pool_list[%s] ;\n' %(pool, index))
