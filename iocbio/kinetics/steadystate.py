@@ -91,11 +91,13 @@ class SteadyFluxAnalyzer(object):
         --------
         load_stoic_from_sbml, load_stoic_from_text, discard_boundary_species, add_boundary_fluxes
         """
+        source_type = 'tuple'
         if isinstance (source, str):
             if os.path.isfile (source) or (source.count ('\n')==0 and '=' not in source):
                 stoic_dict, species, reactions, species_info, reactions_info = \
                     load_stoic_from_sbml(source, split_bidirectional_fluxes=split_bidirectional_fluxes)
             else:
+                source_type = 'string'
                 stoic_dict, species, reactions, species_info, reactions_info = \
                     load_stoic_from_text(source, split_bidirectional_fluxes=split_bidirectional_fluxes)
         elif isinstance (source, tuple):
@@ -114,6 +116,7 @@ class SteadyFluxAnalyzer(object):
                                   reactions_info, growth_factor, growth_shuffle)
 
 
+        self.source_type = source_type
         self.source = source
         self.options = (discard_boundary_species, add_boundary_fluxes, \
                         split_bidirectional_fluxes, growth_factor, growth_shuffle)
@@ -123,6 +126,15 @@ class SteadyFluxAnalyzer(object):
         self.compute_kernel_GJE_data = None
         self.compute_kernel_SVD_data = None
 
+    @property
+    def system_string(self):
+        if self.source_type == 'string':
+            return self.source
+        elif self.source_type == 'tuple':
+            out = str()
+            for r in self.reactions:
+                out += '\n{0}'.format(r)
+            return out
     @property
     def species(self): return self.source_data[1]
     @property

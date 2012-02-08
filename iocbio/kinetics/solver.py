@@ -1,23 +1,18 @@
 #
 # Author: David Schryer
 # Created: March 2011
-import os
+
 import sys
 import time
 import numpy
-import scipy
 import textwrap
 import argparse 
-import cPickle as pickle
 
-from collections import defaultdict
 from scipy import integrate as scipy_integrate
 
 from sympycore import Symbol as sympycore_Symbol
 
-from utils import get_solution
-
-from builder import pp, pf
+from builder import pf
 
 def make_argument_parser():
     '''Returns options parser for this script.
@@ -93,8 +88,7 @@ def make_argument_parser():
 
 class IsotopologueSolver(object):
 
-    def __init__(self):
-        from small_model import model
+    def __init__(self, model):
         
         import_string = 'import {0.import_dir}.{0.model_name} as c_package'.format(model)
         print import_string
@@ -127,6 +121,7 @@ class IsotopologueSolver(object):
 
         if solution_name is None:
             solution_name = 1
+        
 
         ifd = self.independent_flux_dic = independent_flux_dic
         efd = self.exchange_flux_dic = exchange_flux_dic
@@ -141,6 +136,7 @@ class IsotopologueSolver(object):
                                                                 pool_dic=pool_dic,
                                                                 net_flux_dic=nfd,
                                                                 flux_dic=fd)
+        self.solution_name = solution_name
         if write_input_to_file:
             output_string = pf(iv)
             fn = '{0.import_dir}/{0.model_name}_solution_{1}_input.py'.format(self.model, solution_name)
@@ -201,14 +197,10 @@ class IsotopologueSolver(object):
         #print out.sum()
         return out
 
-    def solve(self, solution_name=None, integrator_params=None, initial_time_step=10, end_time=None,
-              x_max=6000, verbose=True, very_verbose=False, write_output_to_file=True): 
+    def solve(self, integrator_params=None, initial_time_step=10, end_time=100,
+              verbose=True, very_verbose=False, write_output_to_file=True): 
 
-        if end_time is None:
-            end_time = x_max
-        print end_time
-
-        output_file_tmpl = '{0.model_name}_solution_{1}_output'.format(self.model, solution_name)
+        output_file_tmpl = '{0.model_name}_solution_{1}_output'.format(self.model, self.solution_name)
         output_file_name = '{0.import_dir}/{1}.py'.format(self.model, output_file_tmpl)
 
         i_str = 'solution_list, time_list'
@@ -425,43 +417,3 @@ class IsotopologueSolver(object):
 
         return flux_dic
    
-
-def make_input_dic(it_solver):
-
-    if it_solver.model.system_name == 'bi_loop':
-        indep_flux_dic = dict(AB_C=1.1)
-        ef_dic = dict(AB_C=0.1, C_DE=0.2, B_D=0.3, A_E=0.4)
-        pool_dic = dict(A=1, B=1, C=1, D=1, E=1)
-    elif it_solver.model.system_name == 'stable_loop':
-        indep_flux_dic = dict(AB_C=1.1)
-        ef_dic = dict(AB_C=0.1, C_DE=0.2, B_D=0.3, A_E=0.4)
-        pool_dic = dict(A=1, B=1, C=1, D=1, E=1)
-
-
-    input_dic = dict(pool_dic=pool_dic,
-                     exchange_flux_dic=ef_dic,
-                     independent_flux_dic=indep_flux_dic,
-                     solution_name='test')
-
-    return input_dic
-
-if __name__ == '__main__':
-
-    it_solver = IsotopologueSolver()
-    input_dic = make_input_dic(it_solver)
-    it_solver.set_data(**input_dic)
-    sn = input_dic['solution_name']
-    it_solver.solve(solution_name=sn)
-
-    s_list, sp_list, time_list, fd = get_solution(it_solver.model, sn)
-
-    print len(s_list), len(sp_list), len(time_list)
-    pp(fd)
-
-    import matplotlib
-    import matplotlib.pyplot as plt
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.plot(time_list, s_list, 'o')
-    plt.show()
