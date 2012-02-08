@@ -61,13 +61,16 @@ if __name__ == '__main__':
     P = bi_loop_dynamic
     P = stable_loop_dynamic
     P = bi_loop_long
-    P = stable_loop_long
+    #P = stable_loop_long
 
     model = IsotopologueModelBuilder(system=P.system.string,
                                      system_name=P.system.name,
                                      labeled_species=P.system.labeled_species,
                                      options=dict(replace_total_sum_with_one=True),
                                      )
+
+    sys_hess = model.system_hessian()
+    pp(sys_hess)
 
     model.compile_ccode(debug=False, stage=2)
 

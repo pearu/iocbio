@@ -8,6 +8,8 @@ import subprocess
 from fractions import Fraction
 from collections import defaultdict
 
+from sympycore import Symbol, Calculus
+
 from steadystate import SteadyFluxAnalyzer
 
 import pprint
@@ -655,7 +657,7 @@ class IsotopologueModel:
         if self.replace_total_sum_with_one:
             eqns0 = self.subs(eqns0, self.total_one_relations)
         return eqns0
-        
+    
     @property
     def mass_isotopomer_equations(self):
         pr = self.pool_relations
@@ -909,27 +911,48 @@ class IsotopologueModelBuilder(IsotopologueModel):
 
 
         self.species = {}
+        lnm = dict()
         for sp in a.species:
             self.species[sp] = index_dic[sp]
-
-        self.latex_name_map = dict(A=r'\Aname{}',
-                                   B=r'\Bname{}',
-                                   C=r'\Cname{}',
-                                   D=r'\Dname{}',
-                                   E=r'\Ename{}',
-                                   Ain=r'\Ainname{}',
-                                   Eout=r'\Eoutname{}',
-                                   )
-
+            lnm[sp] = r'\{0}name'.format(sp) + '{}'
+            
+        self.latex_name_map = lnm
+        
         self.c_name_map = {}
         for k in self.latex_name_map.keys():
             self.c_name_map[k] = k
 
         self._make_options_attributes()
 
+        self.system_hessian()
+
     def _make_options_attributes(self):
         for k, v in self.options.items():
             setattr(self, k, v)
+
+    def system_hessian(self):
+        ie = self.isotopomer_equations
+        rxns = self.reactions
+        
+        symbols = []
+        for it_key in ie.keys():
+            symbols.append(Symbol(it_key))
+        for rxn in rxns:
+            symbols.append(Symbol(rxn['forward']))
+            symbols.append(Symbol(rxn['reverse']))
+
+        for s in symbols:
+            st = s.__str__()
+            locals()[st] = s # HACK
+
+        data = {}
+        for eqn, eq in ie.items():
+            inner_dic = defaultdict(dict)
+            exec('ceq = Calculus({0})'.format(eq.__str__()))
+            for it_key in ie.keys():
+                inner_dic[it_key] = ceq.diff(it_key)
+            data[eqn] = dict(inner_dic)
+        return data
     
     def check_equivalence(self, s1, s2):
         if s1.prefix != s2.prefix:
