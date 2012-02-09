@@ -4,9 +4,11 @@
 import inspect
 import StringIO
 
+from sympycore import Calculus
+
 from collections import namedtuple
 
-from iocbio.kinetics.builder import IsotopologueModelBuilder, pp
+from iocbio.kinetics.builder import IsotopologueModelBuilder, pp, pf
 from iocbio.kinetics.solver import IsotopologueSolver
 
 SystemInput = namedtuple('SystemInput', 'independent_flux_dic, exchange_flux_dic, pool_dic')
@@ -58,7 +60,7 @@ stable_loop_long = SolutionDef('long', SolverInput(30, 6000, dict()), stable_loo
 
 def fname():
     return inspect.stack()[1][3]
-
+        
 def assert_same_lines(output, expected_output, function_name, sub_lines=None):
     expected_lines = expected_output.split('\n')
     lines = output.split('\n')
@@ -128,6 +130,11 @@ double pool_B = pool_list[1] ;
 '''
     assert_same_lines(output, expected_output, fname())
 
+    return model, P, output, expected_output
+
+def test_model_construction_AA():
+    model, P, output, expected_output = test_model_construction_A()
+    
     # This simple loop should give the same output 
     model = IsotopologueModelBuilder(system=P.system.string,
                                      system_name=P.system.name,
@@ -143,6 +150,8 @@ double pool_B = pool_list[1] ;
     f.close()
 
     assert_same_lines(output, expected_output, fname())
+
+    return model, P, output, expected_output
 
 def test_model_construction_B():
     P = bi_loop_dynamic
@@ -224,6 +233,11 @@ double pool_D = pool_list[3] ;
 
     assert_same_lines(output, expected_output, fname())
 
+    return model, P, output, expected_output
+
+def test_model_construction_BB():
+    model, P, output, expected_output = test_model_construction_B()
+
     model = IsotopologueModelBuilder(system=P.system.string,
                                      system_name=P.system.name,
                                      labeled_species=P.system.labeled_species,
@@ -245,3 +259,297 @@ double pool_D = pool_list[3] ;
                  ]
 
     assert_same_lines(output, expected_output, fname(), sub_lines=sub_lines)
+
+    return model, P, output, expected_output
+
+def test_hessian_construction_A():
+    model, P, output, expected_output = test_model_construction_A()
+
+    output = model.system_hessian()
+
+    expected_output = {'B0': {'B0': Calculus('-rA_B - fB_C'),
+                              'B1': Calculus('0'),
+                              'C0': Calculus('rB_C'),
+                              'C1': Calculus('0')},
+                       'B1': {'B0': Calculus('0'),
+                              'B1': Calculus('-rA_B - fB_C'),
+                              'C0': Calculus('0'),
+                              'C1': Calculus('rB_C')},
+                       'C0': {'B0': Calculus('fB_C'),
+                              'B1': Calculus('0'),
+                              'C0': Calculus('-fC_A - rB_C'),
+                              'C1': Calculus('0')},
+                       'C1': {'B0': Calculus('0'),
+                              'B1': Calculus('fB_C'),
+                              'C0': Calculus('0'),
+                              'C1': Calculus('-fC_A - rB_C')}}
+
+
+    assert output == expected_output, `output, expected_output`
+
+def test_hessian_construction_AA():
+    model, P, output, expected_output = test_model_construction_AA()
+    output = model.system_hessian()
+
+    expected_output = {'B0': {'B0': Calculus('-rA_B - fB_C'),
+                              'B1': Calculus('0'),
+                              'C0': Calculus('rB_C'),
+                              'C1': Calculus('0')},
+                       'B1': {'B0': Calculus('0'),
+                              'B1': Calculus('-rA_B - fB_C'),
+                              'C0': Calculus('0'),
+                              'C1': Calculus('rB_C')},
+                       'C0': {'B0': Calculus('fB_C'),
+                              'B1': Calculus('0'),
+                              'C0': Calculus('-fC_A - rB_C'),
+                              'C1': Calculus('0')},
+                       'C1': {'B0': Calculus('0'),
+                              'B1': Calculus('fB_C'),
+                              'C0': Calculus('0'),
+                              'C1': Calculus('-fC_A - rB_C')}}
+
+
+    assert output == expected_output, `output, expected_output`
+
+    
+def test_hessian_construction_B():
+    model, P, output, expected_output = test_model_construction_B()
+
+    output = model.system_hessian()
+
+    expected_output = {'B0': {'B0': Calculus('-rB_D - fAB_C*(A1 + A0)'),
+                              'B1': Calculus('0'),
+                              'C00': Calculus('rAB_C'),
+                              'C01': Calculus('0'),
+                              'C10': Calculus('rAB_C'),
+                              'C11': Calculus('0'),
+                              'D0': Calculus('fB_D'),
+                              'D1': Calculus('0'),
+                              'E0': Calculus('0'),
+                              'E1': Calculus('0')},
+                       'B1': {'B0': Calculus('0'),
+                              'B1': Calculus('-rB_D - fAB_C*(A1 + A0)'),
+                              'C00': Calculus('0'),
+                              'C01': Calculus('rAB_C'),
+                              'C10': Calculus('0'),
+                              'C11': Calculus('rAB_C'),
+                              'D0': Calculus('0'),
+                              'D1': Calculus('fB_D'),
+                              'E0': Calculus('0'),
+                              'E1': Calculus('0')},
+                       'C00': {'B0': Calculus('A0*fAB_C'),
+                               'B1': Calculus('0'),
+                               'C00': Calculus('-rAB_C - fC_DE'),
+                               'C01': Calculus('0'),
+                               'C10': Calculus('0'),
+                               'C11': Calculus('0'),
+                               'D0': Calculus('rC_DE*E0'),
+                               'D1': Calculus('0'),
+                               'E0': Calculus('rC_DE*D0'),
+                               'E1': Calculus('0')},
+                       'C01': {'B0': Calculus('0'),
+                               'B1': Calculus('A0*fAB_C'),
+                               'C00': Calculus('0'),
+                               'C01': Calculus('-fC_DE - rAB_C'),
+                               'C10': Calculus('0'),
+                               'C11': Calculus('0'),
+                               'D0': Calculus('0'),
+                               'D1': Calculus('rC_DE*E0'),
+                               'E0': Calculus('rC_DE*D1'),
+                               'E1': Calculus('0')},
+                       'C10': {'B0': Calculus('A1*fAB_C'),
+                               'B1': Calculus('0'),
+                               'C00': Calculus('0'),
+                               'C01': Calculus('0'),
+                               'C10': Calculus('-fC_DE - rAB_C'),
+                               'C11': Calculus('0'),
+                               'D0': Calculus('rC_DE*E1'),
+                               'D1': Calculus('0'),
+                               'E0': Calculus('0'),
+                               'E1': Calculus('rC_DE*D0')},
+                       'C11': {'B0': Calculus('0'),
+                               'B1': Calculus('A1*fAB_C'),
+                               'C00': Calculus('0'),
+                               'C01': Calculus('0'),
+                               'C10': Calculus('0'),
+                               'C11': Calculus('-fC_DE - rAB_C'),
+                               'D0': Calculus('0'),
+                               'D1': Calculus('rC_DE*E1'),
+                               'E0': Calculus('0'),
+                               'E1': Calculus('rC_DE*D1')},
+                       'D0': {'B0': Calculus('rB_D'),
+                              'B1': Calculus('0'),
+                              'C00': Calculus('fC_DE'),
+                              'C01': Calculus('0'),
+                              'C10': Calculus('fC_DE'),
+                              'C11': Calculus('0'),
+                              'D0': Calculus('-rC_DE*(E1 + E0) - fB_D'),
+                              'D1': Calculus('0'),
+                              'E0': Calculus('-rC_DE*D0'),
+                              'E1': Calculus('-rC_DE*D0')},
+                       'D1': {'B0': Calculus('0'),
+                              'B1': Calculus('rB_D'),
+                              'C00': Calculus('0'),
+                              'C01': Calculus('fC_DE'),
+                              'C10': Calculus('0'),
+                              'C11': Calculus('fC_DE'),
+                              'D0': Calculus('0'),
+                              'D1': Calculus('-rC_DE*(E1 + E0) - fB_D'),
+                              'E0': Calculus('-rC_DE*D1'),
+                              'E1': Calculus('-rC_DE*D1')},
+                       'E0': {'B0': Calculus('0'),
+                              'B1': Calculus('0'),
+                              'C00': Calculus('fC_DE'),
+                              'C01': Calculus('fC_DE'),
+                              'C10': Calculus('0'),
+                              'C11': Calculus('0'),
+                              'D0': Calculus('-rC_DE*E0'),
+                              'D1': Calculus('-rC_DE*E0'),
+                              'E0': Calculus('-(D0 + D1)*rC_DE - rA_E'),
+                              'E1': Calculus('0')},
+                       'E1': {'B0': Calculus('0'),
+                              'B1': Calculus('0'),
+                              'C00': Calculus('0'),
+                              'C01': Calculus('0'),
+                              'C10': Calculus('fC_DE'),
+                              'C11': Calculus('fC_DE'),
+                              'D0': Calculus('-rC_DE*E1'),
+                              'D1': Calculus('-rC_DE*E1'),
+                              'E0': Calculus('0'),
+                              'E1': Calculus('-(D0 + D1)*rC_DE - rA_E')}}
+
+    #for k, vd in output.items():
+    #    for ik, v in vd.items():
+    #        assert expected_output[k][ik].data == v.data, `expected_output[k][ik].data, v.data, k, ik`
+
+def test_hessian_construction_BB():
+    model, P, output, expected_output = test_model_construction_BB()
+
+    output = model.system_hessian()
+
+    expected_output = {'B0': {'B0': Calculus('-rB_D - fAB_C'),
+                              'B1': Calculus('0'),
+                              'C00': Calculus('rAB_C'),
+                              'C01': Calculus('0'),
+                              'C10': Calculus('rAB_C'),
+                              'C11': Calculus('0'),
+                              'D0': Calculus('fB_D'),
+                              'D1': Calculus('0'),
+                              'E0': Calculus('0'),
+                              'E1': Calculus('0')},
+                       'B1': {'B0': Calculus('0'),
+                              'B1': Calculus('-rB_D - fAB_C'),
+                              'C00': Calculus('0'),
+                              'C01': Calculus('rAB_C'),
+                              'C10': Calculus('0'),
+                              'C11': Calculus('rAB_C'),
+                              'D0': Calculus('0'),
+                              'D1': Calculus('fB_D'),
+                              'E0': Calculus('0'),
+                              'E1': Calculus('0')},
+                       'C00': {'B0': Calculus('A0*fAB_C'),
+                               'B1': Calculus('0'),
+                               'C00': Calculus('-rAB_C - fC_DE'),
+                               'C01': Calculus('0'),
+                               'C10': Calculus('0'),
+                               'C11': Calculus('0'),
+                               'D0': Calculus('rC_DE*E0'),
+                               'D1': Calculus('0'),
+                               'E0': Calculus('rC_DE*D0'),
+                               'E1': Calculus('0')},
+                       'C01': {'B0': Calculus('0'),
+                               'B1': Calculus('A0*fAB_C'),
+                               'C00': Calculus('0'),
+                               'C01': Calculus('-fC_DE - rAB_C'),
+                               'C10': Calculus('0'),
+                               'C11': Calculus('0'),
+                               'D0': Calculus('0'),
+                               'D1': Calculus('rC_DE*E0'),
+                               'E0': Calculus('rC_DE*D1'),
+                               'E1': Calculus('0')},
+                       'C10': {'B0': Calculus('A1*fAB_C'),
+                               'B1': Calculus('0'),
+                               'C00': Calculus('0'),
+                               'C01': Calculus('0'),
+                               'C10': Calculus('-fC_DE - rAB_C'),
+                               'C11': Calculus('0'),
+                               'D0': Calculus('rC_DE*E1'),
+                               'D1': Calculus('0'),
+                               'E0': Calculus('0'),
+                               'E1': Calculus('rC_DE*D0')},
+                       'C11': {'B0': Calculus('0'),
+                               'B1': Calculus('A1*fAB_C'),
+                               'C00': Calculus('0'),
+                               'C01': Calculus('0'),
+                               'C10': Calculus('0'),
+                               'C11': Calculus('-fC_DE - rAB_C'),
+                               'D0': Calculus('0'),
+                               'D1': Calculus('rC_DE*E1'),
+                               'E0': Calculus('0'),
+                               'E1': Calculus('rC_DE*D1')},
+                       'D0': {'B0': Calculus('rB_D'),
+                              'B1': Calculus('0'),
+                              'C00': Calculus('fC_DE'),
+                              'C01': Calculus('0'),
+                              'C10': Calculus('fC_DE'),
+                              'C11': Calculus('0'),
+                              'D0': Calculus('-rC_DE - fB_D'),
+                              'D1': Calculus('0'),
+                              'E0': Calculus('0'),
+                              'E1': Calculus('0')},
+                       'D1': {'B0': Calculus('0'),
+                              'B1': Calculus('rB_D'),
+                              'C00': Calculus('0'),
+                              'C01': Calculus('fC_DE'),
+                              'C10': Calculus('0'),
+                              'C11': Calculus('fC_DE'),
+                              'D0': Calculus('0'),
+                              'D1': Calculus('-rC_DE - fB_D'),
+                              'E0': Calculus('0'),
+                              'E1': Calculus('0')},
+                       'E0': {'B0': Calculus('0'),
+                              'B1': Calculus('0'),
+                              'C00': Calculus('fC_DE'),
+                              'C01': Calculus('fC_DE'),
+                              'C10': Calculus('0'),
+                              'C11': Calculus('0'),
+                              'D0': Calculus('0'),
+                              'D1': Calculus('0'),
+                              'E0': Calculus('-rC_DE - rA_E'),
+                              'E1': Calculus('0')},
+                       'E1': {'B0': Calculus('0'),
+                              'B1': Calculus('0'),
+                              'C00': Calculus('0'),
+                              'C01': Calculus('0'),
+                              'C10': Calculus('fC_DE'),
+                              'C11': Calculus('fC_DE'),
+                              'D0': Calculus('0'),
+                              'D1': Calculus('0'),
+                              'E0': Calculus('0'),
+                              'E1': Calculus('-rC_DE - rA_E')}}
+
+    dd = DictDiffer(output, expected_output)
+    print dd.changed()
+    print dd.unchanged()
+    assert False
+
+class DictDiffer(object):
+    """
+    Calculate the difference between two dictionaries as:
+    (1) items added
+    (2) items removed
+    (3) keys same in both but changed values
+    (4) keys same in both and unchanged values
+    """
+    def __init__(self, current_dict, past_dict):
+        self.current_dict, self.past_dict = current_dict, past_dict
+        self.set_current, self.set_past = set(current_dict.keys()), set(past_dict.keys())
+        self.intersect = self.set_current.intersection(self.set_past)
+    def added(self):
+        return self.set_current - self.intersect 
+    def removed(self):
+        return self.set_past - self.intersect 
+    def changed(self):
+        return set(o for o in self.intersect if self.past_dict[o] != self.current_dict[o])
+    def unchanged(self):
+        return set(o for o in self.intersect if self.past_dict[o] == self.current_dict[o])

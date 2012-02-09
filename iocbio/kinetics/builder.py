@@ -930,6 +930,14 @@ class IsotopologueModelBuilder(IsotopologueModel):
         for k, v in self.options.items():
             setattr(self, k, v)
 
+    @property
+    def labeled_isotopologues(self):
+        k = []
+        for met_key, it_code_dic in self.labeled_species.items():
+            for it_code in it_code_dic.keys():
+                k.append(met_key + it_code)
+        return k
+
     def system_hessian(self):
         ie = self.isotopomer_equations
         rxns = self.reactions
@@ -952,6 +960,13 @@ class IsotopologueModelBuilder(IsotopologueModel):
             for it_key in ie.keys():
                 inner_dic[it_key] = ceq.diff(it_key)
             data[eqn] = dict(inner_dic)
+
+        # Remove labeled isotopologues from hessian.
+        for it_key in self.labeled_isotopologues:
+            del data[it_key]
+        for k, vd in data.items():
+            for it_key in self.labeled_isotopologues:
+                del vd[it_key]
         return data
     
     def check_equivalence(self, s1, s2):
