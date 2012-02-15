@@ -8,83 +8,13 @@ import numpy
 import textwrap
 import argparse 
 
+from mytools.tools import drop_to_ipython as dti
+
 from scipy import integrate as scipy_integrate
 
 from sympycore import Symbol as sympycore_Symbol
 
 from builder import pf
-
-def make_argument_parser():
-    '''Returns options parser for this script.
-    '''
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
-                                     description=textwrap.dedent('''
-                                     This script finds one or more solutions to an IsotopeModel definition
-                                     ======================================================================
-                                     It first sets the parameters for each of the solutions and then solves
-                                     them.  Each set of parameters forms a unique solution_name under which
-                                     the input parameters and output are written. The parameters are either
-                                     F (float) or S (string).
-                                     '''))
-
-    fg = parser.add_argument_group('Flags')
-    spg = parser.add_argument_group('Solving parameters')
-    ifpg = parser.add_argument_group('Input file parameters')
-    ofpg = parser.add_argument_group('Output file parameters')
-    mpg = parser.add_argument_group('Model parameters')
-    
-    d = '[default:%(default)s]'
-    c = '[choices:%(choices)s]'
-    FL = 'F'
-    ST = 'S'
-
-    #mpg = add_model_parameter_arguments(mpg)
-    
-    spg.add_argument("-X", "--x-max",
-                     dest="x_max", default=610, metavar=FL, type=float,
-                     help="Flag to specify the time to stop the solution. {0}".format(d))
-    
-    fg.add_argument("-v", "--verbose", action='store_true',
-                     dest="verbose", default=True, 
-                     help="Flag to specify if the solver should be verbose. {0}".format(d))
-    
-    fg.add_argument("-V", "--very-verbose", action='store_true',
-                     dest="very_verbose", default=False, 
-                     help="Flag to specify if the solver should be VERY verbose. {0}".format(d))
-    
-    fg.add_argument("-P", "--prep-grid-job", action='store_true',
-                    dest="prepare_grid_job", default=False, 
-                    help='Prepare the parameters for a grid job. {0}'.format(d))
-    
-    fg.add_argument("-R", "--run-grid-job", action='store_false',
-                    dest="run_grid_job", default=True, 
-                    help='Runs a job with the grid engine. Stores false. {0}'.format(d))
-    
-    fg.add_argument("-o", "--only-set-data", action='store_true', 
-                    dest="only_set_data", default=False, 
-                    help="Only set the data and write the input files.  No solve is attempted. {0}".format(d))
-    
-    fg.add_argument("-w", "--write-output", action='store_true',
-                    dest="write_output_to_file", default=True, 
-                    help="Flag to write the output to a file after solving. {0}".format(d))
-    
-    fg.add_argument("-W", "--write-input", action='store_true',
-                    dest="write_input_to_file", default=True, 
-                    help="Flag to write the input to a file. Required if one wants to solve the model. {0}".format(d))
-
-    ofpg.add_argument("-D", "--save-dir",
-                      dest="save_dir", default='solutions', metavar=ST,
-                      help="Flag to specify the directory where solutions and input files are saved to. {0}".format(d))
-    
-    ifpg.add_argument("-d", "--import-dir",
-                      dest="import_dir", default='local', metavar=ST,
-                      help="Flag to specify the import_dir for the solution input file. {0}".format(d))
-
-    ifpg.add_argument("-m", "--model-name",
-                      dest="model_name", default='model_8_mass', metavar=ST,
-                      help="Flag to specify the model_name of the solution input file. {0}".format(d))
-
-    return parser
 
 class IsotopologueSolver(object):
 
@@ -115,6 +45,7 @@ class IsotopologueSolver(object):
         self.model = model
         self.function = c_package.c_equations
         self.c_variables = c_variables
+        self.slope_index = 1e10
 
     def set_data(self, independent_flux_dic=None, exchange_flux_dic=None, pool_dic=None, solution_name=None,
                  verbose=True, write_input_to_file=True):
@@ -197,7 +128,7 @@ class IsotopologueSolver(object):
         #print out.sum()
         return out
 
-    def solve(self, integrator_params=None, initial_time_step=10, end_time=100,
+    def solve(self, integrator_parameters=None, initial_time_step=10, end_time=100,
               verbose=True, very_verbose=False, write_output_to_file=True): 
 
         output_file_tmpl = '{0.model_name}_solution_{1}_output'.format(self.model, self.solution_name)
@@ -233,12 +164,12 @@ class IsotopologueSolver(object):
                               atol=1e-12, 
                               #order=3, 
                               nsteps=2000000, 
-                              #max_step=0.1, 
-                              #min_step=1e-8,
+                              #max_step=None, 
+                              #min_step=None,
                               with_jacobian=False)
             
-        if integrator_params:
-            int_params.update(integrator_params) 
+        if integrator_parameters:
+            int_params.update(integrator_parameters) 
 
         print 'Integrator parameters:', int_params
 

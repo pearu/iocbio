@@ -924,7 +924,7 @@ class IsotopologueModelBuilder(IsotopologueModel):
 
         self._make_options_attributes()
 
-        self.system_hessian()
+        #self.system_hessian()
 
     def _make_options_attributes(self):
         for k, v in self.options.items():
@@ -938,6 +938,7 @@ class IsotopologueModelBuilder(IsotopologueModel):
                 k.append(met_key + it_code)
         return k
 
+    @property
     def system_hessian(self):
         ie = self.isotopomer_equations
         rxns = self.reactions

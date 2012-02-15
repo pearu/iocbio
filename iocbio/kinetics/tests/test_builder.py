@@ -4,7 +4,7 @@
 import inspect
 import StringIO
 
-from sympycore import Calculus
+from sympycore import Calculus, Expr
 
 from collections import namedtuple
 
@@ -284,8 +284,10 @@ def test_hessian_construction_A():
                               'C0': Calculus('0'),
                               'C1': Calculus('-fC_A - rB_C')}}
 
-
-    assert output == expected_output, `output, expected_output`
+    for k, vd in output.items():
+        for ik, v in vd.items():
+            v1 = expected_output[k][ik]
+            assert (v-v1).expand() == 0
 
 def test_hessian_construction_AA():
     model, P, output, expected_output = test_model_construction_AA()
@@ -308,8 +310,10 @@ def test_hessian_construction_AA():
                               'C0': Calculus('0'),
                               'C1': Calculus('-fC_A - rB_C')}}
 
-
-    assert output == expected_output, `output, expected_output`
+    for k, vd in output.items():
+        for ik, v in vd.items():
+            v1 = expected_output[k][ik]
+            assert (v-v1).expand() == 0
 
     
 def test_hessian_construction_B():
@@ -418,9 +422,10 @@ def test_hessian_construction_B():
                               'E0': Calculus('0'),
                               'E1': Calculus('-(D0 + D1)*rC_DE - rA_E')}}
 
-    #for k, vd in output.items():
-    #    for ik, v in vd.items():
-    #        assert expected_output[k][ik].data == v.data, `expected_output[k][ik].data, v.data, k, ik`
+    for k, vd in output.items():
+        for ik, v in vd.items():
+            v1 = expected_output[k][ik]
+            assert (v-v1).expand() == 0
 
 def test_hessian_construction_BB():
     model, P, output, expected_output = test_model_construction_BB()
@@ -527,29 +532,8 @@ def test_hessian_construction_BB():
                               'D1': Calculus('0'),
                               'E0': Calculus('0'),
                               'E1': Calculus('-rC_DE - rA_E')}}
-
-    dd = DictDiffer(output, expected_output)
-    print dd.changed()
-    print dd.unchanged()
-    assert False
-
-class DictDiffer(object):
-    """
-    Calculate the difference between two dictionaries as:
-    (1) items added
-    (2) items removed
-    (3) keys same in both but changed values
-    (4) keys same in both and unchanged values
-    """
-    def __init__(self, current_dict, past_dict):
-        self.current_dict, self.past_dict = current_dict, past_dict
-        self.set_current, self.set_past = set(current_dict.keys()), set(past_dict.keys())
-        self.intersect = self.set_current.intersection(self.set_past)
-    def added(self):
-        return self.set_current - self.intersect 
-    def removed(self):
-        return self.set_past - self.intersect 
-    def changed(self):
-        return set(o for o in self.intersect if self.past_dict[o] != self.current_dict[o])
-    def unchanged(self):
-        return set(o for o in self.intersect if self.past_dict[o] == self.current_dict[o])
+    
+    for k, vd in output.items():
+        for ik, v in vd.items():
+            v1 = expected_output[k][ik]
+            assert (v-v1).expand() == 0
