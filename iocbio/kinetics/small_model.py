@@ -70,10 +70,10 @@ if __name__ == '__main__':
     #P = stable_loop_dynamic
     #P = stable_loop_long
 
-    P.solver_input.integrator_parameters['rtol'] = 1e-10
-    P.solver_input.integrator_parameters['atol'] = 1e-10
+    P.solver_input.integrator_parameters['rtol'] = 1e-12
+    P.solver_input.integrator_parameters['atol'] = 1e-12
 
-    simplify_sums = True
+    simplify_sums = False
 
     model = IsotopologueModelBuilder(system=P.system.string,
                                      system_name=P.system.name,
@@ -133,30 +133,42 @@ if __name__ == '__main__':
         #print
         #pp(hess_list[-1][p_key])
 
-    import numpy
+    import numpy 
+    import numpy.linalg
     import scipy.linalg
-    import matplotlib
     import matplotlib.pyplot as plt
-    from scipy.linalg import eigvals, eig
-    from sympycore import Matrix
+
+    
 
     e_value_list = []
     zero_e_vector_list = []
     pos_e_vector_list = []
     previous_zero_e_values = []
-    tol = 1e-6
+    tol = 1e-10
     for i, t in enumerate(time_list):
 
         to_matA = []
         for k, innner_dic in hess_list[i].items():
             inner_list = []
             for ik in hess_list[i].keys():
+                #pp((hess_list[i][k], i, k, ik))
                 inner_list.append(float(hess_list[i][k][ik]))
             to_matA.append(inner_list)
 
         hess_array = numpy.array(to_matA)
 
-        e_values, e_vectors = eig(hess_array, right=True)
+        print 'Time: {0}  Condition number: {1}'.format(t, numpy.linalg.cond(hess_array))
+
+        e_values, e_vectors = scipy.linalg.eig(hess_array)
+
+        numpy.savetxt('generated/time_{0}_e_values.txt'.format(t), e_values)
+        numpy.savetxt('generated/time_{0}_e_vectors.txt'.format(t), e_vectors)
+
+    for t in time_list:
+        e_values = numpy.loadtxt('generated/time_{0}_e_values.txt'.format(t))
+        e_vectors = numpy.loadtxt('generated/time_{0}_e_vectors.txt'.format(t))
+
+        #print e_vectors
 
         real_e_values = []
         pos_e_values = []
@@ -218,7 +230,7 @@ if __name__ == '__main__':
     else:
         title_start = 'Stable '
         
-    fig = plt.figure()
+    fig = plt.figure(figsize=(8.5,11))
     ax = fig.add_subplot(311)
     ax.set_title(title_start + P.name + ' e-values')
     ax.plot(time_list, e_value_list, ':')
@@ -253,6 +265,11 @@ if __name__ == '__main__':
     ax.set_title(title_start + P.name + ' solution')
     ax.plot(time_list, s_list, ':')
     ax.plot(time_list, one_list, '--')
-    
-    plt.show()
 
+    fn = '_'.join((title_start.strip().lower(), P.name + '.pdf'))
+    plt.subplots_adjust(hspace=0.4)
+
+    print 'Saving plot: {0}'.format(fn)
+    plt.savefig(fn)
+    #plt.show()
+    
