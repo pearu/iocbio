@@ -66,14 +66,14 @@ if __name__ == '__main__':
     
     P = bi_loop_dynamic
     #P = bi_loop_mid
-    P = bi_loop_long
+    #P = bi_loop_long
     #P = stable_loop_dynamic
     #P = stable_loop_long
 
     P.solver_input.integrator_parameters['rtol'] = 1e-12
     P.solver_input.integrator_parameters['atol'] = 1e-12
 
-    simplify_sums = False
+    simplify_sums = True
 
     model = IsotopologueModelBuilder(system=P.system.string,
                                      system_name=P.system.name,
@@ -138,13 +138,6 @@ if __name__ == '__main__':
     import scipy.linalg
     import matplotlib.pyplot as plt
 
-    
-
-    e_value_list = []
-    zero_e_vector_list = []
-    pos_e_vector_list = []
-    previous_zero_e_values = []
-    tol = 1e-10
     for i, t in enumerate(time_list):
 
         to_matA = []
@@ -155,20 +148,52 @@ if __name__ == '__main__':
                 inner_list.append(float(hess_list[i][k][ik]))
             to_matA.append(inner_list)
 
-        hess_array = numpy.array(to_matA)
+        jac_array = numpy.array(to_matA)
+        cond_num = numpy.linalg.cond(jac_array)
+        
+        print 'Time: {0}  Condition number: {1}'.format(t, cond_num)
 
-        print 'Time: {0}  Condition number: {1}'.format(t, numpy.linalg.cond(hess_array))
+        numpy.savetxt('generated/time_{0}_jac_array.txt'.format(t), jac_array)#, fmt='%.24e')
 
-        e_values, e_vectors = scipy.linalg.eig(hess_array)
-
-        numpy.savetxt('generated/time_{0}_e_values.txt'.format(t), e_values)
-        numpy.savetxt('generated/time_{0}_e_vectors.txt'.format(t), e_vectors)
-
+    tol = 1e-3
     for t in time_list:
+        if abs(t - 1940) < tol:
+            jac_array = numpy.loadtxt('generated/time_1950.0_jac_array.txt')
+        else:
+            jac_array = numpy.loadtxt('generated/time_{0}_jac_array.txt'.format(t))
+        
+        e_values, e_vectors = scipy.linalg.eig(jac_array)
+        eva, eve = zip(*sorted(zip(e_values, e_vectors)))
+
+        evas = []
+        for i, ev in enumerate(eva):
+            if abs(ev) < tol:
+                evas.append(ev)
+
+        #if t == 3710:
+        #    print e_values
+        #    print evas, eves
+        #    exit()
+
+        if evas == list():
+            numpy.savetxt('generated/time_{0}_e_values.txt'.format(t), e_values)
+            numpy.savetxt('generated/time_{0}_e_vectors.txt'.format(t), [1e999])
+        else:
+            numpy.savetxt('generated/time_{0}_e_values.txt'.format(t), e_values)
+            numpy.savetxt('generated/time_{0}_e_vectors.txt'.format(t), e_vectors)
+
+    new_time_list = []
+    e_value_list = []
+    zero_e_vector_list = []
+    pos_e_vector_list = []
+    previous_zero_e_values = []
+    for t in time_list:
+
         e_values = numpy.loadtxt('generated/time_{0}_e_values.txt'.format(t))
         e_vectors = numpy.loadtxt('generated/time_{0}_e_vectors.txt'.format(t))
-
-        #print e_vectors
+        
+        #e_values = numpy.array([e_values])
+        #e_vectors = numpy.array([e_vectors])
 
         real_e_values = []
         pos_e_values = []
@@ -184,16 +209,17 @@ if __name__ == '__main__':
             
         e_value_list.append(sorted(real_e_values))
 
-        #print t, zero_e_values
+        if e_vectors.tolist() == 1e999:
+            continue
 
-        if len(zero_e_values) == 0:
-            zero_e_values = previous_zero_e_values
-        else:
-            previous_zero_e_values = zero_e_values
+        new_time_list.append(t)
+
+        #print t, zero_e_values
 
         zero_e_vectors = []
         sp_set = set()
         for k, e_value in zero_e_values:
+            #print k, e_value, e_vectors
             e_vec = e_vectors[:,k]
             sys_e_vec = e_vec * numpy.sign(e_vec[0].real)
             zero_e_vectors.append(sys_e_vec.real)
@@ -250,11 +276,11 @@ if __name__ == '__main__':
             #ax.plot(time_list, ivl[:,i])
             
             if ivl[:,i].sum() < 0.0001:
-                ax.plot(time_list, ivl[:, i], '-')
+                ax.plot(new_time_list, ivl[:, i], '-')
             else:
                 no_zeros = []
                 new_time = []
-                for j, t in enumerate(time_list):
+                for j, t in enumerate(new_time_list):
                     if abs(ivl[j,i]) < tol:
                         continue
                     no_zeros.append(ivl[j, i].real)
@@ -271,5 +297,5 @@ if __name__ == '__main__':
 
     print 'Saving plot: {0}'.format(fn)
     plt.savefig(fn)
-    #plt.show()
+    plt.show()
     
