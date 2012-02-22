@@ -8,6 +8,8 @@ import subprocess
 from fractions import Fraction
 from collections import defaultdict
 
+from mytools.tools import drop_to_ipython as dti
+
 from sympycore import Symbol, Calculus
 
 from steadystate import SteadyFluxAnalyzer
@@ -867,6 +869,8 @@ class IsotopologueModelBuilder(IsotopologueModel):
         required_options = dict(use_mass=False,
                                 use_sum=False,
                                 import_dir='generated',
+                                add_boundary_fluxes=False,
+                                discard_boundary_species=True,
                                 replace_total_sum_with_one=False)
         
         for k, v in required_options.items():
@@ -887,7 +891,10 @@ class IsotopologueModelBuilder(IsotopologueModel):
         print 'System name     : ', system_name    
         print 'Model name      : ', model_name
 
-        self.flux_analyzer = a = SteadyFluxAnalyzer(system, split_bidirectional_fluxes=False)
+        self.flux_analyzer = a = SteadyFluxAnalyzer(system,
+                                                    add_boundary_fluxes=options['add_boundary_fluxes'],
+                                                    discard_boundary_species=options['discard_boundary_species'],
+                                                    split_bidirectional_fluxes=False)
         self.model_name = model_name
         self.system_name = system_name
         self.labeled_species = labeled_species
@@ -900,22 +907,21 @@ class IsotopologueModelBuilder(IsotopologueModel):
         reaction_info = a.species_info
 
         self.metabolite_lengths = reaction_info.pop('metabolite_lengths')
+        #print self.metabolite_lengths
+        #print a.discarded_species
+        #print labeled_species
         self.reaction_pairs = reaction_info
 
         index_dic = {}
         for met, length in self.metabolite_lengths.items():
             index_dic[met] = make_indices(length)
 
-        #pp((reaction_pairs, metabolite_lengths))
-        #pp((a.species, index_dic))
-
-
         self.species = {}
         lnm = dict()
-        for sp in a.species:
+        for sp in a.species + a.discarded_species:
             self.species[sp] = index_dic[sp]
             lnm[sp] = r'\{0}name'.format(sp) + '{}'
-            
+        
         self.latex_name_map = lnm
         
         self.c_name_map = {}
@@ -924,7 +930,6 @@ class IsotopologueModelBuilder(IsotopologueModel):
 
         self._make_options_attributes()
 
-        #self.system_hessian()
 
     def _make_options_attributes(self):
         for k, v in self.options.items():
@@ -939,7 +944,7 @@ class IsotopologueModelBuilder(IsotopologueModel):
         return k
 
     @property
-    def system_hessian(self):
+    def system_jacobian(self):
         ie = self.isotopomer_equations
         rxns = self.reactions
         
@@ -962,7 +967,7 @@ class IsotopologueModelBuilder(IsotopologueModel):
                 inner_dic[it_key] = ceq.diff(it_key)
             data[eqn] = dict(inner_dic)
 
-        # Remove labeled isotopologues from hessian.
+        # Remove labeled isotopologues from jacobian.
         for it_key in self.labeled_isotopologues:
             del data[it_key]
         for k, vd in data.items():

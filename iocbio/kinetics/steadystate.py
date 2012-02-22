@@ -104,8 +104,10 @@ class SteadyFluxAnalyzer(object):
             stoic_dict, species, reactions, species_info, reactions_info = source
         else:
             raise TypeError ('expected source to be str or tuple but got %r' % (type(source)))
+
+        discarded_species = []
         if discard_boundary_species:
-            stoic_dict, species, reactions, species_info, reactions_info = \
+            stoic_dict, species, discarded_species, reactions, species_info, reactions_info = \
                 self.discard_boundary_species(stoic_dict, species, reactions, species_info, reactions_info)
         if add_boundary_fluxes:
             stoic_dict, species, reactions, species_info, reactions_info = \
@@ -115,7 +117,7 @@ class SteadyFluxAnalyzer(object):
                 self.apply_growth(stoic_dict, species, reactions, species_info, \
                                   reactions_info, growth_factor, growth_shuffle)
 
-
+        self.discarded_species = discarded_species
         self.source_type = source_type
         self.source = source
         self.options = (discard_boundary_species, add_boundary_fluxes, \
@@ -644,7 +646,7 @@ class SteadyFluxAnalyzer(object):
 
         Boundary species are defined as the products or reactants of the network.
         """
-        boundary_species = []
+        boundary_species_indicies = []
         extra_reactions = []
         for specie_index in range(len(species)):
             reaction_indices = [j for i,j in matrix if i==specie_index]
@@ -653,13 +655,15 @@ class SteadyFluxAnalyzer(object):
             reaction_index = reaction_indices[0]
             reaction_id = reactions[reaction_index]
             stoichiometry = matrix[specie_index, reaction_index]
-            boundary_species.append(specie_index)
+            boundary_species_indicies.append(specie_index)
 
         i = 0
         new_matrix = {}
         new_species = []
+        boundary_species = []
         for specie_index in range(len(species)):
-            if specie_index in boundary_species:
+            if specie_index in boundary_species_indicies:
+                boundary_species.append(species[specie_index])
                 continue
             new_species.append(species[specie_index])
             for i0, reaction_index in matrix:
@@ -670,7 +674,7 @@ class SteadyFluxAnalyzer(object):
         species = new_species
         matrix = new_matrix
 
-        return matrix, species, reactions, species_info, reactions_info
+        return matrix, species, boundary_species, reactions, species_info, reactions_info
 
     @property
     def sparsity_kernel_GJE(self):

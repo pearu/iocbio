@@ -330,7 +330,7 @@ class IsotopologueSolver(object):
             r_key = info_dic['reverse']
             nf = net_flux_dic[rxn_key]
             if not info_dic['reversible']:
-                assert nf > 0
+                assert nf >= 0, `nf, rxn_key`
                 flux_dic[f_key] = nf
                 continue
 
