@@ -75,7 +75,7 @@ void imageinterp_get_roi(int image_width, int image_height, double *image,
   double r = dj_size / di_size;
   //printf("imageinterp_get_roi: i0,j0,i1,j1,rw,rh=%f,%f,%f,%f,%d,%d\n",i0,j0,i1,j1,roi_width, roi_height);
  
-  if (j1==j0 && i1>i0 && i1-i0+1==roi_width)
+  if (j1==j0 && i1>i0 && i0>=0 && i1<image_width && fabs(i0-nearbyint(i0))<1e-12 && fabs(i1-nearbyint(i1))<1e-12)
     {
       *roi_di_size = di_size;
       *roi_dj_size = dj_size;
