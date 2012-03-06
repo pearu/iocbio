@@ -193,6 +193,9 @@ class Holder:
 
     def __repr__(self):
         return '%s(%r)' % (self.__class__.__name__, str(self))
+
+    def __getattr__(self, name):
+        raise AttributeError('%r instance has no attribute %r' % (self, name))
     
     def __setattr__(self, name, obj):
         if not self.__dict__.has_key(name) and self.__dict__.has_key('_counter'):
