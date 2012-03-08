@@ -56,7 +56,7 @@ C_DE  : C     <=> D + E
 B_D   : D     <=> B
 ''',
                  dict(A={'0':0, '1':1}),
-                 SystemInput(dict(AB_C=0),
+                 SystemInput(dict(AB_C=1.0),
                              dict(AB_C=0.1, C_DE=0.2, B_D=0.3, A_E=0.4),
                              dict(A=4, B=5, C=6, D=7, E=8),
                              ))
@@ -92,17 +92,18 @@ BR_D  : D      => XD
 
 ''',
                  dict(XA={'0':0, '1':1},
+                      A={'0':0, '1':1},
                       XB={'0':1, '1':0},
                       XE={'0':1, '1':0},
                       XD={'0':1, '1':0}),
-                 SystemInput(dict(A_E=0.1, B_D=0.9, AB_C=1.1),
+                 SystemInput(dict(A_E=-1.0, B_D=0.8465, AB_C=1.0),
                              dict(AB_C=0.1, C_DE=0.2, B_D=0.3, A_E=0.4),
                              dict(A=4, B=5, C=6, D=7, E=8),
                              ))
 
 bi_loop_flow_dynamic = SolutionDef('dynamic', SolverInput(1, 30, int_params), bi_loop_flow)
 bi_loop_flow_mid = SolutionDef('mid', SolverInput(1, 2800, int_params), bi_loop_flow)
-bi_loop_flow_long = SolutionDef('long', SolverInput(10, 8000, int_params), bi_loop_flow)
+bi_loop_flow_long = SolutionDef('long', SolverInput(10000, 1000000, int_params), bi_loop_flow)
 
 w_loop = System('w_loop', '''
 B + A | {1:1, 2:2}
@@ -157,11 +158,11 @@ w_loop_long = SolutionDef('long', SolverInput(30, 10000, int_params), w_loop)
 
 if __name__ == '__main__':
 
-    P = m_loop_dynamic
+    #P = m_loop_dynamic
     #P = m_loop_mid
     #P = m_loop_long
     
-    #P = bi_loop_dynamic
+    P = bi_loop_dynamic
     #P = bi_loop_mid
     #P = bi_loop_long
     
@@ -176,6 +177,7 @@ if __name__ == '__main__':
     P.solver_input.integrator_parameters['atol'] = 1e-10
 
     simplify_sums = True
+    #simplify_sums = False
 
     model = IsotopologueModelBuilder(system=P.system.string,
                                      system_name=P.system.name,
