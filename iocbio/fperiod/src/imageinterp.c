@@ -48,7 +48,7 @@
 */
 
 /* http://en.wikipedia.org/wiki/Cubic_interpolation */
-inline
+static inline
 double CINT(double x, double pm1, double p0, double p1, double p2)
 {
   return 0.5 * (x*((2-x)*x-1)*(pm1) + (x*x*(3*x-5)+2)*(p0) + (x*((4-3*x)*x+1))*p1 + ((x-1)*x*x)*p2);
