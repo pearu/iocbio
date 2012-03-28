@@ -12,6 +12,14 @@
 extern "C" {
 #endif
 
+extern void imageinterp_get_roi8(int image_width, int image_height, unsigned char *image,
+				 double di_size, double dj_size,
+				 double i0, double j0, double i1, double j1,
+				 int roi_width, int roi_height, double *roi,
+				 double* roi_di_size, double* roi_dj_size,
+				 int interpolation
+				 );
+
 extern void imageinterp_get_roi(int image_width, int image_height, double *image,
 				double di_size, double dj_size,
 				double i0, double j0, double i1, double j1,

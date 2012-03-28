@@ -54,6 +54,85 @@ double CINT(double x, double pm1, double p0, double p1, double p2)
   return 0.5 * (x*((2-x)*x-1)*(pm1) + (x*x*(3*x-5)+2)*(p0) + (x*((4-3*x)*x+1))*p1 + ((x-1)*x*x)*p2);
 }
 
+void imageinterp_get_roi8(int image_width, int image_height, unsigned char *image,
+			 double di_size, double dj_size,
+			 double i0, double j0, double i1, double j1,
+			 int roi_width, int roi_height, double *roi,
+			 double* roi_di_size, double* roi_dj_size,
+			 int interpolation
+			 )
+{
+#define GET_IMAGE_PTR(I, J) (image + (J)*image_width + (I))
+#define GET_IMAGE(I, J) (((I)>=0 && (I)<image_width && (J)>=0 && (J)<image_height) ? (*(image + (J)*image_width + (I))) : 0.0)
+#define GET_ROI(I, J) (*(roi + (J)*roi_width + (I)))
+  
+  int ri, rj;
+  int ii, ji, ii1, ji1;
+  double i, j;
+  double v;
+  double rmi, rmj;
+  double bm1, b0, b1, b2;
+  double r = dj_size / di_size;
+  //printf("imageinterp_get_roi: i0,j0,i1,j1,rw,rh=%f,%f,%f,%f,%d,%d\n",i0,j0,i1,j1,roi_width, roi_height);
+ 
+  if (j1==j0 && i1>i0 && i0>=0 && i1<image_width && fabs(i0-nearbyint(i0))<1e-12 && fabs(i1-nearbyint(i1))<1e-12)
+    {
+      *roi_di_size = di_size;
+      *roi_dj_size = dj_size;
+      for (rj=0; rj<roi_height; ++rj)
+	for (ri=0; ri<roi_width; ++ri)
+	  {
+	    v = GET_IMAGE_PTR(ri + (int)i0, rj + ((int)j0)-(roi_height/2))[0];
+	    GET_ROI(ri, rj) = v;
+	  }
+    }
+  else
+    {
+
+      double dti = (i1-i0)/hypot ((i1-i0),(j1-j0));
+      double dtj = (j1-j0)/hypot ((i1-i0),(j1-j0));
+      double dsi = -(j1-j0)*r*r/hypot ((j1-j0)*r*r,(i1-i0));
+      double dsj = (i1-i0)/hypot ((j1-j0)*r*r,(i1-i0));
+      double l = hypot((i1-i0)*di_size, (j1-j0)*dj_size);
+      *roi_di_size = l/hypot ((i1-i0),(j1-j0));
+      *roi_dj_size = l*r/hypot ((j1-j0)*r*r,(i1-i0));
+
+      for (rj=0; rj<roi_height; ++rj)
+	{
+	  for (ri=0; ri<roi_width; ++ri)
+	    {
+	      i = i0 + ri*dti + (rj-(roi_height/2))*dsi;
+	      j = j0 + ri*dtj + (rj-(roi_height/2))*dsj;
+	      ii = floor(i);
+	      ji = floor(j);
+	      rmi = i-ii;
+	      rmj = j-ji;
+	      ii1 = ii+1;
+	      ji1 = ji+1;
+	      switch (interpolation)
+		{
+		case 1: /* bilinear interpolation */
+		  v = (GET_IMAGE(ii,ji)*(1.0-rmi)+GET_IMAGE(ii1,ji)*rmi)*(1.0-rmj)
+		    +(GET_IMAGE(ii,ji1)*(1.0-rmi)+GET_IMAGE(ii1,ji1)*rmi)*rmj;
+		  break;
+		case 2: /* bicubic interpolation */
+		  bm1 = CINT(rmi, GET_IMAGE(ii-1, ji-1), GET_IMAGE(ii, ji-1), GET_IMAGE(ii+1, ji-1), GET_IMAGE(ii+2, ji-1));
+		  b0 = CINT(rmi, GET_IMAGE(ii-1, ji), GET_IMAGE(ii, ji), GET_IMAGE(ii+1, ji), GET_IMAGE(ii+2, ji));
+		  b1 = CINT(rmi, GET_IMAGE(ii-1, ji+1), GET_IMAGE(ii, ji+1), GET_IMAGE(ii+1, ji+1), GET_IMAGE(ii+2, ji+1));
+		  b2 = CINT(rmi, GET_IMAGE(ii-1, ji+2), GET_IMAGE(ii, ji+2), GET_IMAGE(ii+1, ji+2), GET_IMAGE(ii+2, ji+2));
+		  v = CINT(rmj, bm1, b0, b1, b2);
+		  break;
+		case 0:
+		default: /* nearest-neighbor interpolation */
+		  v = GET_IMAGE(ii, ji);
+		}	      
+	      GET_ROI(ri, rj) = v;      
+	    }
+	}
+    }
+}
+
+
 void imageinterp_get_roi(int image_width, int image_height, double *image,
 			 double di_size, double dj_size,
 			 double i0, double j0, double i1, double j1,
