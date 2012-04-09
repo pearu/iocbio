@@ -8,15 +8,49 @@ Requires StrathKelvin 929 Oxygen System software version 4.4.0.2 or higher.
 from __future__ import division
 
 import os
+import sys
 import time
 import subprocess
 import numpy
 
-mailslotname = r'\\.\mailslot\Strathkelvin_Output'
 if os.name=='nt':
+    mailslotname = r'\\.\mailslot\Strathkelvin_Output'
     from mailslot import MailSlot
 else:
+    mailslotname = r'mailslot/Strathkelvin_Output'
     from fakemailslot import MailSlot
+
+def start_fake_strathkelvin():
+    print 'Starting fake strathkelvin application.'
+    # fake application:
+    import random
+    import time
+    import math
+    #time.sleep(4)
+    sleep_time = 0.05
+    mailslot = MailSlot(mailslotname, mode='w')
+    mailslot.write('This is test experiment.')
+    mailslot.write('%s' % (sleep_time))
+    start_time = time.time()
+    index = 0
+    while time.time() < start_time + 60:
+        index += 1
+        time.sleep(sleep_time)
+        row = [time.time()-start_time, index, random.random (),
+               math.sin((time.time()-start_time) * 2*math.pi/10),
+               math.sin(index*sleep_time * 2*math.pi/10),
+               math.sin(index*sleep_time * 2*math.pi/10) + 0.1*random.random()
+               ]
+        mailslot.write(' '.join(map (str, row)))
+    mailslot.write('*** End')
+    print 'Fake strathkelvin application stopped.'
+
+if __name__ == '__main__':
+    if len(sys.argv)==2:
+        fname = sys.argv[1]
+        func = eval(fname)
+        func()
+        sys.exit()
 
 from ..version import version as VERSION
 from .model import Model
@@ -182,6 +216,9 @@ class MainFrame(wx.Frame, GlobalAttr):
                 strathkelvin_program = param.get_value()
 
         if strathkelvin_program is None or os.name!='nt':
+            #strathkelvin_program = [sys.executable, __file__, 'start_fake_strathkelvin']
+            #subprocess.Popen(strathkelvin_program)
+            #self.info('Executed "%s"' % (strathkelvin_program))
             import thread
             thread.start_new_thread(start_fake_strathkelvin, ())
         else:
@@ -1069,7 +1106,7 @@ add a comment.
 
         self.have_axes = True
         self.axis_units = [self.model.get_axis_unit(axis=i) for i in range (3)]
-        self.protocols = [self.model.get_channel_protocol for i in range (1,7)]
+        self.protocols = [self.model.get_channel_protocol(i) for i in range (1,7)]
 
         for (channel_index, t), task in self.marks.items():
             self.draw_mark(channel_index, t, task)
@@ -1081,9 +1118,10 @@ add a comment.
             return
         if self.disable_draw:
             return
+
         if self.need_axis_update():
             self.create_axes()
-
+        
         self.draw_count += 1
 
         slope_n = self.model.get_slope_n()
@@ -1116,10 +1154,12 @@ add a comment.
                 line2.set_data(time_lst, slope_lst)
 
         self.update_axes()
+
         try:
             self.canvas.draw()
         except RuntimeError, msg:
             print '%s.draw: ignoring RuntimeError(%s)' % (self.__class__.__name__, msg)
+
         return
 
     def Populate(self):
@@ -1255,30 +1295,6 @@ class ChannelPanel(wx.Panel, GlobalAttr):
 
         self.Populate()
         self.parent.parent.NotifySizeChange()
-
-def start_fake_strathkelvin():
-    print 'Starting fake strathkelvin application.'
-    # fake application:
-    import random
-    import time
-    import math
-    #time.sleep(4)
-    sleep_time = 0.05
-    mailslot = MailSlot(mailslotname, mode='w')
-    mailslot.write('This is test experiment.')
-    mailslot.write('%s' % (sleep_time))
-    start_time = time.time()
-    index = 0
-    while time.time() < start_time + 60:
-        index += 1
-        time.sleep(sleep_time)
-        row = [time.time()-start_time, index, random.random (),
-               math.sin((time.time()-start_time) * 2*math.pi/10),
-               math.sin(index*sleep_time * 2*math.pi/10),
-               math.sin(index*sleep_time * 2*math.pi/10) + 0.1*random.random()
-               ]
-        mailslot.write (' '.join(map (str, row)))
-    mailslot.write('*** End')
     
 class App(wx.App):
     
