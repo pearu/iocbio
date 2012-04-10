@@ -150,7 +150,7 @@ class MainFrame(wx.Frame, GlobalAttr):
                 ]),
         dict(label = 'StrathKelvin',
              content = [
-                dict(label = 'Start', help='Start StrathKelvin application.',
+                dict(label = 'Start/Resume', help='Start/resume StrathKelvin application.',
                      action = 'OnStrathKelvinStart'),
                 dict(label = 'Interrupt', help='Interrupt receiving data from (possibly crashed) StrathKelvin application.',
                      action = 'OnStrathKelvinStop'),
@@ -850,6 +850,7 @@ add a comment.
 
     check_data_ms = 1000 # ms
     min_draw_ms = 1000 #ms
+    save_data_blink_ms = 550 #ms
 
     def __init__ (self, parent):
         wx.Panel.__init__ (self, parent, wx.ID_ANY)
@@ -867,14 +868,18 @@ add a comment.
         self.timer_get_data.Start(self.check_data_ms)
         # timer_draw_data is started and stopped in OnDataChanged
 
+        self.save_button_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.OnSaveButtonTimer, self.save_button_timer)
+
         self.save_button = wx.Button(self, wx.ID_ANY, "Save measurement results")
-        self.save_button.Enable(False)
+        self.save_style = None
+        self.stop_save()
+        
 
         dpi = 80
         self.figure = Figure( dpi=dpi )
 
         self.canvas = FigureCanvas( self, -1, self.figure )
-
 
         self.Bind(wx.EVT_BUTTON, self.OnSave, self.save_button)
 
@@ -905,15 +910,39 @@ add a comment.
         self.model.save()
         print 'Saving figure to %s' % (self.model.figure_pdf)
         self.figure.savefig(self.model.figure_pdf)
-        self.save_button.Enable(False)
+        self.stop_save()
+
+    def OnSaveButtonTimer(self, event):
+        if self.save_started:
+            cc = self.save_button.GetBackgroundColour ()
+            cc = [255-c for c in cc]
+            self.save_button.SetBackgroundColour (cc)
+
+    def start_save(self):
+        if self.save_started:
+            return
+        self.save_button.Enable(True)        
+        self.save_button.SetBackgroundColour ('#ff0000')
+        self.save_started = True
+        self.save_button_timer.Start(self.save_data_blink_ms)
+        self.save_style = self.GetWindowStyle()
+        self.SetWindowStyle( self.save_style | wx.STAY_ON_TOP )
+
+    def stop_save (self):
+        self.save_started = False
+        self.save_button.Enable(False)        
+        self.save_button.SetBackgroundColour ('#ffffff')
+        self.save_button_timer.Stop()
+        if self.save_style:
+            self.SetWindowStyle( self.save_style ) 
 
     def OnGetData(self, event):
         if self.force_stop() and self.experiment_started:
             self.info('Data retrieval stopped by user. Choose StarthKelvin/Start menu to resume.')
-            self.save_button.Enable(True)
+            self.start_save()
             return
         elif self.force_stop()==False:
-            self.save_button.Enable(False)
+            self.stop_save()
             self.force_stop(None)
 
         messages = self.mailslot.read(timeout=1)
@@ -925,7 +954,8 @@ add a comment.
                 self.timer_draw_data.Stop()
                 self.OnDataChanged(None) # draw last results
                 self.info('Experiment stopped: total number of samples=%s' % (self.data_index))
-                self.save_button.Enable(True)
+                self.start_save ()
+
             elif not self.experiment_started:
                 if messages:
                     dt = messages.pop(0)
@@ -951,7 +981,8 @@ add a comment.
                 self.create_axes()
 
                 self.save_button.SetLabel('Save results to %s' % (self.model.channel_data_template.replace (r'%d','#')))
-                self.save_button.Enable(False)
+                #self.save_button.Enable(False)
+                self.stop_save()
 
                 self.info('Experiment started: title="%s", sample interval=%ss'\
                               % (message, dt))
@@ -1019,7 +1050,7 @@ add a comment.
                 self.update_axes()
                 self.canvas.draw()
                 if not self.experiment_started:
-                    self.save_button.Enable(True)
+                    self.start_save()
         else:
             #print 'cancel'            
             pass
