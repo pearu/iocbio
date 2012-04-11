@@ -22,10 +22,10 @@ void iocbio_ipwf_e11_compute_coeffs_diff1(int j, double *fm, int n, int m, doubl
   {
     for(p=0; p<m; ++p, f+=n)
     {
-      f_m1mjpn = F(-1-j+n);
-      f_m2mjpn = F(-2-j+n);
-      f_m2pn = F(-2+n);
-      f_m1pn = F(-1+n);
+      f_m1mjpn = f[n-1-j];
+      f_m2mjpn = f[n-2-j];
+      f_m2pn = f[n-2];
+      f_m1pn = f[n-1];
       f_i = f[0];
       f_ipj = f[j];
       f_ip1pj = f[j+1];
