@@ -137,7 +137,8 @@ extern "C" {
 ''')
     for filename in source_files:        
         for (name, doc, source) in get_c_functions(os.path.join(dirname,filename)):
-            if name in ['iocbio_fperiod', 'iocbio_fperiod_cached','iocbio_objective',
+            if name in ['iocbio_fperiod', 'iocbio_fperiod_cached', 'iocbio_fperiod2_cached',
+                        'iocbio_objective',
                         'iocbio_detrend', 'iocbio_detrend1',
                         'iocbio_ipwf_e11_find_zero','iocbio_ipwf_e11_evaluate',
                         'IFLOOR(X)', 'ISEXTREME(index)', 'ISMAX(index)', 'ISMIN(index)',

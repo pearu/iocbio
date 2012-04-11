@@ -25,6 +25,7 @@ extern "C" {
 extern void iocbio_objective(double *y, int k, double *f, int n, int m, int order, int method, double *r);
 extern double iocbio_fperiod(double *f, int n, int m, double initial_period, int detrend, int method);
 extern double iocbio_fperiod_cached(double *f, int n, int m, double initial_period, int detrend, int method, double *cache);
+extern double iocbio_fperiod2_cached(double *f, int n, int m, double min_period, double max_period, int detrend, int method, double *cache);
 extern void iocbio_detrend(double *f, int n, int m, double period, double *r);
 extern void iocbio_detrend1(double *f, int n, int fstride, double period, double *r, int rstride);
 extern void iocbio_ipwf_e11_compute_coeffs_diff0(int j, double *fm, int n, int m, double* a0, double* a1, double* a2, double* a3);

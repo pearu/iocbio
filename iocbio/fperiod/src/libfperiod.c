@@ -248,6 +248,70 @@ double iocbio_fperiod_cached(double *f, int n, int m, double initial_period, int
   //printf("iocbio_fperiod_cached: objective function has no non-zero minimum.\n");
   return -2.0;
 }
+double iocbio_fperiod2_cached(double *f, int n, int m, double min_period, double max_period, int detrend, int method, double *cache)
+{
+  /* This function returns the second (counted from the origin,
+     inclusive) minimum point of objective function that defines the
+     fundamental period of f.
+   */
+  int start_j = IFLOOR(min_period);
+  int end_j = IFLOOR(max_period) + 1;
+  double extreme = 0.0;
+  double slope = 0.0;
+  double convexity = 0.0;
+  double* f2 = (detrend?cache:f);
+  int status;
+#ifndef ENABLE_METHOD
+  int (*find_zero)(int, int, double*, int, int, int, double*, double*) = iocbio_ipwf_e11_find_zero;
+#else
+  int (*find_zero)(int, int, double*, int, int, int, double*, double*) = NULL;
+
+  switch (method)
+    {
+    case 0:
+      find_zero = iocbio_ipwf_e11_find_zero;
+      break;
+    case 1:
+      find_zero = iocbio_ipwf_a11_find_zero;
+      break;
+    case 2:
+      find_zero = iocbio_ipwf_ep11_find_zero;
+      break;
+    case 3:
+      find_zero = iocbio_ipwf_ap11_find_zero;
+      break;
+    case 5:
+      find_zero = iocbio_ipwf_a00_find_zero;
+      break;
+    default:
+      printf("iocbio_fperiod2_cached: method value not in [0, 1, 2, 3, 5], got %d\n", method);
+      return -1.0;
+    }
+  //printf("iocbio_fperiod2_cached[%d](n=%d, m=%d, initial_period=%f, detrend=%d, method=%d)\n", iocbio_fperiod_cached_call_level, n, m, initial_period, detrend, method);
+#endif
+  if (detrend)
+    iocbio_detrend(f, n, m, 0.5*(min_period + max_period), cache);
+  start_j = MAX(0, start_j);
+  end_j = MIN(n-1, end_j);
+  status = find_zero(start_j, end_j, f2, n, m, 1, &extreme, &convexity);
+  if (status==0)
+    {
+      if (convexity>0.0)  /* extreme is minimum point */
+	return extreme;
+      if (convexity<0.0) /* extreme is maximum point */
+	{
+	  /* First try if the extreme is in the same interval by approaching it from right */
+	  status = find_zero(IFLOOR(extreme)+1, IFLOOR(extreme), f2, n, m, 1, &extreme, &convexity);
+	  if (status==0 && convexity>0) /* extreme is minimum point */
+	    return extreme;
+	  /* Ok, continuing the search to the right */
+	  status = find_zero(IFLOOR(extreme)+1, end_j, f2, n, m, 1, &extreme, &convexity);
+	  if (status==0 && convexity>0) /* extreme is minimum point */
+	    return extreme;
+	}
+    }
+  return -2.0;
+}
 #define UPDATE_DETREND1_ARRAY(GT, FORCE, N) \
       if (FORCE || prev_extreme_point GT 0)\
 	{\
@@ -802,10 +866,10 @@ void iocbio_ipwf_e11_compute_coeffs_diff1(int j, double *fm, int n, int m, doubl
   {
     for(p=0; p<m; ++p, f+=n)
     {
-      f_m1mjpn = F(-1-j+n);
-      f_m2mjpn = F(-2-j+n);
-      f_m2pn = F(-2+n);
-      f_m1pn = F(-1+n);
+      f_m1mjpn = f[n-1-j];
+      f_m2mjpn = f[n-2-j];
+      f_m2pn = f[n-2];
+      f_m1pn = f[n-1];
       f_i = f[0];
       f_ipj = f[j];
       f_ip1pj = f[j+1];
