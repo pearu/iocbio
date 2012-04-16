@@ -1,7 +1,8 @@
 
 __all__ = ['set_show_options', 'get_io_options_group',
            'get_microscope_options_group', 'set_convert_options',
-           'set_rowfile_plot_options', 'set_ome_options']
+           'set_rowfile_plot_options', 'set_ome_options',
+           'set_sumstacks_options']
 
 import os
 from optparse import OptionGroup, NO_DEFAULT
@@ -167,6 +168,33 @@ def set_convert_options (parser):
                       help="Specify output format extension.")
 
     parser.add_option_group(get_tiff_options_group(parser))
+
+def set_sumstacks_options (parser):
+    import numpy
+    set_formatter(parser)
+    parser.set_usage('%prog [options] [ [-i] INPUT_PATH  [ [-o] OUTPUT_PATH ]]')
+    parser.set_description('Sum the stacks in INPUT_PATH and save the result with specified type and format.')
+
+    parser.add_option ('--input-path','-i',
+                       type = 'file', metavar='INPUT_PATH',
+                       help = 'Specify input PATH of 3D images.'
+                       )
+    parser.add_option ('--output-path','-o',
+                       type = 'file', metavar='OUTPUT_PATH',
+                       help = 'Specify output PATH of 3D images.'
+                       )
+    numpy_types = ['<detect>'] + sorted(set([t.__name__ for t in numpy.typeDict.values()]))
+    parser.add_option("--output-type", dest="output_type",
+                      choices = numpy_types, default = numpy_types[0],
+                      help="Specify output image stack type.")
+
+    parser.add_option('--output-ext', dest='output_ext',
+                      choices = ['tif', 'vtk', 'data'],
+                      default = 'tif',
+                      help="Specify output format extension.")
+
+    parser.add_option_group(get_io_options_group(parser))
+
 
 def set_rowfile_plot_options (parser):
     import matplotlib
