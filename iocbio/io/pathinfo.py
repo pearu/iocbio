@@ -13,6 +13,7 @@ returns instances of one of the following classes:
   Configuration
   Tiffinfo
   Rawinfo
+  Omeinfo
 
 The following mappings are used to hold microscope information:
 
@@ -21,7 +22,7 @@ The following mappings are used to hold microscope information:
 """
 
 #__autodoc__ = ['PathInfo']
-__all__ = ['Scaninfo', 'Configuration', 'Tiffinfo', 'Rawinfo', 'PathInfo']
+__all__ = ['Scaninfo', 'Configuration', 'Tiffinfo', 'Rawinfo', 'PathInfo', 'Omeinfo']
 
 import os
 import sys
@@ -39,6 +40,7 @@ objectives = {'UPLSAPO_60xW_NA_1__x20':dict(refractive_index=1.33, NA = 1.2), # 
               'CFI_Super_Plan_Fluor_ELWD_20xC_NA_0__x45':dict(refractive_index=1.0, NA=0.45),# suga
               'C-Apochromat 63x/1.20 W Korr UV-VIS-IR M27':dict(refractive_index=1.33, NA = 1.2), # zeiss
               'Plan-Apochromat 63x/1.40 Oil DIC M27':dict(refractive_index=1.5158, NA = 1.4), # zeiss
+              'Unknown_63XWater_NA1.2':dict(refractive_index=1.33, NA=1.2) # till, should be identical objective to zeiss
               }
 """
 Contains a mapping between objectives and their parameters.
@@ -102,11 +104,55 @@ turret : {'top', 'bottom'}
 
 dyes = {}
 
+def get_tag_from_omeinfo (path, tagname, _cache={}):
+    """ Return tag value from OME-XML formatted file.
+    """
+    info = _cache.get(path)
+    if info is not None:
+        if tagname is None:
+            return info
+        return info.get(tagname)
+    from lxml import etree
+    info = {}
+    def infoadd (key, value, info=info):
+        if key in info:
+            old_value = info[key]
+            if isinstance (old_value, list):
+                old_value.append (value)
+            else:
+                info[key] = [value]
+        else:
+            info[key] = value
+    
+    f = open (path, 'r')
+    prefixes = []
+    for event, element in etree.iterparse (f, events=('start', 'end')):
+        orig_tag = tag = element.tag
+        i = tag.index ('}')
+        if i != -1:
+            tag = tag[i+1:]
+        if event=='start':
+            prefixes.append(tag)
+            prefix = '.'.join(prefixes)
+            for k,v in element.attrib.iteritems():
+                infoadd('.'.join([prefix,k]), v)
+            if element.text:
+                infoadd('.'.join ([prefix, 'text']), element.text)
+        elif event=='end':
+            prefixes = prefixes[:-1]
+    f.close ()
+    _cache[path] = info
+    if tagname is None:
+        return info
+    return info.get(tagname)
+
 def get_tag_from_scaninfo(path, tagname, _cache={}):
     """ Return tag value from SCANINFO.txt formatted file.
     """
     info = _cache.get(path)
     if info is not None:
+        if tagname is None:
+            return info
         return info.get(tagname)
     info = {}
     f = open (path,'r')
@@ -116,6 +162,8 @@ def get_tag_from_scaninfo(path, tagname, _cache={}):
         info[line[:i].strip()] = line[i+1:].strip()
     f.close ()
     _cache[path] = info
+    if tagname is None:
+        return info
     return info.get(tagname)
 
 def get_tag_from_configuration(path, tagname, _cache={}):
@@ -129,7 +177,7 @@ def get_tag_from_configuration(path, tagname, _cache={}):
     if not os.path.isfile(path):
         path = os.path.join(path, 'configuration.txt')
         if not os.path.isfile(path):
-            print 'get_tag_from_configuration: file %r does not exist' % (path)
+            print ('get_tag_from_configuration: file %r does not exist' % (path))
             return
     info = {}
     f = open(path,'r')
@@ -223,7 +271,7 @@ class PathInfo(object):
         self.sample_format = None
         self.protocol = None
         self.options = None
-
+        self.omedata = None
     def __str__ (self):
         l = []
         for attr in ['microscope_type', 'nof_stacks', 'shape',
@@ -236,7 +284,7 @@ class PathInfo(object):
             except NotImplementedError, msg:
                 v = None
             except AttributeError, msg:
-                print '%s: no %s attribute' % (self.__class__.__name__, msg)
+                print ('%s: no %s attribute' % (self.__class__.__name__, msg))
                 v = None
             if v is None:
                 continue
@@ -423,6 +471,8 @@ class PathInfo(object):
     def set_rotation_angle(self, rotation_angle):
         if isinstance(rotation_angle, str):
             rotation_angle = float(rotation_angle)
+        if rotation_angle is None:
+            rotation_angle = 0.0
         assert isinstance (rotation_angle, (float, int)),`rotation_angle`
         self.rotation_angle = rotation_angle
 
@@ -585,7 +635,94 @@ class PathInfo(object):
         return
 
     def omexml(self):
+        """ Write information to ome-xml file.
+        """
         raise NotImplementedError('%s.omexml' % (self.__class__.__name__))
+
+class Omeinfo(PathInfo):
+    """ PathInfo subclass with microscope information stored in a Tiff
+    description as OME-XML text.
+    """
+
+    def show_omeinfo (self, prefix=''):
+        info = get_tag_from_omeinfo(self.path, None)
+        for k in sorted (info):
+            if k.startswith (prefix):
+                print k,'=',`info[k]`     
+
+    def get_voxel_sizes(self):
+        if self.voxel_sizes is None:
+
+            voxel_sizes = []
+            for d in 'ZYX':
+                s = get_tag_from_omeinfo(self.path, 'OME.Image.Pixels.PhysicalSize'+d)
+                voxel_sizes.append(float(s)*1e-6)
+            self.set_voxel_sizes(*voxel_sizes)
+        return self.voxel_sizes
+
+    def get_microscope_type(self):
+        if self.microscope_type is None:
+            microscope_type = get_tag_from_omeinfo(self.path, 'OME.Image.Pixels.Channel.AcquisitionMode')
+            if microscope_type is not None:
+                self.set_microscope_type(microscope_type.lower())
+        return self.microscope_type
+
+    def get_objective_NA (self):
+        if self.objective_NA is None:
+            #self.show_omeinfo()
+            image_iid = get_tag_from_omeinfo(self.path, 'OME.Image.InstrumentRef.ID')
+            iid = get_tag_from_omeinfo(self.path, 'OME.Instrument.ID')
+            if isinstance (iid, list):
+                instrument_index = iid.index (image_iid)
+                raise NotImplementedError(`iid, image_iid`)
+            else:
+                instrument_oid = get_tag_from_omeinfo(self.path, 'OME.Instrument.OTF.ObjectiveSettings.ID')
+                oid = get_tag_from_omeinfo(self.path, 'OME.Instrument.Objective.ID')
+                oindex = oid.index(instrument_oid)
+                objective_NAs = get_tag_from_omeinfo(self.path, 'OME.Instrument.Objective.LensNA')
+                objective_NA = float(objective_NAs[oindex])
+            if objective_NA is not None:
+                self.set_objective_NA(objective_NA)
+        return self.objective_NA
+
+    def get_excitation_wavelength(self):
+        if self.excitation_wavelength is None:
+            #self.show_omeinfo()
+            #sys.exit ()
+            wavelength = get_tag_from_omeinfo(self.path, 'OME.Image.Pixels.Channel.LightSourceSettings.Wavelength')
+            if wavelength is not None:
+                self.set_excitation_wavelength(wavelength)
+        return self.excitation_wavelength
+
+    def get_refractive_index(self):
+        if self.refractive_index is None:
+            #self.show_omeinfo()
+            instrument_oid = get_tag_from_omeinfo(self.path, 'OME.Instrument.OTF.ObjectiveSettings.ID')
+            oid = get_tag_from_omeinfo(self.path, 'OME.Instrument.Objective.ID')
+            oindex = oid.index(instrument_oid)
+            objective_Manufactures = get_tag_from_omeinfo(self.path, 'OME.Instrument.Objective.Manufacturer')
+            objective_Models = get_tag_from_omeinfo(self.path, 'OME.Instrument.Objective.Model')
+            man = objective_Manufactures[oindex]
+            model = objective_Models[oindex]
+            if man=='Unknown' and model=='Unknown':
+                objective_NAs = get_tag_from_omeinfo(self.path, 'OME.Instrument.Objective.LensNA')
+                objective_Immersions = get_tag_from_omeinfo(self.path, 'OME.Instrument.Objective.Immersion')
+                objective_NMs = get_tag_from_omeinfo(self.path, 'OME.Instrument.Objective.NominalMagnification')
+                NA = objective_NAs[oindex]
+                im = objective_Immersions[oindex]
+                mag = objective_NMs[oindex]
+                objective_name = 'Unknown_%sX%s_NA%s' % (mag, im, NA)
+            else:
+                objective_name = '%s_%s' % (man, model)
+            objective_params = objectives.get(objective_name)
+            if objective_params is not None:
+                refractive_index = objective_params.get('refractive_index')
+            else:
+                print('%s.get_refractive_index: unknown objective %r' % (self.__class__.__name__, objective_name))
+                return None
+            if refractive_index is not None:
+                self.set_refractive_index(refractive_index)
+        return self.refractive_index
 
 class Scaninfo(PathInfo):
 
@@ -1001,7 +1138,10 @@ class Tiffinfo(PathInfo):
             f = open(pathinfo, 'w')
             f.write(image_description)
             f.close()
-            self.pathinfo = Scaninfo(pathinfo)
+            if path.endswith ('.ome.tif'):
+                self.pathinfo = Omeinfo(pathinfo)
+            else:
+                self.pathinfo = Scaninfo(pathinfo)
             self.pathinfo.set_shape (*self.get_shape())
 
     def get_microscope_type(self):

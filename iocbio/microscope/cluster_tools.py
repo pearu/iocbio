@@ -188,7 +188,7 @@ def find_clusters(data, background_level=None, voxel_sizes = None):
     sbr = 100*signal_indices[0].size/float(data.size)
     print '    Signal/background ratio: %s/%s (=%.5f%%)' % (signal_indices[0].size, data.size, sbr)
     if sbr > 20:
-        raise 'Too large ratio, use --cluster-background-level=..'
+        raise ValueError('Too large ratio, use --cluster-background-level=..')
     
     incr_list = compute_incr_list ()
                     
