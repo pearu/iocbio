@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 from builder import flush
 
+import sympycore
+
+from mytools.tools import drop_to_ipython as dti
+
 def get_solution(it_model, solution_name):    
     import_template = 'from {0.import_dir}.{0.model_name}_c_variables import c_variables'
     import_string = import_template.format(it_model)
@@ -73,7 +77,8 @@ def analyze_solution(model, solution_name, end_time=60):
         for ek, ed in model.system_jacobian.items():
             inner_dic = dict()
             for tk, expr in ed.items():
-                inner_dic[tk] = expr.subs(fd).subs(s_dic).subs(lab_dic).data
+                value = expr.subs(fd).subs(s_dic).subs(lab_dic).data
+                inner_dic[tk] = float(value)
             sub_sys_jac[ek] = inner_dic
         jac_list.append(sub_sys_jac)
 
@@ -93,7 +98,9 @@ def analyze_solution(model, solution_name, end_time=60):
         for k, innner_dic in jac_list[i].items():
             inner_list = []
             for ik in jac_list[i].keys():
-                inner_list.append(float(jac_list[i][k][ik]))
+                VAL = jac_list[i][k][ik]
+                inner_list.append(VAL)
+                    
             to_matA.append(inner_list)
 
         jac_array = numpy.array(to_matA)

@@ -956,13 +956,18 @@ class IsotopologueModelBuilder(IsotopologueModel):
             symbols.append(Symbol(rxn['reverse']))
 
         for s in symbols:
+            break
             st = s.__str__()
             locals()[st] = s # HACK
 
         data = {}
         for eqn, eq in ie.items():
             inner_dic = defaultdict(dict)
-            exec('ceq = Calculus({0})'.format(eq.__str__()))
+            #print eq
+            #exec('ceq = Calculus({0})'.format(eq.__str__()))
+            eq = str(eq)
+            if eq.startswith('+'): eq = eq[1:]
+            ceq = Calculus(eq)
             for it_key in ie.keys():
                 inner_dic[it_key] = ceq.diff(it_key)
             data[eqn] = dict(inner_dic)
