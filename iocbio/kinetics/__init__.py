@@ -6,10 +6,8 @@ The :mod:`iocbio.kinetics` provides the following modules:
 
 .. autosummary::
 
-  steadystate
-  builder
-  solver
+  oxygen_isotope_model
   
 """
 
-__autodoc__ = ['steadystate', 'builder', 'solver']
+__autodoc__ = ['oxygen_isotope_model']
