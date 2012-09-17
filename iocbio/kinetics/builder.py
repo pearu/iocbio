@@ -780,13 +780,13 @@ class IsotopeModel(object):
     """ Base class for generating kinetic equations for reactions with
     isotopologues.
 
-    See Example below for usage.
+    See oxygen_isotope_model.py for usage.
     """
     species = {} 
     reactions = [] 
     latex_name_map = {}
 
-    def __init__(self, system_string=None, water_labeling=None, water_exchange=None, verbose=True):
+    def __init__(self, system_string=None, water_labeling=None, verbose=True):
 
         self.system_str = system_string
         matrix, raw_species, rxns, species_info, reactions_info = \
@@ -801,7 +801,6 @@ class IsotopeModel(object):
             self.c_name_map[sp] = sp
 
         self.water_labeling = water_labeling
-        self.water_exchange = water_exchange
         self.use_sum = False
         self.use_mass = True
         self.replace_total_sum_with_one = False
@@ -824,6 +823,7 @@ class IsotopeModel(object):
         self._relations = None
         self._pool_relations = None
         self._pool_relations_quad = None
+        
     def write_ccode(self, stream=sys.stdout):
         use_sum = self.use_sum
         use_mass = self.use_mass
@@ -951,10 +951,10 @@ class IsotopeModel(object):
                           c_variables='{0}_c_variables.py'.format(self.model_name),
                           )
         if not debug:
-            print 'Writing',file_names['c']
             f = open(file_names['c'], 'w')
             self.write_ccode(f)
             f.close()
+            print '\n\nWrote: ',file_names['c']
         else:
             self.write_ccode()
 
@@ -963,10 +963,10 @@ class IsotopeModel(object):
 
         cv_string = pprint.pformat(self.c_variables)
         if not debug:
-            print 'Writing',file_names['c_variables']
             f = open(file_names['c_variables'], 'w')
             f.write('c_variables = %s\n' %(cv_string))
             f.close()
+            print 'Wrote: ',file_names['c_variables']
         else:
             print cv_string
 
@@ -1053,25 +1053,52 @@ class IsotopeModel(object):
 
     @property
     def isotopomer_equations(self):
+        verbose = self.verbose
+        if verbose:
+            print '\nGenerating isotopologue equations:'
+        self.eqn_count = -1    
         eqns0 = self.kinetic_equations
+
+        if verbose:
+            print 'Performing first term collection.'
         eqns0 = self.collect(eqns0)
+
+        if verbose:
+            self.eqn_count = 0
+            print '\nPerforming second term collection.'
         return self.collect(eqns0)
         
     @property
     def mass_isotopomer_equations(self):
+        verbose = self.verbose
+        if verbose:
+            print '\n\nGenerating mass isotopologue equations:'
+        self.eqn_count = -1
         pr = self.pool_relations
         pr_quad = self.pool_relations_quad
+        if verbose:
+            print 'Applying pool relations.'
         eqns = self.apply(self.pools, self.kinetic_equations)
+
+        if verbose:
+            print 'Performing first term collection.'
         eqns = self.subs(eqns, pr_quad)
         eqns = self.collect(eqns)
 
+        if verbose:
+            print '\nPerforming second term collection.'
         eqns = self.subs(eqns, pr)
         eqns = self.collect(eqns)
 
+        if verbose:
+            print '\nPerforming third term collection.'
         eqns = self.subs(eqns, pr)        
         eqns = self.collect(eqns)
 
+        if verbose:
+            print '\nPerforming final term collection.'
         eqns = self.subs(eqns, pr)
+        self.eqn_count = 0
         return  self.collect(eqns)
 
     @property
@@ -1221,7 +1248,14 @@ class IsotopeModel(object):
         return new_kinetic_equations
 
     def collect(self, kinetic_equations, **options):
+        verbose = self.verbose
         new_kinetic_equations = {}
         for k in kinetic_equations:
+            if verbose:
+                if self.eqn_count != -1:
+                    self.eqn_count += 1
+                    print self.eqn_count, flush,
+                else:
+                    print '.', flush,
             new_kinetic_equations[k] = kinetic_equations[k].collect(**options)
         return new_kinetic_equations

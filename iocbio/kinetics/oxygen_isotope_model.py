@@ -1,17 +1,24 @@
 '''
-Definition of OxygenIsotopeModel by deriving from an IsotopeModel class.
+Definition of OxygenIsotopeModel by abstraction from an IsotopeModel class.
 
-One must define a function check_reaction to:
+To use the model builder, one must:
+  Define a function check_reaction:
     Return True when reaction is possible for given tuples of
     reactant and product indices. Reaction pattern is a string in
     a form 'R1+R2(<-|->)P1-P2' where reactants R1, R2 and products
     P1, P2 are keys of the species dictionary.
 
-One must define an index_dic which contains the definition of the
-oxygen isotopologues for each species in the model.
-        For the case of one ADP species, the index_dic can be defined as:
-        index_dic = dict(ADPo = ['000', '001', '010', '011', '100', '101', '110', '111'])
-        Where '0' and '1' refer to labeled and unlabeled oxygen atoms.
+  Define an index_dic which contains the definition of the
+  oxygen isotopologues for each species in the model:
+    For the case of one ADP species, the index_dic is defined as:
+    index_dic = dict(ADPo = ['000', '001', '010', '011', '100', '101', '110', '111'])
+    Where '0' and '1' refer to labeled and unlabeled oxygen atoms.
+
+  Run this script with a python interpreter:
+  python oxygen_isotope_model.py
+
+  Two files are generated.  The first contains the model and the
+  second contains the variables used.
 
 '''
 
@@ -51,6 +58,8 @@ Cio   : CPi <=> CPo
 Pom   : Po => Pm
 '''
 
+
+# The following code section makes creating the index dic easier. 
 make_indices = lambda repeat: map(''.join,itertools.product('01', repeat=repeat)) if repeat else ['']
 
 n = 3
@@ -89,6 +98,8 @@ class OxygenIsotopeModel(IsotopeModel):
                      Ps=P_indices,
                      )
 
+    # The current interface requires defining check_reaction for all reactions.
+    # The following code defines all of the transport reactions. 
     transport_reactions = []
     for a, b in [('ATPi', 'ATPo'), ('ATPm', 'ATPi'),
                  ('ADPo', 'ADPi'), ('ADPi', 'ADPm'), ('ADPm', 'ADPs'), ('ADPe', 'ADPo'),
@@ -105,6 +116,12 @@ class OxygenIsotopeModel(IsotopeModel):
     def check_reaction(self, reaction_pattern, rindices, pindices):
         if reaction_pattern in self.transport_reactions:
             return rindices == pindices
+
+        # All of the enzymatic reactions in the model require their
+        # own definitions for the atom mappings. The builder splits
+        # ATP into two indices because each phosphoryl group is treated
+        # separately in the symbolic calculation to aid in simplifying
+        # the system. 
         if reaction_pattern in ['CPo+ADPo->ATPo', 'CPo+ADPo<-ATPo']:
             atp, = pindices
             cp, adp = rindices
@@ -135,18 +152,18 @@ class OxygenIsotopeModel(IsotopeModel):
             adp, p = rindices
             t1, t2 = atp.split ('_')
             return t1==adp and (t2+w).count('1')==p.count ('1')
+
+        # If a reaction is not implemented, it will return False: 
         return IsotopeModel.check_reaction(self, reaction_pattern, rindices, pindices)
     
 if __name__ == '__main__':
             
     frac_W = 0.3
-    water_exchange = 0.0000001
     water_labeling = {'0':1 - frac_W,
                       '1':frac_W}
                       
     model = OxygenIsotopeModel(system_string=oxygen_isotope_system_str,
-                               water_labeling=water_labeling,
-                               water_exchange=water_exchange)
+                               water_labeling=water_labeling)
     
     model.compile_ccode(debug=False, stage=None)
 
