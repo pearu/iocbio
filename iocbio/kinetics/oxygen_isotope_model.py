@@ -1,35 +1,51 @@
 '''
 Definition of OxygenIsotopeModel by abstraction from an IsotopeModel class.
 
-To use the model builder, one must:
-  Define a function check_reaction:
-    Return True when reaction is possible for given tuples of
-    reactant and product indices. Reaction pattern is a string in
-    a form 'R1+R2(<-|->)P1-P2' where reactants R1, R2 and products
-    P1, P2 are keys of the species dictionary.
+To use the model builder, one must derive a class from IsotopeModel.
+Derived class must define:
+  * system_string attribute that contains the definitions of reactions
+    and labeling information of species;
+  * check_reaction(reaction) method that defines the valid atom mappings
+    of species for each reaction.
 
-  Define an index_dic which contains the definition of the
-  oxygen isotopologues for each species in the model:
-    For the case of one ADP species, the index_dic is defined as:
-    index_dic = dict(ADPo = ['000', '001', '010', '011', '100', '101', '110', '111'])
-    Where '0' and '1' refer to labeled and unlabeled oxygen atoms.
-
-  Run this script with a python interpreter:
+Next, run this script with a python interpreter:
   python oxygen_isotope_model.py
 
-  Two files are generated.  The first contains the model and the
-  second contains the variables used.
+Two files are generated.  The first contains the model as C source code and the
+second contains the variables used.
 
+This example script corresponds to the system analyzed in
+
+  David W. Schryer, Pearu Peterson, Ardo Illaste, Marko Vendelin.
+  Sensitivity analysis of flux determination in heart by
+  H218O-provided labeling using a dynamic isotopologue model of energy
+  transfer pathways.
+  PLoS Computational Biology.
+
+For more information, see
+
+  http://code.google.com/p/iocbio/wiki/OxygenIsotopeEquationGenerator
 '''
-
-from __future__ import division
-
-import itertools
 
 from builder import IsotopeModel
 
-oxygen_isotope_system_str = '''
+class OxygenIsotopeModel(IsotopeModel):
+    system_string = '''
+# See IsotopeModel.parse_system_string.__doc__ for syntax of the system string.
+#
+# Definitions of specie labeling
+# <specie name> = <specie name>[<labeling pattern>]
+#
+ADPs+ADPm+ADPi+ADPo+ADPe = ADPs[***]+ADPm[***]+ADPi[***]+ADPo[***]+ADPe[***]
+Ps+Pm+Pe+Po = Ps[****]+Pm[****]+Pe[****]+Po[****]
+Wo+Ws+We = Wo[*]+Ws[*]+We[*]
+CPi+CPo = CPi[***]+CPo[***]
+ATPs+ATPm+ATPo+ATPe+ATPi = ATPs[***_***]+ATPm[***_***]+ATPo[***_***]+ATPe[***_***]+ATPi[***_***]
 
+#
+# Definitions of reactions
+# <reaction name> : <sum of reactants> (<=|=>|<=>) <sum of products>
+#
 ADPms : ADPm <=> ADPs
 Pms   : Pm <=> Ps
 Wos   : Wo <=> Ws
@@ -42,8 +58,8 @@ Weo   : We <=> Wo
 ASe   : ATPe + We <=> ADPe + Pe
 ADPeo : ADPe <=> ADPo
 
-AKi  : ADPi + ADPi <=> ATPi
-AKo  : ATPo <=> ADPo + ADPo
+AKi  : 2 ADPi <=> ATPi
+AKo  : ATPo <=> 2 ADPo
 
 CKi   : ATPi <=> ADPi + CPi
 CKo   : CPo + ADPo <=> ATPo 
@@ -58,112 +74,75 @@ Cio   : CPi <=> CPo
 Pom   : Po => Pm
 '''
 
+    def check_reaction(self, reaction):
+        """ Validate reaction.
 
-# The following code section makes creating the index dic easier. 
-make_indices = lambda repeat: map(''.join,itertools.product('01', repeat=repeat)) if repeat else ['']
+        For documentation, read the comments below. Also see
+        IsotopeModel.check_reaction.__doc__ for more details.
+        """
+        # Create label matcher object
+        l = self.labels(reaction)
+        # Note that the label matcher object is special Python
+        # dictionary object that items can be accessed via attributes.
+        # Keys are the names of species and values are labeling
+        # indices.
 
-n = 3
-T1indices = make_indices(n)
-T2indices = make_indices(n)
-W_indices = make_indices(1)
-ADP_indices = make_indices(n)
-CP_indices = make_indices(n)
-P_indices = make_indices(n+1)
-
-ATP_indices = []
-for t1 in T1indices:
-    for t2 in T2indices:
-        ATP_indices.append (t1+'_'+t2)
-        
-class OxygenIsotopeModel(IsotopeModel):
-
-    index_dic = dict(ATPm=ATP_indices,
-                     ADPm=ADP_indices,
-                     Pm=P_indices,
-                     ATPi=ATP_indices,
-                     ADPi=ADP_indices,
-                     CPi=CP_indices,
-                     ATPo=ATP_indices,
-                     Wo=W_indices,
-                     ADPo=ADP_indices,
-                     Po=P_indices,
-                     CPo=CP_indices,
-                     ATPe=ATP_indices,
-                     We=W_indices,
-                     ADPe=ADP_indices,
-                     Pe=P_indices,
-                     ATPs=ATP_indices,
-                     Ws=W_indices,
-                     ADPs=ADP_indices,
-                     Ps=P_indices,
-                     )
-
-    # The current interface requires defining check_reaction for all reactions.
-    # The following code defines all of the transport reactions. 
-    transport_reactions = []
-    for a, b in [('ATPi', 'ATPo'), ('ATPm', 'ATPi'),
-                 ('ADPo', 'ADPi'), ('ADPi', 'ADPm'), ('ADPm', 'ADPs'), ('ADPe', 'ADPo'),
-                 ('Pm', 'Ps'), ('Pe', 'Po'),
-                 ('Wo', 'Ws'), ('We', 'Wo'),
-                 ('CPi', 'CPo'),        
-                 ]:
-        transport_reactions.append('%s->%s' % (a,b))
-        transport_reactions.append('%s<-%s' % (a,b))
-        
-    for a, b in [('Po', 'Pm'), ('ATPo', 'ATPe'), ('ATPs', 'ATPm'),]:
-        transport_reactions.append('%s->%s' % (a,b))
-
-    def check_reaction(self, reaction_pattern, rindices, pindices):
-        if reaction_pattern in self.transport_reactions:
-            return rindices == pindices
+        # First, handle transport reactions. Usage of `transport=True`
+        # improves performance but, in general, it is not required.
+        if l.match('ADPm <=> ADPs', transport=True): return l.ADPm==l.ADPs
+        if l.match('Pm <=> Ps', transport=True): return l.Pm==l.Ps
+        if l.match('Wo <=> Ws', transport=True): return l.Wo==l.Ws
+        if l.match('ATPs => ATPm', transport=True): return l.ATPs==l.ATPm
+        if l.match('ATPo => ATPe', transport=True): return l.ATPo==l.ATPe
+        if l.match('Pe <=> Po', transport=True): return l.Pe==l.Po
+        if l.match('We <=> Wo', transport=True): return l.We==l.Wo
+        if l.match('ADPe <=> ADPo', transport=True): return l.ADPe==l.ADPo
+        if l.match('ADPi <=> ADPm', transport=True): return l.ADPi==l.ADPm
+        if l.match('ADPo <=> ADPi', transport=True): return l.ADPo==l.ADPi
+        if l.match('ATPm <=> ATPi', transport=True): return l.ATPm==l.ATPi
+        if l.match('ATPi <=> ATPo', transport=True): return l.ATPi==l.ATPo
+        if l.match('CPi <=> CPo', transport=True): return l.CPi==l.CPo
+        if l.match('Po => Pm', transport=True): return l.Po==l.Pm
 
         # All of the enzymatic reactions in the model require their
         # own definitions for the atom mappings. The builder splits
         # ATP into two indices because each phosphoryl group is treated
         # separately in the symbolic calculation to aid in simplifying
-        # the system. 
-        if reaction_pattern in ['CPo+ADPo->ATPo', 'CPo+ADPo<-ATPo']:
-            atp, = pindices
-            cp, adp = rindices
-            t1, t2 = atp.split('_')
-            return t1 == adp and t2 == cp
-        if reaction_pattern in ['ATPi->ADPi+CPi', 'ATPi<-ADPi+CPi']:
-            atp, = rindices
-            adp, cp = pindices
-            t1, t2 = atp.split('_')
-            return t1 == adp and t2 == cp
-        if reaction_pattern in ['ADPi+ADPi->ATPi','ADPi+ADPi<-ATPi']:
-            adp, adp2 = rindices
-            atp, = pindices
-            t1, t2 = atp.split('_')
-            return t1 == adp and t2 == adp2
-        if reaction_pattern in ['ATPo->ADPo+ADPo','ATPo<-ADPo+ADPo']:
-            atp, = rindices
-            adp, adp2 = pindices
-            t1, t2 = atp.split('_')
-            return t1 == adp and t2 == adp2
-        if reaction_pattern in ['ATPe+We->ADPe+Pe', 'ATPe+We<-ADPe+Pe']:
-            atp, w = rindices
-            adp, p = pindices
-            t1, t2 = atp.split ('_')
-            return t1==adp and (t2+w).count('1')==p.count ('1')
-        if reaction_pattern in ['ADPs+Ps->ATPs+Ws', 'ADPs+Ps<-ATPs+Ws']:
-            atp, w = pindices
-            adp, p = rindices
-            t1, t2 = atp.split ('_')
-            return t1==adp and (t2+w).count('1')==p.count ('1')
+        # the system.
+        if l.match('Ps + ADPs <=> ATPs + Ws'):
+            t1, t2 = l.ATPs.split ('_')
+            return t1==l.ADPs and (t2+l.Ws).count('1')==l.Ps.count ('1')
+        if l.match('Pe + ADPe <=> ATPe + We'):
+            t1, t2 = l.ATPe.split ('_')
+            return t1==l.ADPe and (t2+l.We).count('1')==l.Pe.count ('1')
+        if l.match('CPo + ADPo <=> ATPo'):
+            t1, t2 = l.ATPo.split ('_')
+            return t1 == l.ADPo and t2==l.CPo
+        if l.match('CPi + ADPi <=> ATPi'):
+            t1, t2 = l.ATPi.split ('_')
+            return t1 == l.ADPi and t2==l.CPi
+        # notice that '2 A <=> B' has to be written as 'A + A <=> B'
+        if l.match('ADPi + ADPi <=> ATPi'): 
+            t1, t2 = l.ATPi.split ('_')
+            return t1==l.ADPi[0] and t2==l.ADPi[1]
+        if l.match('ADPo + ADPo <=> ATPo'):
+            t1, t2 = l.ATPo.split ('_')
+            return t1==l.ADPo[0] and t2==l.ADPo[1]
 
-        # If a reaction is not implemented, it will return False: 
-        return IsotopeModel.check_reaction(self, reaction_pattern, rindices, pindices)
+        # Unknown reaction, raise an exception
+        return IsotopeModel.check_reaction(self, reaction)
     
 if __name__ == '__main__':
-            
-    frac_W = 0.3
-    water_labeling = {'0':1 - frac_W,
-                      '1':frac_W}
-                      
-    model = OxygenIsotopeModel(system_string=oxygen_isotope_system_str,
-                               water_labeling=water_labeling)
-    
+
+    # Specify species with defined labeling states.  Keys are the
+    # names of isotope species and values are expressions defining the
+    # labeling states of the corresponding species.
+    defined_labeling = dict(Wo_0='0.7', Wo_1='0.3')
+
+    # Create a model instance.
+    model = OxygenIsotopeModel(defined_labeling=defined_labeling,
+                               model_name='model_3000')
+
+    # Generate C source code of the model.
     model.compile_ccode(debug=False, stage=None)
 

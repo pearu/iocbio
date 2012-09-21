@@ -1,243 +1,24 @@
+"""
+builder - provides IsotopeModel, a base class for generating kinetic
+    equations for reactions with isotopologues.
+
+For more information, see
+
+  http://code.google.com/p/iocbio/wiki/OxygenIsotopeEquationGenerator
+
+"""
+
 from __future__ import division
 
+__all__ = ['IsotopeModel']
+
 import sys
-import re
-import os
-import time
 import pprint
 import itertools
 from fractions import Fraction
 from collections import defaultdict
-import subprocess
 
-def load_stoic_from_text(text, split_bidirectional_fluxes=False):
-    """ Parse stoichiometry matrix from a string.
-
-    Parameters
-    ----------
-    text : str
-      A multiline string where each line contains a chemical reaction
-      description. The description must be given in the following
-      form: ``<sum of reactants> (=> | <=) <sum of producats>``. For example,
-      ``A + 2*B => C``. Lines starting with ``#`` are ignored.
-
-    split_bidirectional_fluxes : bool
-      When True the bidirectional fluxes are split into two unidirectional fluxes.
-      For example, the system ``A<=>B`` is treated as ``A=>B and B=>A``.
-
-    Returns
-    -------
-    matrix_data : dict
-      A dictionary representing a stoichiometry matrix.
-
-    species : list
-      A list of row names.
-
-    reactions : list
-      A list of column names.
-
-    species_info : dict
-    reactions_info : dict
-    """
-
-    def _split_sum (line):
-        for part in line.split('+'):
-            part = part.strip()
-            coeff = ''
-            while part and part[0].isdigit():
-                coeff += part[0]
-                part = part[1:].lstrip()
-            if not coeff:
-                coeff = '1'
-            if not part:
-                continue
-            c = eval(coeff)
-            assert type(c) == type(int())
-            yield part, c
-
-    matrix = {}
-    reactions = []
-    species = []
-    reactions_info = defaultdict(lambda:dict(modifiers=[],reactants=[],products=[],
-                                            boundary_specie_stoichiometry={},annotation=[],
-                                            compartments = set()))
-    species_info = defaultdict(lambda:list())
-    info = defaultdict(lambda:list())
-    for line in text.splitlines():
-        line = line.strip()
-        if not line or line.startswith ('#'): continue
-
-        if '|' in line:
-            pair_name, mapping = line.split('|',1)
-            pair_name = pair_name.strip()
-            mapping = mapping.strip()
-            assert '|' not in mapping, `mapping`
-            if mapping == str(): continue
-            info['rxn_pairs'].append((pair_name, mapping))
-            continue
-        
-        if ':' in line:
-            reaction_name, line = line.split (':',1)
-            reaction_name = reaction_name.strip()
-            line = line.strip()
-            assert ':' not in line, `line`
-            assert '=' in line, `line`
-            if line == str(): continue
-        else:
-            reaction_name = None
-
-        reaction_string = line
-        info['rxns'].append((reaction_name, reaction_string))
-
-    for pair_name, str_mapping in info['rxn_pairs']:
-        mapping = eval(str_mapping)
-        assert type(mapping) == type(dict()), `mapping`
-        mets = pair_name.split('+')
-        metA, metB = mets
-        metA = metA.strip()
-        metB = metB.strip()
-        reverse_mapping = dict()
-        for k, v in mapping.items():
-            reverse_mapping[v] = k
-        species_info[metA].append({metB:mapping})
-        species_info[metB].append({metA:reverse_mapping})
-
-    species_info = dict(species_info)
-    length_dic = dict()
-    for met, mappings in species_info.items():
-        largest = 0
-        for mapping in mappings:
-            for atom_dic in mapping.values():
-                for atom in atom_dic.keys():
-                    if atom > largest:
-                        largest = atom
-        length_dic[met] = largest
-    species_info['metabolite_lengths'] = length_dic
-    
-    for reaction_name, reaction_string in info['rxns']:
-        reversible = False
-        left, right = reaction_string.split ('=')
-        direction = '='
-        if right.startswith('>'):
-            right = right[1:].strip()
-            direction = '>'
-            if left.endswith ('<'):
-                left = left[:-1].strip()
-                reversible = True
-        elif left.endswith ('>'):
-            left = left[:-1].strip()
-            direction = '>'
-        elif left.endswith ('<'):
-            left = left[:-1].strip()
-            direction = '<'
-        elif right.startswith ('<'):
-            right = right[1:].strip()
-            direction = '<'
-
-        left_specie_coeff = list(_split_sum(left))
-        right_specie_coeff = list(_split_sum(right))
-        left_specie_names = [n for n,c in left_specie_coeff if n]
-        right_specie_names = [n for n,c in right_specie_coeff if n]
-
-        fname = ['R']
-        rname = ['R']
-        name0 = ''.join(left_specie_names)
-        name1 = ''.join(right_specie_names)
-        if name0:
-            rname.append (name0)
-        if name1:
-            fname.append (name1)
-            rname.append (name1)
-        if name0:
-            fname.append (name0)
-
-        if direction=='<':
-            if not reaction_name:
-                reaction_name = '_'.join(fname)
-                reaction_name2 = '_'.join(rname)
-            else:
-                reaction_name2 = 'r'+reaction_name
-                if split_bidirectional_fluxes:
-                    reaction_name = 'f'+reaction_name
-        else:
-            if not reaction_name:
-                reaction_name2 = '_'.join(fname)
-                reaction_name = '_'.join(rname)
-            else:
-                reaction_name2 = 'r'+reaction_name
-                if split_bidirectional_fluxes:
-                    reaction_name = 'f'+reaction_name
-
-        reactions.append (reaction_name)
-        reaction_index = reactions.index (reaction_name)
-        if split_bidirectional_fluxes and reversible:
-            reactions.append (reaction_name2)
-            reaction_index2 = reactions.index (reaction_name2)
-        else:
-            reaction_index2 = None
-
-        def matrix_add (i,j,c):
-            v = matrix.get ((i,j))
-            if v is None:
-                matrix[i, j] = c
-            else:
-                matrix[i, j] = v + c
-
-        for specie, coeff in left_specie_coeff:
-            if specie not in species:
-                species.append (specie)
-            specie_index = species.index (specie)
-            if direction=='<':
-                if reaction_index2 is not None:
-                    matrix_add(specie_index, reaction_index2, -coeff)
-                matrix_add(specie_index, reaction_index, coeff)
-            else:
-                if reaction_index2 is not None:
-                    matrix_add(specie_index, reaction_index2, coeff)
-                matrix_add(specie_index, reaction_index, -coeff)
-            
-        for specie, coeff in right_specie_coeff:
-            if specie not in species:
-                species.append (specie)
-            specie_index = species.index (specie)
-            if direction=='<':
-                if reaction_index2 is not None:
-                    matrix_add(specie_index, reaction_index2, coeff)
-                matrix_add(specie_index, reaction_index, -coeff)
-            else:
-                if reaction_index2 is not None:
-                    matrix_add(specie_index, reaction_index2, -coeff)
-                matrix_add(specie_index, reaction_index, coeff)
-
-        if split_bidirectional_fluxes:
-            reactions_info[reaction_name]['reversible'] = False
-            reactions_info[reaction_name]['reactants'] = left_specie_names
-            reactions_info[reaction_name]['products'] = right_specie_names
-            reactions_info[reaction_name]['forward'] = reaction_name
-            reactions_info[reaction_name]['reverse'] = None
-
-            if reversible:
-                reactions_info[reaction_name2]['reversible'] = False
-                reactions_info[reaction_name2]['reactants'] = right_specie_names
-                reactions_info[reaction_name2]['products'] = left_specie_names
-                reactions_info[reaction_name2]['forward'] = reaction_name2
-                reactions_info[reaction_name2]['reverse'] = None
-
-        else:
-            reactions_info[reaction_name]['reversible'] = reversible
-            reactions_info[reaction_name]['reactants'] = left_specie_names
-            reactions_info[reaction_name]['products'] = right_specie_names
-            if reversible:
-                reactions_info[reaction_name]['forward'] = 'f'+reaction_name
-                reactions_info[reaction_name]['reverse'] = 'r'+reaction_name
-            else:
-                reactions_info[reaction_name]['forward'] = 'f'+reaction_name
-                reactions_info[reaction_name]['reverse'] = None
-
-            reactions_info[reaction_name]['name'] = reaction_string
-
-    return matrix, species, reactions, species_info, reactions_info
-
+make_indices = lambda repeat: map(''.join,itertools.product('01', repeat=repeat))
 
 class Flush:
     def __str__ (self):
@@ -262,7 +43,6 @@ def round_float(float, precision=0, return_string=True):
 ########  Start of symbolic code  ##########
 ########                          ##########
 ############################################
-
 
 class StrContext:
     context = 'str'
@@ -776,23 +556,307 @@ class Terms(object):
             return number(1), r
         return r.coeff_term
 
+def load_stoic_from_text(text, split_bidirectional_fluxes=False):
+    """ Parse stoichiometry matrix from a string.
+
+    Parameters
+    ----------
+    text : str
+      A multiline string where each line contains a chemical reaction
+      description. The description must be given in the following
+      form: ``<sum of reactants> (=> | <=) <sum of producats>``. For example,
+      ``A + 2 B => C``. Lines starting with ``#`` are ignored. To
+      assign a name to reaction, start the line with the name following
+      a colon. For example, ``f : A + 2 B => C``.
+
+    split_bidirectional_fluxes : bool
+      When True the bidirectional fluxes are split into two unidirectional fluxes.
+      For example, the system ``A<=>B`` is treated as ``A=>B and B=>A``.
+
+    Returns
+    -------
+    matrix_data : dict
+      A dictionary representing a stoichiometry matrix.
+
+    species : list
+      A list of row names.
+
+    reactions : list
+      A list of column names.
+
+    species_info : dict
+    reactions_info : dict
+    """
+
+    def _split_sum (line):
+        for part in line.split('+'):
+            part = part.strip()
+            coeff = ''
+            while part and part[0].isdigit():
+                coeff += part[0]
+                part = part[1:].lstrip()
+            if not coeff:
+                coeff = '1'
+            if not part:
+                continue
+            c = eval(coeff)
+            assert type(c) == type(int())
+            yield part, c
+
+    matrix = {}
+    reactions = []
+    species = []
+    reactions_info = defaultdict(lambda:dict(modifiers=[],reactants=[],products=[],
+                                            boundary_specie_stoichiometry={},annotation=[],
+                                            compartments = set()))
+    species_info = defaultdict(lambda:list())
+    info = defaultdict(lambda:list())
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith ('#'): continue
+
+        if '|' in line:
+            pair_name, mapping = line.split('|',1)
+            pair_name = pair_name.strip()
+            mapping = mapping.strip()
+            assert '|' not in mapping, `mapping`
+            if mapping == str(): continue
+            info['rxn_pairs'].append((pair_name, mapping))
+            continue
+        
+        if ':' in line:
+            reaction_name, line = line.split (':',1)
+            reaction_name = reaction_name.strip()
+            line = line.strip()
+            assert ':' not in line, `line`
+            assert '=' in line, `line`
+            if line == str(): continue
+        else:
+            reaction_name = None
+
+        reaction_string = line
+        info['rxns'].append((reaction_name, reaction_string))
+
+    for pair_name, str_mapping in info['rxn_pairs']:
+        mapping = eval(str_mapping)
+        assert type(mapping) == type(dict()), `mapping`
+        mets = pair_name.split('+')
+        metA, metB = mets
+        metA = metA.strip()
+        metB = metB.strip()
+        reverse_mapping = dict()
+        for k, v in mapping.items():
+            reverse_mapping[v] = k
+        species_info[metA].append({metB:mapping})
+        species_info[metB].append({metA:reverse_mapping})
+
+    species_info = dict(species_info)
+    length_dic = dict()
+    for met, mappings in species_info.items():
+        largest = 0
+        for mapping in mappings:
+            for atom_dic in mapping.values():
+                for atom in atom_dic.keys():
+                    if atom > largest:
+                        largest = atom
+        length_dic[met] = largest
+    species_info['metabolite_lengths'] = length_dic
+    
+    for reaction_name, reaction_string in info['rxns']:
+        reversible = False
+        left, right = reaction_string.split ('=')
+        direction = '='
+        if right.startswith('>'):
+            right = right[1:].strip()
+            direction = '>'
+            if left.endswith ('<'):
+                left = left[:-1].strip()
+                reversible = True
+        elif left.endswith ('>'):
+            left = left[:-1].strip()
+            direction = '>'
+        elif left.endswith ('<'):
+            left = left[:-1].strip()
+            direction = '<'
+        elif right.startswith ('<'):
+            right = right[1:].strip()
+            direction = '<'
+
+        left_specie_coeff = list(_split_sum(left))
+        right_specie_coeff = list(_split_sum(right))
+        left_specie_names = [n for n,c in left_specie_coeff if n]
+        right_specie_names = [n for n,c in right_specie_coeff if n]
+
+        fname = ['R']
+        rname = ['R']
+        name0 = ''.join(left_specie_names)
+        name1 = ''.join(right_specie_names)
+        if name0:
+            rname.append (name0)
+        if name1:
+            fname.append (name1)
+            rname.append (name1)
+        if name0:
+            fname.append (name0)
+
+        if direction=='<':
+            if not reaction_name:
+                reaction_name = '_'.join(fname)
+                reaction_name2 = '_'.join(rname)
+            else:
+                reaction_name2 = 'r'+reaction_name
+                if split_bidirectional_fluxes:
+                    reaction_name = 'f'+reaction_name
+        else:
+            if not reaction_name:
+                reaction_name2 = '_'.join(fname)
+                reaction_name = '_'.join(rname)
+            else:
+                reaction_name2 = 'r'+reaction_name
+                if split_bidirectional_fluxes:
+                    reaction_name = 'f'+reaction_name
+
+        reactions.append (reaction_name)
+        reaction_index = reactions.index (reaction_name)
+        if split_bidirectional_fluxes and reversible:
+            reactions.append (reaction_name2)
+            reaction_index2 = reactions.index (reaction_name2)
+        else:
+            reaction_index2 = None
+
+        def matrix_add (i,j,c):
+            v = matrix.get ((i,j))
+            if v is None:
+                matrix[i, j] = c
+            else:
+                matrix[i, j] = v + c
+
+        for specie, coeff in left_specie_coeff:
+            if specie not in species:
+                species.append (specie)
+            specie_index = species.index (specie)
+            if direction=='<':
+                if reaction_index2 is not None:
+                    matrix_add(specie_index, reaction_index2, -coeff)
+                matrix_add(specie_index, reaction_index, coeff)
+            else:
+                if reaction_index2 is not None:
+                    matrix_add(specie_index, reaction_index2, coeff)
+                matrix_add(specie_index, reaction_index, -coeff)
+            
+        for specie, coeff in right_specie_coeff:
+            if specie not in species:
+                species.append (specie)
+            specie_index = species.index (specie)
+            if direction=='<':
+                if reaction_index2 is not None:
+                    matrix_add(specie_index, reaction_index2, coeff)
+                matrix_add(specie_index, reaction_index, -coeff)
+            else:
+                if reaction_index2 is not None:
+                    matrix_add(specie_index, reaction_index2, -coeff)
+                matrix_add(specie_index, reaction_index, coeff)
+
+        if split_bidirectional_fluxes:
+            reactions_info[reaction_name]['reversible'] = False
+            reactions_info[reaction_name]['reactants'] = left_specie_names
+            reactions_info[reaction_name]['products'] = right_specie_names
+            reactions_info[reaction_name]['forward'] = reaction_name
+            reactions_info[reaction_name]['reverse'] = None
+
+            if reversible:
+                reactions_info[reaction_name2]['reversible'] = False
+                reactions_info[reaction_name2]['reactants'] = right_specie_names
+                reactions_info[reaction_name2]['products'] = left_specie_names
+                reactions_info[reaction_name2]['forward'] = reaction_name2
+                reactions_info[reaction_name2]['reverse'] = None
+
+        else:
+            reactions_info[reaction_name]['reversible'] = reversible
+            reactions_info[reaction_name]['reactants'] = left_specie_names
+            reactions_info[reaction_name]['products'] = right_specie_names
+            if reversible:
+                reactions_info[reaction_name]['forward'] = 'f'+reaction_name
+                reactions_info[reaction_name]['reverse'] = 'r'+reaction_name
+            else:
+                reactions_info[reaction_name]['forward'] = 'f'+reaction_name
+                reactions_info[reaction_name]['reverse'] = None
+
+            reactions_info[reaction_name]['name'] = reaction_string
+
+    return matrix, species, reactions, species_info, reactions_info
+
+class Labels(dict):
+
+    def __init__(self, parent, reaction):
+        dict.__init__(self)
+        self.parent = parent
+        self.reaction = reaction
+
+    def match (self, reaction_pattern, transport=False):
+        if transport and not (len (self.reaction[1]) == len (self.reaction[2]) == 1):
+            return False
+        self.parent.get_labels(self, reaction_pattern, self.reaction)
+        return not not self
+
+    def __getattr__(self, specie):
+        return self[specie]
+
+    def __setitem__ (self, item, value):
+        current_value = self.get (item)
+        if isinstance (current_value, tuple):
+            value = current_value + (value,)
+        elif current_value is not None:
+            value = (current_value, value)
+        return dict.__setitem__ (self, item, value)
+
 class IsotopeModel(object):
     """ Base class for generating kinetic equations for reactions with
     isotopologues.
 
-    See oxygen_isotope_model.py for usage.
+    See oxygen_isotope_model.py for example usage.
     """
+    system_string = None
     species = {} 
     reactions = [] 
     latex_name_map = {}
 
-    def __init__(self, system_string=None, water_labeling=None, verbose=True):
+    def __init__(self,
+                 system_string=None, 
+                 defined_labeling = {},
+                 model_name = None,
+                 verbose=True,
+                 ):
+        """ Construct a model builder.
 
-        self.system_str = system_string
-        matrix, raw_species, rxns, species_info, reactions_info = \
-            load_stoic_from_text(system_string)
+        Parameters
+        ----------
+        system_string : str
+          Specify system string containing reaction definitions and
+          atom labeling information.  See parse_system_string
+          documentation for syntax of the system string.  When
+          system_string is not specified then system_string attribute
+          of the derived class is used.
 
-        self.reactions = reactions_info.values()
+        defined_labeling : dict
+          Defines a map of isotope species and their defined values as
+          C/C++ expressions.
+
+        model_name : str
+          Specify the name of the model that defines a part of the
+          generated files.
+
+        verbose : bool
+          When True then show information about model building
+          progress.
+
+        See oxygen_isotope_model.py for example usage.
+        """
+        if system_string is not None:
+            self.system_string = system_string
+        if self.system_string is None:
+            raise ValueError ('Must specify system_string as class attribute or constructor argument')
+        raw_species, self.reactions = self.parse_system_string(self.system_string)
 
         self.species = {}
         self.c_name_map = {}
@@ -800,13 +864,17 @@ class IsotopeModel(object):
             self.species[sp] = self.index_dic[sp]
             self.c_name_map[sp] = sp
 
-        self.water_labeling = water_labeling
+        self.defined_labeling = defined_labeling
         self.use_sum = False
         self.use_mass = True
         self.replace_total_sum_with_one = False
 
         self.import_dir = 'local'
-        self.model_name = 'model_%s' % (round_float(self.water_labeling['1']*10000))
+
+        if model_name is None:
+            model_name = self.__class__.__name__
+            
+        self.model_name = model_name
 
         if self.use_mass:
             self.model_name += '_mass'
@@ -823,8 +891,133 @@ class IsotopeModel(object):
         self._relations = None
         self._pool_relations = None
         self._pool_relations_quad = None
-        
+
+    def parse_system_string(self, system_string):
+        """ Parse a string of chemical reactions.
+
+        Parameters
+        ----------
+        system_string : str
+          A multiline string where each line contains a chemical reaction
+          description. The description must be given in the following
+          form: ``<sum of reactants> (=> | <=) <sum of producats>``. For example,
+          ``A + 2 B => C``. Lines starting with ``#`` are ignored. To
+          assign a name to reaction, start the line with the name following
+          a colon. For example, ``f : A + 2 B => C``.
+
+        Returns
+        -------
+        species : list
+          A list of species names.
+
+        reactions : list
+          A list of reaction data. Reaction data is a dictionary::
+
+            dict(reactants=<list of reactants names>,
+                 products=<list of products names>,
+                 reversible=<bool>,
+                 forward=<name of forward flux>
+                 reverse=<name of reverse flux>)
+        """
+        matrix, raw_species, rxns, species_info, reactions_info = \
+            load_stoic_from_text(system_string)
+        reactions = []
+        species = set ()
+        self.index_dic = index_dic = {}
+        for n, d in reactions_info.iteritems():
+            r = {}
+            for k,v in d.iteritems ():
+                if k in ['reversible','forward', 'reverse']:
+                    r[k] = v
+            ri = rxns.index(n)
+            reactants = []
+            products = []
+            for (si,j), stoic in matrix.iteritems ():
+                if j==ri and stoic:
+                    specie = raw_species[si]
+                    i = specie.find('[')
+                    if i>=0:
+                        assert specie.endswith (']'), `specie`
+                        labeling_pattern = specie[i+1:-1]
+                        specie = specie[:i]
+                        all_indices = []
+                        for l in labeling_pattern.split('_'):
+                            indices = make_indices(len(l))
+                            all_indices.append (indices)
+                        specie_indices = []
+                        for indices in itertools.product(*all_indices):
+                            specie_indices.append('_'.join (indices))
+                        if specie in self.index_dic:
+                            assert specie_indices==self.index_dic[specie]
+                        if specie not in index_dic:
+                            index_dic[specie] = specie_indices
+                        else:
+                            if index_dic[specie] != specie_indices:
+                                raise ValueError ('Mismatch of specie indices: %s != %s' % (index_dic, specie_indices))
+                    species.add (specie)
+                    if stoic > 0:
+                        products.extend([specie]*stoic)
+                    else:
+                        reactants.extend([specie]*abs(stoic))
+            if set(reactants)==set(products):
+                # artificial reaction used for labeling definition
+                continue
+            r['reactants'] = reactants
+            r['products'] = products
+
+            reactions.append(r)
+        return species, reactions
+
+    def normalize_reaction(self, reaction):
+        left, right = reaction.split('=')
+        left = left.strip ()
+        right = right.strip ()
+        op = '='
+        if left.endswith('<'):
+            op = '<' + op
+            left = left[:-1].rstrip()
+        if right.startswith ('>'):
+            op = op + '>'
+            right = right[1:].lstrip()
+        reactants = map(str.strip, left.split('+'))
+        products = map(str.strip, right.split('+'))
+
+        return reactants, op, products
+
+    def labels(self, reaction):
+        """ Return Labels instance to be used in check_reaction as
+        label matcher object.
+        """
+        return Labels(self, reaction)
+
+    def get_labels(self, labels, pattern, (reaction, rindices, pindices)):
+        """ If reaction matches with reaction pattern then return
+        a Labels object containing the labeling information of
+        species as attributes to the Labels object.
+        """
+        reactants, op, products = self.normalize_reaction(reaction)
+        if op=='<=':
+            op = '=>'
+            reactants, products = products, reactants
+            rindices, pindices = pindices, rindices
+
+        pattern_reactants, pattern_op, pattern_products = self.normalize_reaction(pattern)
+        if pattern_op=='<=':
+            pattern_op = '=>'
+            pattern_reactants, pattern_products = pattern_products, pattern_reactants
+        if pattern_op=='<=>':
+            if set(pattern_reactants)==set(products) and set(pattern_products)==set (reactants):
+                pattern_reactants, pattern_products = pattern_products, pattern_reactants
+        if set(pattern_reactants)==set (reactants) and set (pattern_products)==set (products):
+            #print pattern_reactants, pattern_op, pattern_products
+            for i,r in enumerate(reactants):
+                labels[r] = rindices[i]
+            for i,p in enumerate(products):
+                labels[p] = pindices[i]
+
     def write_ccode(self, stream=sys.stdout):
+        """ Generate a C source code of the model.
+        """
         use_sum = self.use_sum
         use_mass = self.use_mass
         pool_relations = self.pool_relations
@@ -864,7 +1057,8 @@ class IsotopeModel(object):
             c_eqns = it_eqns
 
         with StrContext ('ccode', self.c_name_map):
-            stream.write ('/*\n%s\n*/\n' % ('\n'.join(line for line in self.system_str.splitlines () if line.strip() and not line.strip().startswith ('#'))))
+            stream.write ('/* See http://code.google.com/p/iocbio/wiki/OxygenIsotopeEquationGenerator */\n')
+            stream.write ('/*\n%s\n*/\n' % ('\n'.join(line for line in self.system_string.splitlines () if line.strip() and not line.strip().startswith ('#'))))
             stream.write (c_header)
             
             # Assign the input_list to their isotopologue names.
@@ -872,10 +1066,9 @@ class IsotopeModel(object):
             derivatives_list = []
             index = 0
             for k in sorted (c_eqns):
-
                 it_key = StrContext.map(k)
-                if it_key.startswith ('Wo'):
-                    value = self.water_labeling[it_key[-1]]
+                if it_key in self.defined_labeling:
+                    value = self.defined_labeling[it_key]
                     stream.write('double %s = %s ;\n' %(it_key, value))
                 elif use_sum and is_unlabeled (k):
                     count = -1
@@ -947,6 +1140,9 @@ class IsotopeModel(object):
         self.c_variables = c_variables
 
     def compile_ccode(self, debug=False, stage=None):
+        """
+        Compile C source file containing the kinetic model.
+        """
         file_names = dict(c='{0}.c'.format(self.model_name),
                           c_variables='{0}_c_variables.py'.format(self.model_name),
                           )
@@ -973,12 +1169,38 @@ class IsotopeModel(object):
         if debug:
             return True
 
-    def check_reaction(self, reaction_pattern, rindices, pindices):
-        """
-        Return True when reaction is possible for given tuples of
-        reactant and product indices. Reaction pattern is a string in
-        a form 'R1+R2(<-|->)P1-P2' where reactants R1, R2 and products
-        P1, P2 are keys of the species dictionary.
+    def check_reaction(self, (reaction_pattern, rindices, pindices)):
+        """ Validate reaction.
+
+        This method must be implemented in an user derived class.
+        
+        Parameters
+        ----------
+        reaction_pattern : str
+          The reaction pattern is composed by the IsotopeModel class
+          and has the following form: R1+R2+...RM(<=|=>)P1+P2+...PN
+          where Ri, i=1..M, are the names of M reactants, and Pi,
+          i=1..N, are the names of N products.  For example, reaction
+          pattern could be 'ADP+P=>ATP+W'.
+
+        rindices, pindices : tuple
+          Reactant and product labeling indices are also composed by
+          the IsotopeModel class. Labeling indices consists of
+          strings representing labeling states where '0' refers to
+          ublabeled state and '1' to labeled state. If a reactant or product
+          has several groups of labeling states then they are separated
+          with underscore ('_').
+          For example, reactant indices could be ('010','0011') and
+          product indices could be ('010_001', '1').
+
+        Returns
+        -------
+        is_valid : bool
+          Return True when reaction is possible. For examples above, a
+          reaction ADP[010]+P[0011]=>ATP[010_001]+W[1] is possible and
+          True should be returned while in the case of
+          ADP[010]+P[0011]=>ATP[011_001]+W[0] False should be
+          returned.
         """
         raise NotImplementedError('check_reaction for reaction_pattern=%r' % (reaction_pattern))
 
@@ -1017,8 +1239,8 @@ class IsotopeModel(object):
         for reaction in self.reactions:
             reactants = reaction['reactants']
             products = reaction['products']
-            forward_reaction_pattern = '%s->%s' % ('+'.join(reactants), '+'.join(products))
-            reverse_reaction_pattern = '%s<-%s' % ('+'.join(reactants), '+'.join(products))
+            forward_reaction_pattern = '%s=>%s' % ('+'.join(reactants), '+'.join(products))
+            reverse_reaction_pattern = '%s<=%s' % ('+'.join(reactants), '+'.join(products))
             forward = reaction.get('forward')
             reverse = reaction.get('reverse')
             
@@ -1031,9 +1253,9 @@ class IsotopeModel(object):
                 for pindices in itertools.product(*map(self.species.__getitem__, products)):
                     pspecies = tuple([symbol_latex(p,i) for p,i in zip(products, pindices)])
 
-                    if forward and self.check_reaction(forward_reaction_pattern, rindices, pindices):
+                    if forward and self.check_reaction((forward_reaction_pattern, rindices, pindices)):
                         reactions[forward, rspecies].append(pspecies)
-                    if reverse and self.check_reaction(reverse_reaction_pattern, rindices, pindices):
+                    if reverse and self.check_reaction((reverse_reaction_pattern, rindices, pindices)):
                         reactions[reverse, pspecies].append(rspecies)
             kinetic_terms.append(reactions)
 
@@ -1050,6 +1272,36 @@ class IsotopeModel(object):
         self._kinetic_equations = equations
         self._kinetic_terms = kinetic_terms
         return equations
+
+    def demo(self):
+        eqns0 = self.kinetic_equations
+        print 'Model kinetic equations:'
+        for sp in sorted(eqns0):
+            print '  d%s/dt = %s' % (sp, eqns0[sp])
+
+        print 'Pool relations:'
+        #pool = self.pool_relations
+        #for ispecies, specie in sorted (pool):
+        #    print '  %s <- %s' % ('+'.join(ispecies), specie)
+
+        for mspecie in sorted(self.pools):
+            print '  %s = %s' % (mspecie, '+'.join(self.pools[mspecie]))
+
+        print 'Applying pool relations:'
+        eqns = self.apply(self.pools, self.kinetic_equations)
+        for sp in sorted(eqns):
+            print '  d%s/dt = %s' % (sp, eqns[sp])
+
+        print 'Substituting pool relations to RHS..',
+        for i in range(4):
+            # repeate until all isotopomer species are resolved
+            eqns = self.subs(eqns, self.pool_relations)
+            eqns = self.collect(eqns)
+        print 'done'
+        
+        print 'Mass isotopomer kinetic equations:'
+        for sp in sorted(eqns):
+            print '  d%s/dt = %s' % (sp, eqns[sp])
 
     @property
     def isotopomer_equations(self):
@@ -1133,7 +1385,7 @@ class IsotopeModel(object):
         relations = []
 
         for lst, name in self.pool_relations:
-            if len (lst)>1 and isinstance (name, str) and name.startswith('ADP'): # HACK
+            if len(lst)>1 and isinstance (name, str) and name.startswith('ADP'): # HACK
                 l = [Factors(*sorted([a,b])) for a in lst for b in lst]
                 relations.append((l, Factors(name, name)))
                 l = [Factors(*sorted([number(2),a,b])) for a in lst for b in lst]
@@ -1251,11 +1503,11 @@ class IsotopeModel(object):
         verbose = self.verbose
         new_kinetic_equations = {}
         for k in kinetic_equations:
-            if verbose:
-                if self.eqn_count != -1:
-                    self.eqn_count += 1
-                    print self.eqn_count, flush,
-                else:
-                    print '.', flush,
+            #if verbose:
+            #    if self.eqn_count != -1:
+            #        self.eqn_count += 1
+            #        print self.eqn_count, flush,
+            #    else:
+            #        print '.', flush,
             new_kinetic_equations[k] = kinetic_equations[k].collect(**options)
         return new_kinetic_equations
