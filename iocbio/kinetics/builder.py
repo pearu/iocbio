@@ -1039,7 +1039,28 @@ class IsotopeModel(object):
         in_list = in_list[:-2]
         var_list = in_list + ', double* out'
 
-        c_header = 'void c_equations(%s)\n{\n' %(var_list)
+        c_header = '''
+/*
+
+c_equations calculates the change in labeled species given an input of steady fluxes, constant
+            pool sizes, and the current labeling state of all species.  Typically this function 
+            is used inside of a differential equation solver.
+            
+Inputs:
+    pool_list:    Pool sizes for all metabolic species in the model.
+    flux_list:    Steady fluxes for all reactions in the model.  If these are not steady your 
+                  solver will complain ;)
+    solver_time:  The time provided by the differential equation solver.  This can be used to 
+                  change the default labeling step change into a function of time.
+    input_list:   This is a list of the initial labeling state of all mass isotopologue species.
+                  The order is defined in the code below.  An initial list is provided by the 
+                  user, and intermediate labeling states are provided by the differential equation solver.
+            
+Output:
+    out:          The updated labeling state of all species.  The order of this list is the same
+                  as the input_list.
+*/
+void c_equations(%s)\n{\n''' %(var_list)
 
         def get_name (r):
             r_copy = r
@@ -1139,7 +1160,7 @@ class IsotopeModel(object):
 
         self.c_variables = c_variables
 
-    def compile_ccode(self, debug=False, stage=None):
+    def compile_ccode(self, debug=False):
         """
         Compile C source file containing the kinetic model.
         """
@@ -1153,20 +1174,6 @@ class IsotopeModel(object):
             print '\n\nWrote: ',file_names['c']
         else:
             self.write_ccode()
-
-        if stage==1:
-            return
-
-        cv_string = pprint.pformat(self.c_variables)
-        if not debug:
-            f = open(file_names['c_variables'], 'w')
-            f.write('c_variables = %s\n' %(cv_string))
-            f.close()
-            print 'Wrote: ',file_names['c_variables']
-        else:
-            print cv_string
-
-        if debug:
             return True
 
     def check_reaction(self, (reaction_pattern, rindices, pindices)):

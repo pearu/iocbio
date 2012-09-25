@@ -144,5 +144,5 @@ if __name__ == '__main__':
                                model_name='model_3000')
 
     # Generate C source code of the model.
-    model.compile_ccode(debug=False, stage=None)
+    model.compile_ccode(debug=False)
 

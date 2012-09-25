@@ -63,3 +63,4 @@ if __name__ == '__main__':
     # Demonstrate model equations
     model.demo()
     
+    model.compile_ccode(debug=False)
