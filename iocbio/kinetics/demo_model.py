@@ -12,8 +12,8 @@ class DemoModel(IsotopeModel):
     system_string = '''
 # See IsotopeModel.parse_system_string.__doc__ for syntax of the system string.
 #
-# Definitions of specie labeling
-# <specie name> = <specie name>[<labeling pattern>]
+# Definitions of species labeling
+# <species name> = <species name>[<labeling pattern>]
 #
 A = A[*]
 B = B[*]
@@ -57,6 +57,8 @@ if __name__ == '__main__':
 
     # Create a model instance.
     model = DemoModel()
+    
+    print model.system_string
 
     # Demonstrate model equations
     model.demo()
