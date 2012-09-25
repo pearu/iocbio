@@ -1307,7 +1307,7 @@ class IsotopeModel(object):
     def isotopomer_equations(self):
         verbose = self.verbose
         if verbose:
-            print '\nGenerating isotopologue equations:'
+            print 'Generating isotopologue equations:'
         self.eqn_count = -1    
         eqns0 = self.kinetic_equations
 
@@ -1317,14 +1317,14 @@ class IsotopeModel(object):
 
         if verbose:
             self.eqn_count = 0
-            print '\nPerforming second term collection.'
+            print 'Performing second term collection.'
         return self.collect(eqns0)
         
     @property
     def mass_isotopomer_equations(self):
         verbose = self.verbose
         if verbose:
-            print '\n\nGenerating mass isotopologue equations:'
+            print 'Generating mass isotopologue equations:'
         self.eqn_count = -1
         pr = self.pool_relations
         pr_quad = self.pool_relations_quad
@@ -1338,17 +1338,17 @@ class IsotopeModel(object):
         eqns = self.collect(eqns)
 
         if verbose:
-            print '\nPerforming second term collection.'
+            print 'Performing second term collection.'
         eqns = self.subs(eqns, pr)
         eqns = self.collect(eqns)
 
         if verbose:
-            print '\nPerforming third term collection.'
+            print 'Performing third term collection.'
         eqns = self.subs(eqns, pr)        
         eqns = self.collect(eqns)
 
         if verbose:
-            print '\nPerforming final term collection.'
+            print 'Performing final term collection.'
         eqns = self.subs(eqns, pr)
         self.eqn_count = 0
         return  self.collect(eqns)
