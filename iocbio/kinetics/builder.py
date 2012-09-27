@@ -810,6 +810,15 @@ class Labels(dict):
             value = (current_value, value)
         return dict.__setitem__ (self, item, value)
 
+def get_name (r):
+    r_copy = r
+    while r and not r[0].isdigit ():
+        r = r[1:]
+    return r_copy[:len(r_copy)-len(r)]
+
+def get_pool_name (r):
+    return get_name (r.split ('_')[0])
+
 class IsotopeModel(object):
     """ Base class for generating kinetic equations for reactions with
     isotopologues.
@@ -887,10 +896,11 @@ class IsotopeModel(object):
         self._pools = None
         self._pools2 = None
         self._kinetic_equations = None
-        self._kinetic_terms = None
+        #self._kinetic_terms = None
         self._relations = None
         self._pool_relations = None
         self._pool_relations_quad = None
+        self._elementary_reactions = None
 
     def parse_system_string(self, system_string):
         """ Parse a string of chemical reactions.
@@ -1042,31 +1052,37 @@ class IsotopeModel(object):
         c_header = '''
 /*
 
-c_equations calculates the change in labeled species given an input of steady fluxes, constant
-            pool sizes, and the current labeling state of all species.  Typically this function 
-            is used inside of a differential equation solver.
+c_equations calculates the change in labeled species given an input of
+            steady fluxes, constant pool sizes, and the current
+            labeling state of all species.  Typically this function is
+            used inside of a differential equation solver.
             
-Inputs:
-    pool_list:    Pool sizes for all metabolic species in the model.
-    flux_list:    Steady fluxes for all reactions in the model.  If these are not steady your 
-                  solver will complain ;)
-    solver_time:  The time provided by the differential equation solver.  This can be used to 
-                  change the default labeling step change into a function of time.
-    input_list:   This is a list of the initial labeling state of all mass isotopologue species.
-                  The order is defined in the code below.  An initial list is provided by the 
-                  user, and intermediate labeling states are provided by the differential equation solver.
+Input arguments:
+       pool_list: Pool sizes for all metabolic species in the model.
+
+       flux_list: Steady fluxes for all reactions in the model.  If
+                  these are not steady your solver will complain ;)
+
+     solver_time: The time provided by the differential equation
+                  solver.  This can be used to change the default
+                  labeling step change into a function of time.
+
+      input_list: This is a list of the initial labeling state of all
+                  mass isotopologue species.  The order is defined in
+                  the code below.  An initial list is provided by the
+                  user, and intermediate labeling states are provided
+                  by the differential equation solver.
             
-Output:
-    out:          The updated labeling state of all species.  The order of this list is the same
-                  as the input_list.
+Output arguments:
+
+             out: The time derivative of labeling state of all
+                  species.  The order of this list is the same as the
+                  input_list.
 */
+
 void c_equations(%s)\n{\n''' %(var_list)
 
-        def get_name (r):
-            r_copy = r
-            while r and not r[0].isdigit ():
-                r = r[1:]
-            return r_copy[:len(r_copy)-len(r)]
+
         def is_unlabeled (r):
             while not r[0].isdigit ():
                 r = r[1:]
@@ -1243,6 +1259,7 @@ void c_equations(%s)\n{\n''' %(var_list)
         equations = defaultdict(Sum)
 
         kinetic_terms = []
+        elementary_reactions = defaultdict(list)
         for reaction in self.reactions:
             reactants = reaction['reactants']
             products = reaction['products']
@@ -1251,6 +1268,14 @@ void c_equations(%s)\n{\n''' %(var_list)
             forward = reaction.get('forward')
             reverse = reaction.get('reverse')
             
+            if forward and reverse:
+                reaction_string = '%s <=%s==%s=> %s' % ('+'.join (reactants), reverse, forward, '+'.join (products))
+            elif forward:
+                reaction_string = '%s =%s=> %s' % ('+'.join (reactants), forward,  '+'.join (products))
+            elif reverse:
+                reaction_string = '%s =%s=> %s' % ('+'.join (products), reverse,  '+'.join (reactants))
+            else:
+                raise
             reactant_indices = [self.species[s] for s in reaction['reactants']]
             product_indices = [self.species[s] for s in reaction['products']]
 
@@ -1266,49 +1291,64 @@ void c_equations(%s)\n{\n''' %(var_list)
                         reactions[reverse, pspecies].append(rspecies)
             kinetic_terms.append(reactions)
 
+            elementary_reaction_strings = []
             for (rate, reactants), all_products in reactions.iteritems():
+                lhs = []
+
                 for r in reactants:
                     equations[r].append('-%s' % (rate), *reactants)
+                    lhs.append (r)
                 for products in all_products:
+                    rhs = []
                     for p in products:
                         equations[p].append('+%s' % (rate), number(1, len(all_products)), *reactants)
-
+                        rhs.append(p)
+                    elementary_reaction_strings.append ('%s -%s-> %s' % ('+'.join (lhs), rate, '+'.join (rhs)))
+            elementary_reactions[reaction_string] = elementary_reaction_strings
         for v in equations.itervalues():
             v.set_parent(self)
 
+        self._elementary_reactions = elementary_reactions
         self._kinetic_equations = equations
-        self._kinetic_terms = kinetic_terms
+        #self._kinetic_terms = kinetic_terms
         return equations
+
+    @property
+    def elementary_reactions (self):
+        if self._elementary_reactions is None:
+            self.kinetic_equations
+        return self._elementary_reactions
 
     def demo(self):
         eqns0 = self.kinetic_equations
-        print 'Model kinetic equations:'
+
+        print 'Reactions split to elementary reactions:'
+        for reaction in sorted(self.elementary_reactions):
+            print '  %s' % (reaction)
+            for elreaction in sorted(self.elementary_reactions[reaction]):
+                print '    %s' % (elreaction,)
+
+        print 'Kinetic equations from elementary reactions:'
         for sp in sorted(eqns0):
-            print '  d%s/dt = %s' % (sp, eqns0[sp])
-
-        print 'Pool relations:'
-        #pool = self.pool_relations
-        #for ispecies, specie in sorted (pool):
-        #    print '  %s <- %s' % ('+'.join(ispecies), specie)
-
+            print '  %s * d%s/dt = %s' % (get_pool_name (sp), sp, eqns0[sp])
+        print '  where %s are pool sizes.' %(', '.join(sorted(set (map (get_pool_name, eqns0)))))
+        print 'Definitions of pool relations:'
         for mspecie in sorted(self.pools):
             print '  %s = %s' % (mspecie, '+'.join(self.pools[mspecie]))
 
-        print 'Applying pool relations:'
+        print 'Time derivatives of pool relations with substituted elementary kinetic equations:'
         eqns = self.apply(self.pools, self.kinetic_equations)
         for sp in sorted(eqns):
-            print '  d%s/dt = %s' % (sp, eqns[sp])
+            print '  %s * d%s/dt = %s' % (get_pool_name (sp), sp, eqns[sp])
 
-        print 'Substituting pool relations to RHS..',
         for i in range(4):
             # repeate until all isotopomer species are resolved
             eqns = self.subs(eqns, self.pool_relations)
             eqns = self.collect(eqns)
-        print 'done'
         
-        print 'Mass isotopomer kinetic equations:'
+        print 'Mass isotopomer kinetic equations with substituded pool relations:'
         for sp in sorted(eqns):
-            print '  d%s/dt = %s' % (sp, eqns[sp])
+            print '  %s * d%s/dt = %s' % (get_pool_name (sp), sp, eqns[sp])
 
     @property
     def isotopomer_equations(self):

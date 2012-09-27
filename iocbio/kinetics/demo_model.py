@@ -10,24 +10,20 @@ from builder import IsotopeModel
 
 class DemoModel(IsotopeModel):
     system_string = '''
-# See IsotopeModel.parse_system_string.__doc__ for syntax of the system string.
+# See IsotopeModel.parse_system_string.__doc__ for syntax specifications.
 #
 # Definitions of species labeling
 # <species name> = <species name>[<labeling pattern>]
 #
-A = A[*]
+A = A[**]
 B = B[*]
-C = C[**]
-Ai = Ai[*]
-Co = Co[**]
+C = C[**_*]
 
 #
 # Definitions of reactions
-# <reaction name> : <sum of reactants> (<=|=>|<=>) <sum of products>
+# <flux name> : <sum of reactants> (<=|=>|<=>) <sum of products>
 #
-flux : A + B <=> C
-in : A <= Ai
-out : C => Co
+F1 : A + B <=> C
 '''
     def check_reaction(self, reaction):
         """ Validate reaction.
@@ -47,8 +43,9 @@ out : C => Co
         # improves performance but, in general, it is not required.
         if l.match('Ai => A', transport=True): return l.Ai==l.A
         if l.match('C => Co', transport=True): return l.C==l.Co
-        if l.match('A+B <=> C'): return (l.A+l.B).count('1')==l.C.count ('1')
-
+        if l.match('A+B <=> C'): 
+            t1,t2 = l.C.split ('_')
+            return l.A==t1 and l.B==t2
         # Unknown reaction, raise an exception
         return IsotopeModel.check_reaction(self, reaction)
 
@@ -58,9 +55,8 @@ if __name__ == '__main__':
     # Create a model instance.
     model = DemoModel()
     
-    print model.system_string
-
     # Demonstrate model equations
     model.demo()
-    
+
+    # Generate C code with kinetic equations
     model.compile_ccode(debug=False)
