@@ -59,4 +59,4 @@ if __name__ == '__main__':
     model.demo()
 
     # Generate C code with kinetic equations
-    model.compile_ccode(debug=False)
+    #model.compile_ccode(debug=False)

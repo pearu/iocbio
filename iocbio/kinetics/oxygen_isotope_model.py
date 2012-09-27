@@ -142,8 +142,8 @@ if __name__ == '__main__':
     # Create a model instance.
     model = OxygenIsotopeModel(defined_labeling=defined_labeling,
                                model_name='model_3000')
-    model.demo ()
+    #model.demo ()
     
     # Generate C source code of the model.
-    #model.compile_ccode(debug=False)
+    model.compile_ccode(debug=False)
 

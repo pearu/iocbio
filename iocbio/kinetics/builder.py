@@ -1320,6 +1320,7 @@ void c_equations(%s)\n{\n''' %(var_list)
         return self._elementary_reactions
 
     def demo(self):
+        print self.system_string
         eqns0 = self.kinetic_equations
 
         print 'Reactions split to elementary reactions:'
