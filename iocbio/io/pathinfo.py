@@ -40,6 +40,7 @@ objectives = {'UPLSAPO_60xW_NA_1__x20':dict(refractive_index=1.33, NA = 1.2), # 
               'CFI_Super_Plan_Fluor_ELWD_20xC_NA_0__x45':dict(refractive_index=1.0, NA=0.45),# suga
               'C-Apochromat 63x/1.20 W Korr UV-VIS-IR M27':dict(refractive_index=1.33, NA = 1.2), # zeiss
               'Plan-Apochromat 63x/1.40 Oil DIC M27':dict(refractive_index=1.5158, NA = 1.4), # zeiss
+              'LCI Plan-Neofluar 63x/1.3 Imm Korr DIC M27':dict(refractive_index=1.33, NA = 1.3), # zeiss
               'Unknown_63XWater_NA1.2':dict(refractive_index=1.33, NA=1.2) # till, should be identical objective to zeiss
               }
 """
