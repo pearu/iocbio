@@ -74,7 +74,10 @@ if tiff_h is None:
         if value in d:
             value = d[value]
         else:
-            value = eval(value)
+            try:
+                value = eval(value)
+            except Exception, msg:
+                print '%s: %r' % (msg, value)
         d[name] = value
         l.append('%s = %s' % (name, value))
     f.close()
@@ -102,7 +105,11 @@ name_to_define_map = dict(Orientation={}, Compression={},
 
 for name, value in d.items():
     if name.startswith ('_'): continue
-    exec '%s = %s' % (name, value)
+    try:
+        exec '%s = %s' % (name, value)
+    except Exception, msg:
+        print '%s: %r' % (msg, value)
+        continue
     for n in define_to_name_map:
         if name.startswith(n.upper()):
             define_to_name_map[n][value] = name        
