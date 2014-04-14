@@ -22,7 +22,7 @@ The following mappings are used to hold microscope information:
 """
 
 #__autodoc__ = ['PathInfo']
-__all__ = ['Scaninfo', 'Configuration', 'Tiffinfo', 'Rawinfo', 'PathInfo', 'Omeinfo']
+__all__ = ['Scaninfo', 'Configuration', 'Tiffinfo', 'Rawinfo', 'PathInfo', 'OmeInfo', 'HDF5info']
 
 import os
 import sys
@@ -623,6 +623,24 @@ class PathInfo(object):
             return dr
         if t=='widefield':
             return 2*dr
+        raise NotImplementedError(`t`)
+
+    def get_axial_resolution(self):
+        """
+        Return computed axial resolution (in meters) of the microscope
+        system.
+        """
+        NA = self.get_objective_NA()
+        n = self.get_refractive_index()
+        l = self.get_excitation_wavelength()
+        t = self.get_microscope_type()        
+        if None in [NA, n, l, t]: return
+        alpha = numpy.arcsin(NA/n)
+        dz = l / n / (1-numpy.cos(alpha))
+        if t=='confocal':
+            return dz
+        if t=='widefield':
+            return 2*dz
         raise NotImplementedError(`t`)
 
     def get_detectors(self):
@@ -1282,3 +1300,222 @@ class Rawinfo(PathInfo):
             if sample_format is not None:
                 self.set_sample_format (sample_format)
         return self.sample_format
+
+class HDF5info(Configuration):
+    
+    def __init__ (self, path):
+        PathInfo.__init__(self, path)
+        import h5py
+        self.h5 = h5py.File(path,'r')
+        self.conf = self.h5['Configuration'].attrs
+
+    def has_imperx(self):
+        path = self.path
+        if 'Imperx' in path:
+            return True
+        protocol_mode = str(self.conf['main_protocol_mode'])
+        if protocol_mode in ['MyocyteMechanics', 'MyocyteMechanicsFluorescence']:
+            return True
+
+    def get_protocol(self):
+        if self.protocol is None:
+            protocol_mode = str(self.conf['main_protocol_mode'])
+            if protocol_mode in self._widefield_protocol_modes + self._confocal_protocol_modes:
+                self.set_protocol('image')
+            if protocol_mode in self._rics_protocol_modes:
+                self.set_protocol('rics')
+        return self.protocol
+
+    def get_microscope_type(self):
+        if self.microscope_type is None:
+            protocol_mode = str(self.conf['main_protocol_mode'])
+            microscope_type = None
+            if protocol_mode in self._confocal_protocol_modes + self._rics_protocol_modes:
+                microscope_type = 'confocal'
+            elif protocol_mode in self._widefield_protocol_modes:
+                microscope_type = 'widefield'
+            else:
+                raise NotImplementedError (`protocol_mode`)
+            if microscope_type is not None:
+                self.set_microscope_type(microscope_type)
+        return self.microscope_type
+
+    def get_nof_stacks(self):
+        if self.nof_stacks is None:
+            shape = self.get_shape()
+            nof_stacks = None
+            if shape is not None:
+                path = self.path
+                protocol_mode = str(self.conf['main_protocol_mode'])
+                if protocol_mode in self._widefield_protocol_modes + self._confocal_protocol_modes + self._rics_protocol_modes:
+                    if self.conf['PROTOCOL_Z_STACKER_Enable']:
+                        n = self.conf['PROTOCOL_Z_STACKER_NumberOfFrames'] or 1
+                        nof_stacks = shape[0] // n
+                    else:
+                        nof_stacks = 1
+                else:
+                    raise NotImplementedError (`protocol_mode`)
+            if nof_stacks is not None:
+                self.set_nof_stacks(nof_stacks)
+        return self.nof_stacks
+
+
+    def get_shape(self):
+        if self.shape is None:
+            path = self.path
+            protocol_mode = str(self.conf['main_protocol_mode'])
+            n = self.conf['PROTOCOL_Z_STACKER_NumberOfFrames'] or 1
+            if protocol_mode in self._confocal_protocol_modes + self._rics_protocol_modes:
+                imagesize_x = self.conf['CONFOCAL_ImageSizeX'] #px
+                imagesize_y = self.conf['CONFOCAL_ImageSizeY'] #px
+                shape = (n, imagesize_y, imagesize_x)
+            elif protocol_mode in self._widefield_protocol_modes:
+                if self.has_imperx():
+                    imagesize_x = self.conf['CAMERA_IMPERX_ImageSizeX'] #px
+                    imagesize_y = self.conf['CAMERA_IMPERX_ImageSizeY'] #px
+                else:
+                    imagesize_x = self.conf['CAMERA_ANDOR_ImageSizeX'] #px
+                    imagesize_y = self.conf['CAMERA_ANDOR_ImageSizeY'] #px
+                shape = (n, imagesize_y, imagesize_x)
+            else:
+                raise NotImplementedError (`protocol_mode`)
+            self.set_shape(*shape)
+        return self.shape
+
+    def get_voxel_sizes(self):
+        path = self.path
+        if self.voxel_sizes is None:
+            protocol_mode = str(self.conf['main_protocol_mode'])
+            mn = self.conf['PROTOCOL_Z_STACKER_Minimum'] #um
+            mx = self.conf['PROTOCOL_Z_STACKER_Maximum'] #um
+            n = self.conf['PROTOCOL_Z_STACKER_NumberOfFrames'] or 1
+            if protocol_mode in self._confocal_protocol_modes + self._rics_protocol_modes:
+                pixelsize_x = self.conf['CONFOCAL_PixelSizeX'] #um
+                pixelsize_y = self.conf['CONFOCAL_PixelSizeY'] #um
+                voxel_sizes = (1e-6*(mx-mn)/(n), 1e-6*pixelsize_y, 1e-6*pixelsize_x)
+            elif protocol_mode in self._widefield_protocol_modes:
+                if self.has_imperx():
+                    pixelsize_x = self.conf['CAMERA_IMPERX_PixelSize']
+                else:
+                    pixelsize_x = self.conf['CAMERA_ANDOR_PixelSize']
+                pixelsize_y = pixelsize_x
+                voxel_sizes = (1e-6*(mx-mn)/(n), 1e-6*pixelsize_y, 1e-6*pixelsize_x)
+            else:
+                raise NotImplementedError (`protocol_mode`)
+            self.set_voxel_sizes(*voxel_sizes)
+        return self.voxel_sizes
+
+    def get_image_time (self):
+        path = self.path
+        print path
+        if self.image_time is None:
+            image_time = None
+            protocol_mode = str(self.conf['main_protocol_mode'])
+            if protocol_mode in self._widefield_protocol_modes:
+                time_path = None
+                if self.has_imperx():
+                    time_path = os.path.join (os.path.dirname(path), 'Imperx_index.txt')
+                elif 'Andor' in path:
+                    time_path = os.path.join (os.path.dirname(path), 'Andor_index.txt')
+                if time_path is not None:
+                    image_time = []
+                    for line in open (time_path):
+                        t, fn = line.strip().split()
+                        image_time.append (float (t.strip()))
+            if image_time is not None:
+                self.set_image_time(image_time)
+            else:
+                raise NotImplementedError (`protocol_mode, path`)
+        return self.image_time
+
+    def get_objective_NA(self):
+        path = self.path
+        if self.objective_NA is None:
+            protocol_mode = str(self.conf['main_protocol_mode'])
+            if protocol_mode in self._confocal_protocol_modes + self._rics_protocol_modes:
+                objective_name = str(self.conf['olympus_optics_objective'])
+            elif protocol_mode in self._widefield_protocol_modes:
+                objective_name = str(self.conf['optics_objective'])
+            else:
+                raise NotImplementedError(`protocol_mode`)
+            objective_params = objectives.get(objective_name)
+            if objective_params is not None:
+                objective_NA = objective_params.get('NA')
+            else:
+                raise NotImplementedError(`objective_name`)
+            self.set_objective_NA (objective_NA)
+        return self.objective_NA
+
+    def get_refractive_index(self):
+        path = self.path
+        if self.refractive_index is None:
+            protocol_mode = str(self.conf['main_protocol_mode'])
+            if protocol_mode in self._confocal_protocol_modes + self._rics_protocol_modes:
+                objective_name = str(self.conf['olympus_optics_objective'])
+            elif protocol_mode in self._widefield_protocol_modes:
+                objective_name = str(self.conf['optics_objective'])
+            else:
+                raise NotImplementedError(`protocol_mode`)
+            objective_params = objectives.get(objective_name)
+            if objective_params is not None:
+                refractive_index = objective_params.get('refractive_index')                
+            else:
+                raise NotImplementedError(`objective_name`)
+            self.set_refractive_index (refractive_index)
+        return self.refractive_index
+
+    def get_excitation_wavelength(self):
+        path = self.path
+        if self.excitation_wavelength is None:
+            protocol_mode = str(self.conf['main_protocol_mode'])
+            if protocol_mode in self._confocal_protocol_modes + self._rics_protocol_modes:
+                for i in range (1,5):
+                    line_enabled = self.conf['AOTF_Line%iEnable' % i]
+                    if line_enabled:
+                        line_freq = self.conf['AOTF_Line%iAcousticFrequency' % i]
+                        line_pow = self.conf['AOTF_Line%iAcousticPower' % i]
+                        if line_pow:
+                            if 85 < line_freq < 100:
+                                self.set_excitation_wavelength(633*1e-9)
+                                break
+                            elif 130 < line_freq < 145:
+                                self.set_excitation_wavelength(473*1e-9)
+                                break
+                            raise NotImplementedError (`line_enabled, i, line_freq, line_pow`)
+            elif protocol_mode in self._widefield_protocol_modes:
+                self.set_excitation_wavelength(540*1e-9)
+            else:
+                raise NotImplementedError(`protocol_mode`)
+        return self.excitation_wavelength
+
+    def get_emission_wavelength(self):
+        path = self.path
+        if self.emission_wavelength is None:
+            protocol_mode = str(self.conf['main_protocol_mode'])
+            wavelength = None
+            if protocol_mode in self._confocal_protocol_modes + self._rics_protocol_modes:
+                #XXX: emission wave length is defined by the used dye and filter combination
+                filter_position = str(self.conf['thorlabs_filter_wheel_position'])
+                filter_params = filters.get(filter_position)
+                if filter_params is not None:
+                    wavelength = filter_params.get('wavelength')
+            if wavelength is not None:
+                self.set_emission_wavelength(wavelength*1e-9)
+        return self.emission_wavelength
+
+    def get_rotation_angle(self):
+        path = self.path
+        if self.rotation_angle is None:
+            rotation_angle = None
+            protocol_mode = str(self.conf['main_protocol_mode'])
+            if protocol_mode in self._confocal_protocol_modes + self._rics_protocol_modes:
+                                      rotation_angle = str(self.conf['CONFOCAL_RotationAngle'])
+            elif protocol_mode in self._widefield_protocol_modes:
+                rotation_angle = 0
+            else:
+                raise NotImplementedError(`protocol_mode`)                
+            if rotation_angle is not None:
+                self.set_rotation_angle (rotation_angle)
+        return self.rotation_angle
+
+
